@@ -14,6 +14,7 @@
             --input: rgba(255, 255, 255, 0.9);
             --shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
             --item-bg: rgba(0,0,0,0.03);
+            --btn-hover: rgba(255, 255, 255, 0.9);
         }
 
         [data-theme="dark"] {
@@ -25,19 +26,18 @@
             --input: rgba(20, 20, 25, 0.6);
             --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             --item-bg: rgba(255,255,255,0.05);
+            --btn-hover: rgba(70, 70, 75, 0.9);
         }
 
-        /* 緩慢變色過場動畫 */
-        body {
-            transition: background 0.8s ease, color 0.8s ease;
-        }
-        .panel, input, select, .forecast-item, .check-item input {
-            transition: background 0.8s ease, border-color 0.8s ease, box-shadow 0.8s ease, color 0.8s ease;
+        * {
+            transition: background 0.8s ease, color 0.8s ease, border-color 0.8s ease, box-shadow 0.8s ease, transform 0.2s ease;
         }
 
         body {
             font-family: "Segoe UI", sans-serif;
-            margin: 0; padding: 20px; min-height: 100vh;
+            margin: 0; 
+            padding: 30px 20px 30px 90px; 
+            min-height: 100vh;
             background: var(--bg); color: var(--text);
             display: flex; justify-content: center;
         }
@@ -47,25 +47,47 @@
             gap: 20px; width: 100%; max-width: 1300px;
         }
 
+        .input-panel {
+            position: relative; 
+        }
+
         .panel {
             background: var(--glass); backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             border-radius: 16px; padding: 24px; box-shadow: var(--shadow);
         }
+
+        .theme-toggle-container {
+            position: absolute;
+            left: -70px;
+            top: 20px;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; user-select: none;
+            z-index: 10;
+        }
+        .theme-toggle-container:hover {
+            background: var(--btn-hover);
+            transform: scale(1.05);
+        }
+        .theme-toggle-container:active {
+            transform: scale(0.95);
+        }
+        .theme-btn { font-size: 1.6rem; margin: 0; }
 
         h2 { 
             margin: 0 0 15px 0; font-size: 1.1rem; 
             border-bottom: 2px solid var(--accent); 
             padding-bottom: 8px; width: fit-content; 
-            display: flex; align-items: center; 
         }
-
-        .theme-btn {
-            cursor: pointer; user-select: none; font-size: 1.3rem; 
-            margin-right: 8px; transition: transform 0.3s ease;
-            display: inline-block;
-        }
-        .theme-btn:active { transform: scale(0.8); }
 
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 12px; }
         .short-input { width: 80%; }
@@ -75,6 +97,11 @@
         input, select {
             width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border);
             background: var(--input); color: var(--text); outline: none; box-sizing: border-box;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.2);
         }
 
         .check-group { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0; }
@@ -101,16 +128,24 @@
         }
         .lvl-tag { font-weight: bold; }
         .date-val { opacity: 0.8; }
+
+        @media (max-width: 900px) {
+            body { padding: 20px; }
+            .layout { grid-template-columns: 1fr; }
+            .theme-toggle-container { left: auto; right: 20px; top: 20px; }
+        }
     </style>
 </head>
 <body>
 
 <div class="layout">
-    <div class="panel">
-        <h2>
-            <span id="themeBtn" class="theme-btn" onclick="toggleTheme()">☀️</span>
-            ⚙️ 練功參數
-        </h2>
+    <div class="panel input-panel">
+        
+        <div class="theme-toggle-container" onclick="toggleTheme()">
+            <span id="themeBtn" class="theme-btn">☀️</span>
+        </div>
+
+        <h2>⚙️ 練功參數</h2>
         <div class="form-row">
             <div>
                 <label>👤 當前等級</label>
@@ -128,7 +163,7 @@
 
         <div class="form-group" style="margin-top:20px;">
             <label>⚔️ 打怪每秒經驗</label>
-            <input type="text" id="expPerSec" value="11E" placeholder="12E5000W">
+            <input type="text" id="expPerSec" placeholder="11E">
         </div>
 
         <div class="form-row">
@@ -185,9 +220,8 @@
         <div class="form-group">
             <label>史詩副本</label>
             <div class="check-group" style="margin-bottom: 10px;">
-                <label class="check-item"><input type="checkbox" id="epiPart" checked> 參與</label>
-                <label class="check-item"><input type="radio" name="epiType" value="high"> 高山 (260+)</label>
-                <label class="check-item"><input type="radio" name="epiType" value="ang"> 安格洛 (270+)</label>
+                <label class="check-item"><input type="checkbox" id="epiHigh"> 高山 (260+)</label>
+                <label class="check-item"><input type="checkbox" id="epiAng"> 安格洛 (270+)</label>
             </div>
             <div class="form-row" style="margin-bottom: 0;">
                 <div>
@@ -230,11 +264,9 @@
         295:870403132500696, 296:957443445750765, 297:1053187790325840, 298:1158506569358420, 299:1737759854037630
     };
     
-    // 紅月與終極怪公
     const RM_BASE = { 260: 2652e8, 270: 5670e8, 280: 10614.2e8, 290: 10993.3e8 };
     const EX_BASE = { 260: 530.4e8, 270: 1134e8, 280: 1632.9e8, 290: 1691.2e8 };
 
-    // 高山經驗表
     const HM_DATA = {
         260: 2609e8, 261: 2647e8, 262: 2685e8, 263: 2722e8, 264: 2765e8,
         265: 3110e8, 266: 3153e8, 267: 3196e8, 268: 3245e8, 269: 3288e8,
@@ -246,7 +278,6 @@
         295: 7596e8, 296: 7596e8, 297: 7596e8, 298: 7596e8, 299: 7596e8
     };
 
-    // 安格洛公司經驗表
     const AC_DATA = {
         270: 5547e8, 271: 5628e8, 272: 5701.5e8, 273: 5775e8, 274: 5859e8,
         275: 6585e8, 276: 6667.5e8, 277: 6762e8, 278: 6846e8, 279: 6940.5e8,
@@ -258,6 +289,7 @@
 
     function parseExp(str) {
         if(!str) return 0;
+        str = str.toString();
         let val = 0;
         const eMatch = str.toUpperCase().match(/(\d+)\s*[E億]/);
         const wMatch = str.toUpperCase().match(/(\d+)\s*[W萬]/);
@@ -266,7 +298,6 @@
         return val || parseInt(str.replace(/,/g, '')) || 0;
     }
 
-    // 儲存資料到 LocalStorage
     function saveData() {
         const data = {};
         document.querySelectorAll('input, select').forEach(el => {
@@ -277,12 +308,11 @@
                 data[key] = el.value;
             }
         });
-        localStorage.setItem('mapleCalcData_v8', JSON.stringify(data));
+        localStorage.setItem('mapleCalcData_v11', JSON.stringify(data));
     }
 
-    // 從 LocalStorage 載入資料
     function loadData() {
-        const saved = localStorage.getItem('mapleCalcData_v8');
+        const saved = localStorage.getItem('mapleCalcData_v11');
         if (saved) {
             const data = JSON.parse(saved);
             document.querySelectorAll('input, select').forEach(el => {
@@ -298,16 +328,19 @@
         }
     }
 
-    // 切換深淺色模式
     function toggleTheme() {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         const targetTheme = isDark ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', targetTheme);
         localStorage.setItem('m-theme', targetTheme);
-        document.getElementById('themeBtn').innerText = targetTheme === 'dark' ? '🌙' : '☀️';
+        updateThemeEmoji(targetTheme);
     }
 
-    // 終極怪物公園 互斥邏輯
+    function updateThemeEmoji(theme) {
+        document.getElementById('themeBtn').innerText = theme === 'dark' ? '🌙' : '☀️';
+    }
+
+    // 終極怪公互斥邏輯
     document.getElementById('exSun').addEventListener('change', function() {
         if(this.checked) document.getElementById('exEvt').checked = false;
         calculate();
@@ -317,13 +350,22 @@
         calculate();
     });
 
-    // 核心計算
+    // 史詩副本互斥邏輯 (點選一次選取，再點一次取消，且兩者只能選一個)
+    document.getElementById('epiHigh').addEventListener('change', function() {
+        if(this.checked) document.getElementById('epiAng').checked = false;
+        calculate();
+    });
+    document.getElementById('epiAng').addEventListener('change', function() {
+        if(this.checked) document.getElementById('epiHigh').checked = false;
+        calculate();
+    });
+
     function calculate() {
         const curLvl = parseInt(document.getElementById('level').value) || 260;
         const tarLvl = parseInt(document.getElementById('targetLevel').value) || 300;
         const curPct = parseFloat(document.getElementById('curExpP').value) || 0;
         
-        const eps = parseExp(document.getElementById('expPerSec').value) || 0;
+        const eps = parseExp(document.getElementById('expPerSec').value) || parseExp("11E"); 
         const hH = parseInt(document.getElementById('huntH').value) || 0;
         const hM = parseInt(document.getElementById('huntM').value) || 0;
         const huntSec = (hH * 3600) + (hM * 60);
@@ -345,50 +387,45 @@
             let dailyGain = 0;
 
             if(huntDays.includes(dayOfWeek)) dailyGain += eps * huntSec;
-
-            if(tempLvl >= 100) {
-                dailyGain += (afkBase / 5) * afkSec;
-            }
+            if(tempLvl >= 100) dailyGain += (afkBase / 5) * afkSec;
             
             if(dayOfWeek === 0 && tempLvl >= 260) {
                 // 紅月之森
                 if(document.getElementById('rmPart').checked) {
-                    let rm = RM_BASE[Math.floor(tempLvl/10)*10] || RM_BASE[260];
+                    let rm = RM_BASE[Math.floor(tempLvl/10)*10] || RM_BASE[290];
                     dailyGain += document.getElementById('rmCert').checked ? rm*2 : rm;
                 }
                 
-                // 終極怪公
+                // 終極怪物公園
                 if(document.getElementById('exPart').checked) {
                     let mult = 1; 
                     if(document.getElementById('exSun').checked) mult = 1.5;
                     if(document.getElementById('exEvt').checked) mult = 2;
-                    dailyGain += (EX_BASE[Math.floor(tempLvl/10)*10] || EX_BASE[260]) * mult;
+                    dailyGain += (EX_BASE[Math.floor(tempLvl/10)*10] || EX_BASE[290]) * mult;
                 }
 
                 // 史詩副本
-                if(document.getElementById('epiPart').checked) {
-                    let epiTypeNode = document.querySelector('input[name="epiType"]:checked');
-                    if (epiTypeNode) {
-                        let epiType = epiTypeNode.value;
-                        let buyCount = parseInt(document.getElementById('epiBuy').value) || 0;
-                        let baseEpiExp = 0;
+                let isEpiHigh = document.getElementById('epiHigh').checked;
+                let isEpiAng = document.getElementById('epiAng').checked;
 
-                        if (epiType === 'high' && tempLvl >= 260) {
-                            baseEpiExp = HM_DATA[tempLvl] || HM_DATA[299];
-                        } else if (epiType === 'ang' && tempLvl >= 270) {
-                            baseEpiExp = AC_DATA[tempLvl] || AC_DATA[299];
-                        }
-                        
-                        if (baseEpiExp > 0) {
-                            let totalEpiExp = baseEpiExp * (1 + (buyCount * 0.1374));
-                            dailyGain += totalEpiExp;
-                        }
+                if (isEpiHigh || isEpiAng) {
+                    let buyCount = parseInt(document.getElementById('epiBuy').value) || 0;
+                    let baseEpiExp = 0;
+
+                    if (isEpiHigh && tempLvl >= 260) {
+                        baseEpiExp = HM_DATA[tempLvl] || HM_DATA[299];
+                    } else if (isEpiAng && tempLvl >= 270) {
+                        baseEpiExp = AC_DATA[tempLvl] || AC_DATA[299];
+                    }
+                    
+                    // 每購買1次 = +1.074倍 (10次 = +10.74倍)
+                    if (baseEpiExp > 0) {
+                        let totalEpiExp = baseEpiExp * (1 + (buyCount * 1.074));
+                        dailyGain += totalEpiExp;
                     }
                 }
             }
-
             currentExpOwned += dailyGain;
-
             while(EXP_REQ[tempLvl] && currentExpOwned >= EXP_REQ[tempLvl]) {
                 currentExpOwned -= EXP_REQ[tempLvl];
                 tempLvl++;
@@ -398,31 +435,27 @@
             }
         }
 
-        document.getElementById('forecastList').innerHTML = listHtml || "無練功/掛機收益，無法升等";
+        document.getElementById('forecastList').innerHTML = listHtml || "無法升等，請檢查收益設定";
         document.getElementById('summary').innerText = `預計花費：${dayCount} 天`;
         
-        // 每次計算完畢自動存檔
         saveData();
     }
 
-    // 綁定所有輸入變更事件來觸發計算與存檔
     document.querySelectorAll('input, select').forEach(i => {
         i.addEventListener('input', calculate);
         i.addEventListener('change', calculate);
     });
 
-    // 網頁載入時初始化
     window.onload = () => {
-        const savedTheme = localStorage.getItem('m-theme');
-        if(savedTheme === 'dark') {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            document.getElementById('themeBtn').innerText = '🌙';
-        } else {
-            document.getElementById('themeBtn').innerText = '☀️';
-        }
+        const savedTheme = localStorage.getItem('m-theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateThemeEmoji(savedTheme);
         
-        loadData();  // 讀取存檔
-        calculate(); // 執行計算
+        loadData();
+        if(!document.getElementById('expPerSec').value) {
+            document.getElementById('expPerSec').value = "11E";
+        }
+        calculate();
     };
 </script>
 
