@@ -13,6 +13,7 @@
             --accent: #0078d4;
             --input: rgba(255, 255, 255, 0.9);
             --shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+            --item-bg: rgba(0,0,0,0.03);
         }
 
         [data-theme="dark"] {
@@ -23,6 +24,15 @@
             --accent: #60cdff;
             --input: rgba(20, 20, 25, 0.6);
             --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --item-bg: rgba(255,255,255,0.05);
+        }
+
+        /* 緩慢變色過場動畫 */
+        body {
+            transition: background 0.8s ease, color 0.8s ease;
+        }
+        .panel, input, select, .forecast-item, .check-item input {
+            transition: background 0.8s ease, border-color 0.8s ease, box-shadow 0.8s ease, color 0.8s ease;
         }
 
         body {
@@ -43,7 +53,19 @@
             border-radius: 16px; padding: 24px; box-shadow: var(--shadow);
         }
 
-        h2 { margin: 0 0 15px 0; font-size: 1.1rem; border-bottom: 2px solid var(--accent); padding-bottom: 8px; width: fit-content; }
+        h2 { 
+            margin: 0 0 15px 0; font-size: 1.1rem; 
+            border-bottom: 2px solid var(--accent); 
+            padding-bottom: 8px; width: fit-content; 
+            display: flex; align-items: center; 
+        }
+
+        .theme-btn {
+            cursor: pointer; user-select: none; font-size: 1.3rem; 
+            margin-right: 8px; transition: transform 0.3s ease;
+            display: inline-block;
+        }
+        .theme-btn:active { transform: scale(0.8); }
 
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 12px; }
         .short-input { width: 80%; }
@@ -67,8 +89,6 @@
             background: var(--accent); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);
         }
 
-        .theme-btn { position: fixed; top: 15px; right: 15px; padding: 8px 16px; border-radius: 20px; cursor: pointer; z-index: 100; border:1px solid var(--glass-border); background: var(--glass); color: var(--text); }
-
         .forecast-list {
             display: grid; grid-template-columns: 1fr 1fr;
             gap: 8px; margin-top: 15px; max-height: 75vh; overflow-y: auto;
@@ -76,21 +96,21 @@
         }
         .forecast-item {
             display: flex; justify-content: space-between; padding: 10px;
-            background: rgba(0,0,0,0.03); border-radius: 8px; font-size: 0.85rem;
+            background: var(--item-bg); border-radius: 8px; font-size: 0.85rem;
             border-left: 3px solid var(--accent);
         }
-        [data-theme="dark"] .forecast-item { background: rgba(255,255,255,0.05); }
         .lvl-tag { font-weight: bold; }
         .date-val { opacity: 0.8; }
     </style>
 </head>
 <body>
 
-<button class="theme-btn" onclick="toggleTheme()">🌓 切換深色/淺色模式</button>
-
 <div class="layout">
     <div class="panel">
-        <h2>⚙️ 練功參數</h2>
+        <h2>
+            <span id="themeBtn" class="theme-btn" onclick="toggleTheme()">☀️</span>
+            ⚙️ 練功參數
+        </h2>
         <div class="form-row">
             <div>
                 <label>👤 當前等級</label>
@@ -149,14 +169,14 @@
         <div class="form-group">
             <label>紅月之森</label>
             <div class="check-group">
-                <label class="check-item"><input type="checkbox" id="rmPart"> 參與</label>
+                <label class="check-item"><input type="checkbox" id="rmPart" checked> 參與</label>
                 <label class="check-item"><input type="checkbox" id="rmCert"> 托圖伊保證書 (x2)</label>
             </div>
         </div>
         <div class="form-group">
             <label>終極怪物公園</label>
             <div class="check-group">
-                <label class="check-item"><input type="checkbox" id="exPart"> 參與</label>
+                <label class="check-item"><input type="checkbox" id="exPart" checked> 參與</label>
                 <label class="check-item"><input type="checkbox" id="exSun"> 週日(*1.5)</label>
                 <label class="check-item"><input type="checkbox" id="exEvt"> 活動(*2)</label>
             </div>
@@ -165,8 +185,8 @@
         <div class="form-group">
             <label>史詩副本</label>
             <div class="check-group" style="margin-bottom: 10px;">
-                <label class="check-item"><input type="checkbox" id="epiPart"> 參與</label>
-                <label class="check-item"><input type="radio" name="epiType" value="high" checked> 高山 (260+)</label>
+                <label class="check-item"><input type="checkbox" id="epiPart" checked> 參與</label>
+                <label class="check-item"><input type="radio" name="epiType" value="high"> 高山 (260+)</label>
                 <label class="check-item"><input type="radio" name="epiType" value="ang"> 安格洛 (270+)</label>
             </div>
             <div class="form-row" style="margin-bottom: 0;">
@@ -246,10 +266,45 @@
         return val || parseInt(str.replace(/,/g, '')) || 0;
     }
 
+    // 儲存資料到 LocalStorage
+    function saveData() {
+        const data = {};
+        document.querySelectorAll('input, select').forEach(el => {
+            const key = el.id || el.name + '_' + el.value;
+            if (el.type === 'checkbox' || el.type === 'radio') {
+                data[key] = el.checked;
+            } else {
+                data[key] = el.value;
+            }
+        });
+        localStorage.setItem('mapleCalcData_v8', JSON.stringify(data));
+    }
+
+    // 從 LocalStorage 載入資料
+    function loadData() {
+        const saved = localStorage.getItem('mapleCalcData_v8');
+        if (saved) {
+            const data = JSON.parse(saved);
+            document.querySelectorAll('input, select').forEach(el => {
+                const key = el.id || el.name + '_' + el.value;
+                if (data[key] !== undefined) {
+                    if (el.type === 'checkbox' || el.type === 'radio') {
+                        el.checked = data[key];
+                    } else {
+                        el.value = data[key];
+                    }
+                }
+            });
+        }
+    }
+
+    // 切換深淺色模式
     function toggleTheme() {
-        const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('m-theme', theme);
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const targetTheme = isDark ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', targetTheme);
+        localStorage.setItem('m-theme', targetTheme);
+        document.getElementById('themeBtn').innerText = targetTheme === 'dark' ? '🌙' : '☀️';
     }
 
     // 終極怪物公園 互斥邏輯
@@ -262,6 +317,7 @@
         calculate();
     });
 
+    // 核心計算
     function calculate() {
         const curLvl = parseInt(document.getElementById('level').value) || 260;
         const tarLvl = parseInt(document.getElementById('targetLevel').value) || 300;
@@ -311,20 +367,23 @@
 
                 // 史詩副本
                 if(document.getElementById('epiPart').checked) {
-                    let epiType = document.querySelector('input[name="epiType"]:checked').value;
-                    let buyCount = parseInt(document.getElementById('epiBuy').value) || 0;
-                    let baseEpiExp = 0;
+                    let epiTypeNode = document.querySelector('input[name="epiType"]:checked');
+                    if (epiTypeNode) {
+                        let epiType = epiTypeNode.value;
+                        let buyCount = parseInt(document.getElementById('epiBuy').value) || 0;
+                        let baseEpiExp = 0;
 
-                    // 判斷該等級是否符合該副本的參加資格
-                    if (epiType === 'high' && tempLvl >= 260) {
-                        baseEpiExp = HM_DATA[tempLvl] || HM_DATA[299];
-                    } else if (epiType === 'ang' && tempLvl >= 270) {
-                        baseEpiExp = AC_DATA[tempLvl] || AC_DATA[299];
+                        if (epiType === 'high' && tempLvl >= 260) {
+                            baseEpiExp = HM_DATA[tempLvl] || HM_DATA[299];
+                        } else if (epiType === 'ang' && tempLvl >= 270) {
+                            baseEpiExp = AC_DATA[tempLvl] || AC_DATA[299];
+                        }
+                        
+                        if (baseEpiExp > 0) {
+                            let totalEpiExp = baseEpiExp * (1 + (buyCount * 0.1374));
+                            dailyGain += totalEpiExp;
+                        }
                     }
-                    
-                    // 10次 = 137.4%，故 1次 = 13.74% (0.1374)
-                    let totalEpiExp = baseEpiExp * (1 + (buyCount * 0.1374));
-                    dailyGain += totalEpiExp;
                 }
             }
 
@@ -341,13 +400,29 @@
 
         document.getElementById('forecastList').innerHTML = listHtml || "無練功/掛機收益，無法升等";
         document.getElementById('summary').innerText = `預計花費：${dayCount} 天`;
+        
+        // 每次計算完畢自動存檔
+        saveData();
     }
 
-    // 綁定事件與存取
-    document.querySelectorAll('input, select').forEach(i => i.addEventListener('input', calculate));
+    // 綁定所有輸入變更事件來觸發計算與存檔
+    document.querySelectorAll('input, select').forEach(i => {
+        i.addEventListener('input', calculate);
+        i.addEventListener('change', calculate);
+    });
+
+    // 網頁載入時初始化
     window.onload = () => {
-        if(localStorage.getItem('m-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-        calculate();
+        const savedTheme = localStorage.getItem('m-theme');
+        if(savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.getElementById('themeBtn').innerText = '🌙';
+        } else {
+            document.getElementById('themeBtn').innerText = '☀️';
+        }
+        
+        loadData();  // 讀取存檔
+        calculate(); // 執行計算
     };
 </script>
 
