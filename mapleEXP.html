@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MapleStory EXP Pro</title>
+    <style>
+        :root {
+            --bg: linear-gradient(135deg, #f3f9ff 0%, #e2eafc 100%);
+            --glass: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --text: #1c1c1c;
+            --accent: #0078d4;
+            --input: rgba(255, 255, 255, 0.9);
+            --shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg: linear-gradient(135deg, #1a1a1e 0%, #111114 100%);
+            --glass: rgba(40, 40, 45, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text: #f5f5f5;
+            --accent: #60cdff;
+            --input: rgba(20, 20, 25, 0.6);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: "Segoe UI", sans-serif;
+            margin: 0; padding: 20px; min-height: 100vh;
+            background: var(--bg); color: var(--text);
+            display: flex; justify-content: center;
+        }
+
+        .layout {
+            display: grid; grid-template-columns: 1fr 550px;
+            gap: 20px; width: 100%; max-width: 1300px;
+        }
+
+        .panel {
+            background: var(--glass); backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px; padding: 24px; box-shadow: var(--shadow);
+        }
+
+        h2 { margin: 0 0 15px 0; font-size: 1.1rem; border-bottom: 2px solid var(--accent); padding-bottom: 8px; width: fit-content; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 12px; }
+        .short-input { width: 80%; }
+
+        label { display: block; font-size: 0.85rem; margin-bottom: 5px; font-weight: 600; }
+        
+        input, select {
+            width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border);
+            background: var(--input); color: var(--text); outline: none; box-sizing: border-box;
+        }
+
+        .check-group { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0; }
+        .check-item { display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 0.8rem; }
+        
+        input[type="radio"], input[type="checkbox"] {
+            appearance: none; width: 16px; height: 16px; border: 2px solid var(--accent);
+            border-radius: 50%; cursor: pointer; position: relative; background: var(--input);
+        }
+        input:checked::before {
+            content: ""; position: absolute; width: 8px; height: 8px;
+            background: var(--accent); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        }
+
+        .theme-btn { position: fixed; top: 15px; right: 15px; padding: 8px 16px; border-radius: 20px; cursor: pointer; z-index: 100; border:1px solid var(--glass-border); background: var(--glass); color: var(--text); }
+
+        .forecast-list {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 8px; margin-top: 15px; max-height: 75vh; overflow-y: auto;
+            padding-right: 10px;
+        }
+        .forecast-item {
+            display: flex; justify-content: space-between; padding: 10px;
+            background: rgba(0,0,0,0.03); border-radius: 8px; font-size: 0.85rem;
+            border-left: 3px solid var(--accent);
+        }
+        [data-theme="dark"] .forecast-item { background: rgba(255,255,255,0.05); }
+        .lvl-tag { font-weight: bold; }
+        .date-val { opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+<button class="theme-btn" onclick="toggleTheme()">🌓 切換深色/淺色模式</button>
+
+<div class="layout">
+    <div class="panel">
+        <h2>⚙️ 練功參數</h2>
+        <div class="form-row">
+            <div>
+                <label>👤 當前等級</label>
+                <input type="number" id="level" value="260" class="short-input">
+            </div>
+            <div>
+                <label>🎯 目標等級</label>
+                <input type="number" id="targetLevel" value="300" class="short-input">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>📊 當前經驗 %</label>
+            <input type="number" id="curExpP" step="0.0001" value="0" class="short-input">
+        </div>
+
+        <div class="form-group" style="margin-top:20px;">
+            <label>⚔️ 打怪每秒經驗</label>
+            <input type="text" id="expPerSec" value="11E" placeholder="12E5000W">
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label>每日時數 (hr)</label>
+                <input type="number" id="huntH" value="1" min="0" class="short-input">
+            </div>
+            <div>
+                <label>每日分鐘 (min)</label>
+                <input type="number" id="huntM" value="0" min="0" class="short-input">
+            </div>
+        </div>
+
+        <label>指定練功日</label>
+        <div class="check-group">
+            <label class="check-item"><input type="checkbox" class="day-check" value="1" checked>一</label>
+            <label class="check-item"><input type="checkbox" class="day-check" value="2" checked>二</label>
+            <label class="check-item"><input type="checkbox" class="day-check" value="3" checked>三</label>
+            <label class="check-item"><input type="checkbox" class="day-check" value="4" checked>四</label>
+            <label class="check-item"><input type="checkbox" class="day-check" value="5" checked>五</label>
+            <label class="check-item"><input type="checkbox" class="day-check" value="6" checked>六</label>
+            <label class="check-item"><input type="checkbox" class="day-check" value="0" checked>日</label>
+        </div>
+
+        <h2 style="margin-top: 25px;">🪑 掛機系統</h2>
+        <div class="form-row">
+            <div>
+                <label>掛機經驗 (每5秒)</label>
+                <input type="text" id="afkExp" placeholder="1E2000W" class="short-input">
+            </div>
+            <div>
+                <label>每日掛機時數 (hr)</label>
+                <input type="number" id="afkH" value="0" min="0" max="24" class="short-input">
+            </div>
+        </div>
+
+        <h2 style="margin-top: 25px;">🏔️ 週常活動 (Lv. 260+)</h2>
+        <div class="form-group">
+            <label>紅月之森</label>
+            <div class="check-group">
+                <label class="check-item"><input type="checkbox" id="rmPart"> 參與</label>
+                <label class="check-item"><input type="checkbox" id="rmCert"> 托圖伊保證書 (x2)</label>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>終極怪物公園</label>
+            <div class="check-group">
+                <label class="check-item"><input type="checkbox" id="exPart"> 參與</label>
+                <label class="check-item"><input type="checkbox" id="exSun"> 週日(*1.5)</label>
+                <label class="check-item"><input type="checkbox" id="exEvt"> 活動(*2)</label>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>史詩副本</label>
+            <div class="check-group" style="margin-bottom: 10px;">
+                <label class="check-item"><input type="checkbox" id="epiPart"> 參與</label>
+                <label class="check-item"><input type="radio" name="epiType" value="high" checked> 高山 (260+)</label>
+                <label class="check-item"><input type="radio" name="epiType" value="ang"> 安格洛 (270+)</label>
+            </div>
+            <div class="form-row" style="margin-bottom: 0;">
+                <div>
+                    <label>額外購買次數</label>
+                    <select id="epiBuy" class="short-input">
+                        <option value="0">0 次 (不購買)</option>
+                        <option value="1">1 次</option>
+                        <option value="2">2 次</option>
+                        <option value="3">3 次</option>
+                        <option value="4">4 次</option>
+                        <option value="5">5 次</option>
+                        <option value="6">6 次</option>
+                        <option value="7">7 次</option>
+                        <option value="8">8 次</option>
+                        <option value="9">9 次</option>
+                        <option value="10">10 次</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>📅 升等時程預測</h2>
+        <div id="summary" style="margin-bottom:10px; font-weight:bold; color:var(--accent);"></div>
+        <div class="forecast-list" id="forecastList"></div>
+    </div>
+</div>
+
+<script>
+    const EXP_REQ = {
+        1:15, 2:34, 3:57, 4:92, 5:135, 200:2207026470, 250:442457484960, 
+        260:1731919984062, 261:1749239183902, 262:1766731575741, 263:1784398891498, 264:1802242880412,
+        265:2342915744535, 266:2366344901980, 267:2390008350999, 268:2413908434508, 269:2438047518853,
+        270:5412465491853, 271:5466590146771, 272:5521256048238, 273:5576468608720, 274:5632233294807,
+        275:11377111255510, 276:12514822381061, 277:13766304619167, 278:15142935081083, 279:16657228589191,
+        280:33647601750165, 281:37012361925181, 282:40713598117699, 283:44784957929468, 284:49263453722414,
+        285:99512176519276, 286:109463394171203, 287:120409733588323, 288:132450706947155, 289:145695777641870,
+        290:294305470836577, 291:323736017920234, 292:356109619712257, 293:391720581683482, 294:430892639851830,
+        295:870403132500696, 296:957443445750765, 297:1053187790325840, 298:1158506569358420, 299:1737759854037630
+    };
+    
+    // 紅月與終極怪公
+    const RM_BASE = { 260: 2652e8, 270: 5670e8, 280: 10614.2e8, 290: 10993.3e8 };
+    const EX_BASE = { 260: 530.4e8, 270: 1134e8, 280: 1632.9e8, 290: 1691.2e8 };
+
+    // 高山經驗表
+    const HM_DATA = {
+        260: 2609e8, 261: 2647e8, 262: 2685e8, 263: 2722e8, 264: 2765e8,
+        265: 3110e8, 266: 3153e8, 267: 3196e8, 268: 3245e8, 269: 3288e8,
+        270: 3698e8, 271: 3752e8, 272: 3801e8, 273: 3850e8, 274: 3906e8,
+        275: 4390e8, 276: 4445e8, 277: 4508e8, 278: 4564e8, 279: 4627e8,
+        280: 5196e8, 281: 5267e8, 282: 5330e8, 283: 5401e8, 284: 5465e8,
+        285: 6144e8, 286: 6215e8, 287: 6296e8, 288: 6377e8, 289: 6450e8,
+        290: 7248e8, 291: 7329e8, 292: 7421e8, 293: 7514e8, 294: 7596e8,
+        295: 7596e8, 296: 7596e8, 297: 7596e8, 298: 7596e8, 299: 7596e8
+    };
+
+    // 安格洛公司經驗表
+    const AC_DATA = {
+        270: 5547e8, 271: 5628e8, 272: 5701.5e8, 273: 5775e8, 274: 5859e8,
+        275: 6585e8, 276: 6667.5e8, 277: 6762e8, 278: 6846e8, 279: 6940.5e8,
+        280: 7794e8, 281: 7900.5e8, 282: 7995e8, 283: 8101.5e8, 284: 8197.5e8,
+        285: 9216e8, 286: 9322.5e8, 287: 9444e8, 288: 9565.5e8, 289: 9675e8,
+        290: 10872e8, 291: 10993.5e8, 292: 11131.5e8, 293: 11271e8, 294: 11394e8,
+        295: 11394e8, 296: 11394e8, 297: 11394e8, 298: 11394e8, 299: 11394e8
+    };
+
+    function parseExp(str) {
+        if(!str) return 0;
+        let val = 0;
+        const eMatch = str.toUpperCase().match(/(\d+)\s*[E億]/);
+        const wMatch = str.toUpperCase().match(/(\d+)\s*[W萬]/);
+        if(eMatch) val += parseInt(eMatch[1]) * 1e8;
+        if(wMatch) val += parseInt(wMatch[1]) * 1e4;
+        return val || parseInt(str.replace(/,/g, '')) || 0;
+    }
+
+    function toggleTheme() {
+        const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('m-theme', theme);
+    }
+
+    // 終極怪物公園 互斥邏輯
+    document.getElementById('exSun').addEventListener('change', function() {
+        if(this.checked) document.getElementById('exEvt').checked = false;
+        calculate();
+    });
+    document.getElementById('exEvt').addEventListener('change', function() {
+        if(this.checked) document.getElementById('exSun').checked = false;
+        calculate();
+    });
+
+    function calculate() {
+        const curLvl = parseInt(document.getElementById('level').value) || 260;
+        const tarLvl = parseInt(document.getElementById('targetLevel').value) || 300;
+        const curPct = parseFloat(document.getElementById('curExpP').value) || 0;
+        
+        const eps = parseExp(document.getElementById('expPerSec').value) || 0;
+        const hH = parseInt(document.getElementById('huntH').value) || 0;
+        const hM = parseInt(document.getElementById('huntM').value) || 0;
+        const huntSec = (hH * 3600) + (hM * 60);
+        
+        const huntDays = Array.from(document.querySelectorAll('.day-check:checked')).map(el => parseInt(el.value));
+        const afkBase = parseExp(document.getElementById('afkExp').value) || 0;
+        const afkSec = (parseFloat(document.getElementById('afkH').value) || 0) * 3600;
+
+        let listHtml = "";
+        let dayCount = 0;
+        let tempLvl = curLvl;
+        let today = new Date();
+        let currentExpOwned = (EXP_REQ[tempLvl] || 0) * (curPct / 100);
+
+        while(tempLvl < tarLvl && dayCount < 7300) { 
+            dayCount++;
+            today.setDate(today.getDate() + 1);
+            let dayOfWeek = today.getDay();
+            let dailyGain = 0;
+
+            if(huntDays.includes(dayOfWeek)) dailyGain += eps * huntSec;
+
+            if(tempLvl >= 100) {
+                dailyGain += (afkBase / 5) * afkSec;
+            }
+            
+            if(dayOfWeek === 0 && tempLvl >= 260) {
+                // 紅月之森
+                if(document.getElementById('rmPart').checked) {
+                    let rm = RM_BASE[Math.floor(tempLvl/10)*10] || RM_BASE[260];
+                    dailyGain += document.getElementById('rmCert').checked ? rm*2 : rm;
+                }
+                
+                // 終極怪公
+                if(document.getElementById('exPart').checked) {
+                    let mult = 1; 
+                    if(document.getElementById('exSun').checked) mult = 1.5;
+                    if(document.getElementById('exEvt').checked) mult = 2;
+                    dailyGain += (EX_BASE[Math.floor(tempLvl/10)*10] || EX_BASE[260]) * mult;
+                }
+
+                // 史詩副本
+                if(document.getElementById('epiPart').checked) {
+                    let epiType = document.querySelector('input[name="epiType"]:checked').value;
+                    let buyCount = parseInt(document.getElementById('epiBuy').value) || 0;
+                    let baseEpiExp = 0;
+
+                    // 判斷該等級是否符合該副本的參加資格
+                    if (epiType === 'high' && tempLvl >= 260) {
+                        baseEpiExp = HM_DATA[tempLvl] || HM_DATA[299];
+                    } else if (epiType === 'ang' && tempLvl >= 270) {
+                        baseEpiExp = AC_DATA[tempLvl] || AC_DATA[299];
+                    }
+                    
+                    // 10次 = 137.4%，故 1次 = 13.74% (0.1374)
+                    let totalEpiExp = baseEpiExp * (1 + (buyCount * 0.1374));
+                    dailyGain += totalEpiExp;
+                }
+            }
+
+            currentExpOwned += dailyGain;
+
+            while(EXP_REQ[tempLvl] && currentExpOwned >= EXP_REQ[tempLvl]) {
+                currentExpOwned -= EXP_REQ[tempLvl];
+                tempLvl++;
+                let dateStr = `${today.getFullYear()}/${today.getMonth()+1}/${today.getDate()}`;
+                listHtml += `<div class="forecast-item"><span class="lvl-tag">Lv.${tempLvl}</span><span class="date-val">${dateStr}</span></div>`;
+                if(tempLvl >= tarLvl) break;
+            }
+        }
+
+        document.getElementById('forecastList').innerHTML = listHtml || "無練功/掛機收益，無法升等";
+        document.getElementById('summary').innerText = `預計花費：${dayCount} 天`;
+    }
+
+    // 綁定事件與存取
+    document.querySelectorAll('input, select').forEach(i => i.addEventListener('input', calculate));
+    window.onload = () => {
+        if(localStorage.getItem('m-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        calculate();
+    };
+</script>
+
+</body>
+</html>
