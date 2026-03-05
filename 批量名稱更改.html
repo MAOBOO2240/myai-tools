@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Win11 風格 - 批量檔案管理工具</title>
+    <style>
+        /* CSS 變數：用於控制黑白模式及全域字體大小 */
+        :root {
+            --bg-color: #f3f3f3;
+            --text-color: #202020;
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --btn-bg: rgba(255, 255, 255, 0.8);
+            --btn-hover: rgba(255, 255, 255, 1);
+            --input-bg: rgba(255, 255, 255, 0.5);
+            --hover-border: #000000; 
+            --input-btn-border: #000000; 
+            
+            /* 全域基礎字體大小變數 */
+            --ui-font-size: 14px;
+        }
+
+        body.dark-mode {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --glass-bg: rgba(30, 30, 30, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --btn-bg: rgba(50, 50, 50, 0.8);
+            --btn-hover: rgba(70, 70, 70, 1);
+            --input-bg: rgba(0, 0, 0, 0.5);
+            --hover-border: #ffffff; 
+            --input-btn-border: rgba(255, 255, 255, 0.4); 
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            
+            /* 將全域字體套用在 body 上 */
+            font-size: var(--ui-font-size);
+        }
+
+        /* 手動切換主題時才有過渡動畫，防閃屏 */
+        body.theme-transition {
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* 頂部工具列 */
+        .top-bar {
+            padding: 15px 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 10;
+            gap: 15px;
+        }
+
+        /* 主要佈局 */
+        .main-container {
+            display: flex;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        /* Win11 毛玻璃面板 */
+        .win11-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        /* 左側操控區 */
+        .left-panel {
+            width: 300px;
+            flex-shrink: 0;
+            gap: 12px;
+        }
+
+        /* 右側顯示區 */
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* UI 元件樣式 (使用 em 單位實現等比例縮放) */
+        h3 { margin-top: 5px; margin-bottom: 10px; font-size: 1.15em; border-bottom: 1px solid var(--glass-border); padding-bottom: 5px; }
+        h4 { margin: 10px 0 5px 0; font-size: 1.05em; }
+        
+        button, select, input {
+            font-family: inherit;
+            color: var(--text-color);
+            border: 1px solid var(--input-btn-border);
+            border-radius: 6px;
+            padding: 8px 12px;
+            outline: none;
+            transition: all 0.2s;
+            font-size: inherit; /* 繼承 body 的全域字體大小 */
+        }
+
+        button { background: var(--btn-bg); cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        button:hover { background: var(--btn-hover); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input[type="text"], input[type="number"], select { background: var(--input-bg); width: 100%; box-sizing: border-box; margin-bottom: 8px; }
+
+        .view-controls { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
+
+        .file-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            overflow-y: auto;
+            align-content: flex-start;
+            flex: 1;
+            padding-right: 5px;
+            padding-top: 10px;
+        }
+
+        /* 檔案卡片 */
+        .file-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            background: var(--glass-bg);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            transition: border 0.2s, transform 0.1s;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+        }
+
+        .file-card:hover { border-color: var(--hover-border); }
+
+        /* 右上角紅色叉叉按鈕 */
+        .delete-x {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ff4c4c;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            text-align: center;
+            line-height: 22px;
+            cursor: pointer;
+            font-size: 0.8em;
+            display: none;
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border: 1px solid white;
+        }
+        
+        .undo-x { background: #0078d4; font-size: 1.1em; line-height: 20px;}
+        .file-card:hover .delete-x { display: block; }
+
+        .preview-img-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--input-bg);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+        
+        .preview-img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* 檔名字體套用比例 */
+        .file-old-name { 
+            font-size: 0.9em; 
+            margin-bottom: 5px; 
+            opacity: 0.8; 
+            word-break: break-all; 
+            display: -webkit-box; 
+            -webkit-line-clamp: 2; 
+            -webkit-box-orient: vertical; 
+            overflow: hidden; 
+            min-height: 2.5em; /* 根據自身字體大小保留兩行高度 */
+        }
+        .file-name-input { 
+            font-size: 0.9em; 
+            text-align: center; 
+            padding: 4px; 
+            margin-bottom: 5px; 
+            border: 1px solid transparent; 
+            background: transparent; 
+        }
+        .file-name-input:focus { border: 1px solid var(--input-btn-border); background: var(--input-bg); }
+        .file-status { font-size: 0.8em; font-weight: bold; }
+
+        .size-small .file-card { width: 110px; }
+        .size-small .preview-img-container { width: 64px; height: 64px; font-size: 24px; }
+        .size-medium .file-card { width: 150px; }
+        .size-medium .preview-img-container { width: 100px; height: 100px; font-size: 40px; }
+        .size-large .file-card { width: 200px; }
+        .size-large .preview-img-container { width: 150px; height: 150px; font-size: 60px; }
+
+        .status-none { color: gray; font-weight: normal; }
+        .status-rename { color: #2eb82e; }
+        .status-delete { color: #ff4c4c; }
+        .deleted-text { text-decoration: line-through; color: #ff4c4c; }
+
+        /* 彈窗樣式 (共用進度條與設定) */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dialog-box { width: 350px; text-align: center; }
+        .settings-box { width: 400px; text-align: left; }
+
+        .ext-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            background: var(--input-bg);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .ext-item { display: flex; align-items: center; gap: 5px; font-size: 0.9em; cursor: pointer; }
+
+        .progress-track {
+            width: 100%; height: 12px; background: var(--input-bg);
+            border-radius: 6px; overflow: hidden;
+            border: 1px solid var(--glass-border); margin-top: 15px;
+        }
+        .progress-fill {
+            width: 100%; height: 100%; background: #0078d4;
+            transition: width 0.3s ease-out; 
+        }
+    </style>
+</head>
+<body>
+
+    <script>
+        if (localStorage.getItem('app_theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
+
+    <div id="progress-overlay" class="overlay">
+        <div class="dialog-box win11-panel">
+            <h3 style="margin: 0; border: none;">⏳ 正在套用修改，請稍候...</h3>
+            <div class="progress-track">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <div id="progress-text" style="font-size: 0.9em; margin-top: 10px; opacity: 0.8;">剩餘項目計算中...</div>
+        </div>
+    </div>
+
+    <div id="settings-overlay" class="overlay">
+        <div class="settings-box win11-panel">
+            <h3 style="margin-top: 0;">⚙️ 偏好設定</h3>
+            
+            <h4>外觀與顯示</h4>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span style="font-size: 1em; line-height: 34px;">預設圖示預覽大小：</span>
+                <select id="set-icon-size" style="width: 150px; margin: 0;">
+                    <option value="small">小圖示</option>
+                    <option value="medium">中圖示</option>
+                    <option value="large">大圖示</option>
+                </select>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                <span style="font-size: 1em; line-height: 34px;">介面字體大小：</span>
+                <select id="set-font-size" style="width: 150px; margin: 0;">
+                    <option value="12px">偏小 (12px)</option>
+                    <option value="14px">適中 (14px)</option>
+                    <option value="16px">偏大 (16px)</option>
+                    <option value="18px">特大 (18px)</option>
+                </select>
+            </div>
+
+            <h4>副檔名快捷選單管理</h4>
+            <div class="ext-grid" id="ext-checkbox-container">
+                </div>
+
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button onclick="saveSettings()" style="flex: 1; background: #0078d4; color: white; border: none;">💾 儲存並關閉</button>
+                <button onclick="closeSettings()" style="flex: 1;">❌ 取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="top-bar">
+        <button id="theme-btn" onclick="toggleTheme()" style="padding: 10px 20px;">🌙 切換至深色模式</button>
+        <button onclick="openSettings()" style="padding: 10px 20px;">⚙️ 設定</button>
+    </div>
+
+    <div class="main-container">
+        
+        <div class="left-panel win11-panel">
+            <button onclick="selectFolder()" style="padding: 12px; font-size: 1.05em;">📁 選擇資料夾</button>
+            <button onclick="refreshFolder()" style="padding: 8px; margin-bottom: 10px;">🔄 刷新檔案列表</button>
+
+            <h3>🗑️ 批量刪除</h3>
+            <input type="text" id="keyword-del" placeholder="輸入包含的檔名關鍵字...">
+            <button onclick="previewDelete()">👀 預覽刪除</button>
+
+            <h3>📝 批量改名</h3>
+            <input type="text" id="rename-prefix" placeholder="前綴名稱 (選填)">
+            <input type="text" id="rename-start" placeholder="起始數字 (例如:001)">
+            <button onclick="previewRenameSequential()">👀 預覽改名</button>
+
+            <h3>🔄 批量改副檔名</h3>
+            <select id="ext-select">
+                </select>
+            <button onclick="previewExtensionChange()">👀 預覽修改副檔名</button>
+
+            <h3>🎞️ 圖片處理</h3>
+            <button onclick="previewRemoveAnimation()" title="將動態圖(如 WebP, APNG, GIF)擷取第一幀轉為靜態">🛑 移除動畫效果</button>
+
+            <div style="margin-top: auto;">
+                <button onclick="applyChanges()" style="width: 100%; background: #0078d4; color: white; border: none; padding: 12px; font-size: 1.1em;">✅ 執行所有修改</button>
+                <p style="font-size: 0.8em; opacity: 0.8; margin-top: 5px; text-align: center;">⚠️ 點擊執行將直接修改電腦檔案</p>
+            </div>
+        </div>
+
+        <div class="right-panel win11-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 id="preview-header" style="margin: 0; border: none; padding: 0;">📂 檔案預覽區域</h3>
+                <div class="view-controls" style="margin: 0;">
+                    <span style="font-size: 0.9em;">🖼️ 顯示大小：</span>
+                    <button onclick="changeViewSize('small')">小</button>
+                    <button onclick="changeViewSize('medium')">中</button>
+                    <button onclick="changeViewSize('large')">大</button>
+                </div>
+            </div>
+            
+            <div id="file-grid" class="file-grid size-medium">
+                <div style="width: 100%; text-align: center; opacity: 0.6; margin-top: 20px;">請先從左側選擇資料夾</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let directoryHandle = null;
+        let filesData = [];
+
+        // --- 全域預設設定與副檔名庫 ---
+        const ALL_EXTENSIONS = [
+            { ext: '.txt', desc: '純文字' }, { ext: '.jpg', desc: '圖片' },
+            { ext: '.png', desc: '圖片' }, { ext: '.mp4', desc: '影片' },
+            { ext: '.pdf', desc: '文件' }, { ext: '.docx', desc: 'Word' },
+            { ext: '.xlsx', desc: 'Excel' }, { ext: '.zip', desc: '壓縮檔' },
+            { ext: '.gif', desc: '動圖' }, { ext: '.webp', desc: '網頁圖片' },
+            { ext: '.mp3', desc: '音樂' }, { ext: '.json', desc: '資料檔' }
+        ];
+        
+        const DEFAULT_EXTENSIONS = ['.txt', '.jpg', '.png', '.mp4', '.pdf'];
+
+        // --- 頁面載入初始化 ---
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('app_theme');
+            const btn = document.getElementById('theme-btn');
+            if (savedTheme === 'dark') {
+                btn.innerHTML = "☀️ 切換至淺色模式";
+            } else {
+                btn.innerHTML = "🌙 切換至深色模式";
+            }
+            setTimeout(() => { document.body.classList.add('theme-transition'); }, 100);
+
+            applySavedSettings();
+            renderMainExtSelect();
+        });
+
+        // --- 主題切換 ---
+        function toggleTheme() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            const btn = document.getElementById('theme-btn');
+            if (isDark) {
+                btn.innerHTML = "☀️ 切換至淺色模式";
+                localStorage.setItem('app_theme', 'dark'); 
+            } else {
+                btn.innerHTML = "🌙 切換至深色模式";
+                localStorage.setItem('app_theme', 'light'); 
+            }
+        }
+
+        // --- 快捷調整顯示大小 (並同步至設定) ---
+        function changeViewSize(size) {
+            document.getElementById('file-grid').className = `file-grid size-${size}`;
+            localStorage.setItem('app_icon_size', size);
+            const selectSize = document.getElementById('set-icon-size');
+            if (selectSize) selectSize.value = size;
+        }
+
+        // --- 設定面板邏輯 ---
+        function openSettings() {
+            document.getElementById('settings-overlay').style.display = 'flex';
+            
+            // 字體預設值改為 14px
+            document.getElementById('set-icon-size').value = localStorage.getItem('app_icon_size') || 'medium';
+            document.getElementById('set-font-size').value = localStorage.getItem('app_font_size') || '14px';
+
+            const activeExts = JSON.parse(localStorage.getItem('app_active_exts')) || DEFAULT_EXTENSIONS;
+            const container = document.getElementById('ext-checkbox-container');
+            container.innerHTML = '';
+            
+            ALL_EXTENSIONS.forEach(item => {
+                const isChecked = activeExts.includes(item.ext) ? 'checked' : '';
+                container.innerHTML += `
+                    <label class="ext-item">
+                        <input type="checkbox" value="${item.ext}" class="ext-checkbox" ${isChecked}>
+                        ${item.ext} <span style="opacity: 0.6">(${item.desc})</span>
+                    </label>
+                `;
+            });
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-overlay').style.display = 'none';
+        }
+
+        function saveSettings() {
+            const iconSize = document.getElementById('set-icon-size').value;
+            const fontSize = document.getElementById('set-font-size').value;
+            localStorage.setItem('app_icon_size', iconSize);
+            localStorage.setItem('app_font_size', fontSize);
+
+            const checkboxes = document.querySelectorAll('.ext-checkbox');
+            const selectedExts = [];
+            checkboxes.forEach(cb => {
+                if (cb.checked) selectedExts.push(cb.value);
+            });
+            localStorage.setItem('app_active_exts', JSON.stringify(selectedExts));
+
+            applySavedSettings();
+            renderMainExtSelect();
+            closeSettings();
+        }
+
+        function applySavedSettings() {
+            const iconSize = localStorage.getItem('app_icon_size') || 'medium';
+            const fontSize = localStorage.getItem('app_font_size') || '14px'; // 字體預設改為 14px
+            
+            const grid = document.getElementById('file-grid');
+            if (grid) grid.className = `file-grid size-${iconSize}`;
+
+            // 將全域變數套用到整個網頁根部
+            document.documentElement.style.setProperty('--ui-font-size', fontSize);
+        }
+
+        function renderMainExtSelect() {
+            const activeExts = JSON.parse(localStorage.getItem('app_active_exts')) || DEFAULT_EXTENSIONS;
+            const select = document.getElementById('ext-select');
+            select.innerHTML = '<option value="">選擇副檔名...</option>';
+            
+            ALL_EXTENSIONS.forEach(item => {
+                if (activeExts.includes(item.ext)) {
+                    select.innerHTML += `<option value="${item.ext}">${item.ext} (${item.desc})</option>`;
+                }
+            });
+        }
+
+        // --- 檔案處理邏輯 ---
+        function cleanupObjectUrls() {
+            filesData.forEach(f => {
+                if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
+            });
+        }
+
+        async function selectFolder() {
+            try {
+                directoryHandle = await window.showDirectoryPicker({ 
+                    mode: 'readwrite',
+                    startIn: 'downloads' 
+                });
+                document.getElementById('preview-header').innerText = `📂 ${directoryHandle.name} 內檔案預覽`;
+                await loadFiles();
+            } catch (error) {
+                console.log("使用者取消或發生錯誤:", error);
+            }
+        }
+
+        async function refreshFolder() {
+            if (!directoryHandle) return alert("請先選擇資料夾！");
+            await loadFiles();
+        }
+
+        async function loadFiles() {
+            cleanupObjectUrls();
+            filesData = [];
+            for await (const entry of directoryHandle.values()) {
+                if (entry.kind === 'file') {
+                    filesData.push({
+                        handle: entry,
+                        oldName: entry.name,
+                        newName: entry.name,
+                        action: 'none',
+                        removeAnim: false,
+                        previewUrl: null
+                    });
+                }
+            }
+            filesData.sort((a, b) => a.oldName.localeCompare(b.oldName, undefined, { numeric: true }));
+            renderGrid();
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('file-grid');
+            grid.innerHTML = '';
+            
+            if (filesData.length === 0) {
+                grid.innerHTML = '<div style="width: 100%; text-align: center; opacity: 0.6; margin-top: 20px;">資料夾為空</div>';
+                return;
+            }
+
+            filesData.forEach((file, index) => {
+                const card = document.createElement('div');
+                card.className = 'file-card';
+                
+                const ext = file.oldName.split('.').pop().toLowerCase();
+                const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'apng'].includes(ext);
+                
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'preview-img-container';
+                
+                if (isImage) {
+                    if (file.previewUrl) {
+                        imgContainer.innerHTML = `<img src="${file.previewUrl}" class="preview-img">`;
+                    } else {
+                        imgContainer.innerHTML = `⏳`;
+                        file.handle.getFile().then(fileData => {
+                            file.previewUrl = URL.createObjectURL(fileData);
+                            imgContainer.innerHTML = `<img src="${file.previewUrl}" class="preview-img">`;
+                        });
+                    }
+                } else {
+                    imgContainer.innerHTML = `📄`;
+                }
+
+                let statusClass = 'status-none';
+                let statusText = '無變更';
+                let inputClass = 'file-name-input';
+
+                if (file.action === 'delete') {
+                    statusClass = 'status-delete';
+                    statusText = '🗑️ 將被刪除';
+                    inputClass += ' deleted-text';
+                } else if (file.action === 'rename' || file.removeAnim) {
+                    statusClass = 'status-rename';
+                    statusText = file.action === 'rename' ? '📝 將被改名' : '';
+                    if (file.removeAnim) statusText += (statusText ? ' + ' : '') + '🛑 轉為靜態';
+                }
+
+                const deleteBtnHtml = file.action === 'delete' 
+                    ? `<span class="delete-x undo-x" onclick="undoDelete(${index}, event)" title="取消刪除">↺</span>`
+                    : `<span class="delete-x" onclick="markDelete(${index}, event)" title="刪除此檔案">✖</span>`;
+
+                card.innerHTML = `
+                    ${deleteBtnHtml}
+                    <div class="file-old-name" title="${file.oldName}">${file.oldName}</div>
+                    <input type="text" class="${inputClass}" value="${file.newName}" 
+                           onchange="manualEdit(${index}, this.value)" 
+                           ${file.action === 'delete' ? 'disabled' : ''}>
+                    <div class="file-status ${statusClass}">${statusText}</div>
+                `;
+                
+                card.insertBefore(imgContainer, card.firstChild);
+                grid.appendChild(card);
+            });
+        }
+
+        function markDelete(index, event) {
+            event.stopPropagation();
+            filesData[index].action = 'delete';
+            renderGrid();
+        }
+
+        function undoDelete(index, event) {
+            event.stopPropagation();
+            filesData[index].action = 'none';
+            renderGrid();
+        }
+
+        function manualEdit(index, value) {
+            if (filesData[index].oldName !== value) {
+                filesData[index].newName = value;
+                filesData[index].action = 'rename';
+            } else {
+                filesData[index].action = 'none';
+            }
+            renderGrid();
+        }
+
+        function previewDelete() {
+            const keyword = document.getElementById('keyword-del').value;
+            if (!keyword) return alert("請輸入關鍵字！");
+            filesData.forEach(file => { if (file.oldName.includes(keyword)) file.action = 'delete'; });
+            renderGrid();
+        }
+
+        function previewRenameSequential() {
+            const prefix = document.getElementById('rename-prefix').value;
+            const startInput = document.getElementById('rename-start').value; 
+            
+            if (!startInput) return alert("請輸入起始數字！");
+            
+            const padLength = startInput.length; 
+            let currentNum = parseInt(startInput, 10);
+            
+            if (isNaN(currentNum)) return alert("請輸入有效的起始數字！");
+
+            filesData.forEach(file => {
+                if (file.action !== 'delete') {
+                    const extIndex = file.oldName.lastIndexOf('.');
+                    const ext = extIndex > -1 ? file.oldName.substring(extIndex) : '';
+                    const numStr = String(currentNum).padStart(padLength, '0');
+                    file.newName = `${prefix}${numStr}${ext}`;
+                    file.action = 'rename';
+                    currentNum++;
+                }
+            });
+            renderGrid();
+        }
+
+        function previewExtensionChange() {
+            const newExt = document.getElementById('ext-select').value;
+            if (!newExt) return alert("請選擇副檔名！");
+
+            filesData.forEach(file => {
+                if (file.action !== 'delete') {
+                    const baseName = file.newName.substring(0, file.newName.lastIndexOf('.')) || file.newName;
+                    file.newName = baseName + newExt;
+                    file.action = file.newName !== file.oldName ? 'rename' : 'none';
+                }
+            });
+            renderGrid();
+        }
+
+        function previewRemoveAnimation() {
+            let foundImage = false;
+            filesData.forEach(file => {
+                if (file.action !== 'delete') {
+                    const ext = file.oldName.split('.').pop().toLowerCase();
+                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'apng'].includes(ext);
+                    if (isImage) {
+                        file.removeAnim = true;
+                        foundImage = true;
+                    }
+                }
+            });
+            if (!foundImage) alert("目前資料夾沒有可處理的圖片檔案！");
+            renderGrid();
+        }
+
+        const getStaticBlob = (fileData) => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const url = URL.createObjectURL(fileData);
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0); 
+                    
+                    canvas.toBlob((blob) => {
+                        URL.revokeObjectURL(url);
+                        resolve(blob);
+                    }, fileData.type || 'image/png');
+                };
+                img.onerror = (e) => {
+                    URL.revokeObjectURL(url);
+                    reject(e);
+                };
+                img.src = url;
+            });
+        };
+
+        async function applyChanges() {
+            if (!directoryHandle) return alert("請先選擇資料夾！");
+            
+            const filesToProcess = filesData.filter(f => f.action !== 'none' || f.removeAnim);
+            if (filesToProcess.length === 0) return alert("目前沒有需要被修改的檔案！");
+
+            if (!confirm("確定要執行這些修改嗎？此操作將實際修改您的本地檔案！")) return;
+
+            const overlay = document.getElementById('progress-overlay');
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            overlay.style.display = 'flex';
+            
+            const totalTasks = filesToProcess.length;
+            let remainingTasks = totalTasks;
+
+            progressFill.style.width = '100%';
+            progressText.innerText = `剩餘項目: ${remainingTasks} / ${totalTasks}`;
+
+            for (const file of filesToProcess) {
+                try {
+                    if (file.action === 'delete') {
+                        await directoryHandle.removeEntry(file.oldName);
+                    } else {
+                        let dataToWrite = null;
+                        let needsWrite = false;
+                        const originalFileHandle = await directoryHandle.getFileHandle(file.oldName);
+                        
+                        if (file.removeAnim) {
+                            const fileData = await originalFileHandle.getFile();
+                            dataToWrite = await getStaticBlob(fileData);
+                            needsWrite = true;
+                        }
+
+                        if (file.action === 'rename' || needsWrite) {
+                            if (!dataToWrite) {
+                                dataToWrite = await originalFileHandle.getFile();
+                            }
+                            
+                            const newName = file.action === 'rename' ? file.newName : file.oldName;
+                            
+                            if (file.action === 'rename') {
+                                const newFileHandle = await directoryHandle.getFileHandle(newName, { create: true });
+                                const writable = await newFileHandle.createWritable();
+                                await writable.write(dataToWrite);
+                                await writable.close();
+                                await directoryHandle.removeEntry(file.oldName);
+                            } else {
+                                const writable = await originalFileHandle.createWritable();
+                                await writable.write(dataToWrite);
+                                await writable.close();
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error(`處理 ${file.oldName} 時發生錯誤:`, e);
+                }
+
+                remainingTasks--;
+                const percentage = (remainingTasks / totalTasks) * 100;
+                progressFill.style.width = `${percentage}%`;
+                progressText.innerText = `剩餘項目: ${remainingTasks} / ${totalTasks}`;
+            }
+            
+            setTimeout(async () => {
+                overlay.style.display = 'none';
+                alert("修改完成！");
+                await loadFiles();
+            }, 300);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多功能倒數計時鬧鐘</title>
+    <style>
+        /* 基礎樣式 (亮色模式) */
+        :root {
+            --bg-color: #f0f2f5; --card-bg: rgba(255, 255, 255, 0.85);
+            --text-color: #333; --input-bg: #fff; --input-border: #ccc;
+            --title-color: #1a73e8; --status-color: #666;
+            --btn-hover-bg: #1a73e8; --btn-hover-text: #fff;
+        }
+
+        /* 暗色模式變數 */
+        body.dark-mode {
+            --bg-color: #18191a; --card-bg: rgba(36, 37, 38, 0.85);
+            --text-color: #e4e6eb; --input-bg: #3a3b3c; --input-border: #555;
+            --title-color: #66b2ff; --status-color: #b0b3b8;
+            --btn-hover-bg: #66b2ff; --btn-hover-text: #18191a;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg-color); background-size: cover;
+            background-position: center; background-attachment: fixed;
+            color: var(--text-color); display: flex; flex-direction: column;
+            align-items: center; min-height: 100vh; margin: 0;
+            padding: 30px 20px; box-sizing: border-box; transition: background-color 0.3s;
+        }
+        .header {
+            width: 100%; max-width: 1050px; display: flex; justify-content: center;
+            flex-wrap: wrap; gap: 15px; margin-bottom: 30px;
+        }
+        .header button {
+            background-color: var(--card-bg); color: var(--text-color);
+            border: 1px solid var(--input-border); padding: 10px 20px;
+            font-size: 15px; font-weight: 600; border-radius: 30px; cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); backdrop-filter: blur(10px);
+            transition: all 0.3s ease; display: flex; align-items: center; gap: 8px;
+        }
+        .header button:hover { 
+            background-color: var(--btn-hover-bg); color: var(--btn-hover-text);
+            border-color: var(--btn-hover-bg); transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        .container { 
+            display: flex; gap: 25px; flex-wrap: wrap; justify-content: center; 
+            align-items: stretch; max-width: 1800px; margin: 0 auto;
+        }
+        
+        /* 🔥 鬧鐘卡片主體 (依要求加寬至 355px) */
+        .timer-card { 
+            position: relative; background: var(--card-bg); padding: 35px 25px 25px 25px; 
+            border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            width: 355px; display: flex; flex-direction: column; gap: 15px; 
+            box-sizing: border-box; backdrop-filter: blur(15px);
+            border: 2px solid rgba(255,255,255,0.1); 
+        }
+        
+        /* 執行中的漸層邊框特效 */
+        .timer-card.is-running::after {
+            content: ""; position: absolute; inset: 0;
+            border-radius: 20px; padding: 3px; 
+            background: linear-gradient(135deg, #111, #aaa); 
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor; mask-composite: exclude;
+            pointer-events: none; z-index: 10;
+        }
+        body.dark-mode .timer-card.is-running::after {
+            background: linear-gradient(135deg, #fff, #555); 
+        }
+
+        .delete-btn {
+            position: absolute; top: 10px; right: 15px; background: transparent;
+            border: none; color: var(--status-color); font-size: 16px;
+            cursor: pointer; transition: color 0.2s, transform 0.2s; z-index: 20;
+        }
+        .delete-btn:hover { color: #ea4335; transform: scale(1.2); }
+        .add-timer-btn {
+            display: flex; justify-content: center; align-items: center;
+            width: 60px; height: 60px; border-radius: 50%;
+            background-color: var(--card-bg); color: var(--title-color);
+            font-size: 28px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease; align-self: center; margin: 0 10px;
+        }
+        .add-timer-btn:hover { transform: scale(1.1); background-color: var(--title-color); color: white; }
+        
+        .alarm-label {
+            font-size: 12px; font-weight: bold; color: var(--status-color);
+            text-align: center; margin-bottom: -10px; letter-spacing: 1px;
+        }
+        .alarm-name {
+            font-size: 24px; font-weight: bold; color: var(--title-color);
+            text-align: center; background: transparent; border: none;
+            border-bottom: 2px dashed transparent; padding: 5px; margin: 0;
+            width: 100%; box-sizing: border-box; transition: border-color 0.3s; font-family: inherit; z-index: 20; position: relative;
+        }
+        .alarm-name:hover, .alarm-name:focus { border-bottom: 2px dashed var(--title-color); outline: none; }
+        
+        .time-inputs { display: flex; gap: 10px; position: relative; z-index: 20; }
+        .time-group { display: flex; flex-direction: column; align-items: center; width: 100%; font-size: 13px; color: var(--status-color); gap: 6px; }
+        input[type="text"], input[type="number"], select { 
+            padding: 10px; border: 1px solid var(--input-border); border-radius: 8px; 
+            font-size: 14px; background-color: var(--input-bg); color: var(--text-color);
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus, input[type="number"]:focus { border-color: var(--title-color); outline: none; }
+        .time-group input { width: 100%; text-align: center; font-size: 18px; font-weight: bold; box-sizing: border-box; }
+        .msg-input { width: 100%; box-sizing: border-box; text-align: center; position: relative; z-index: 20; }
+        ::placeholder { color: #999; opacity: 1; font-weight: normal; }
+        
+        .options-row { 
+            display: flex; flex-direction: column; gap: 12px; font-size: 14px;
+            background: rgba(0,0,0,0.03); padding: 15px; border-radius: 12px; position: relative; z-index: 20;
+        }
+        body.dark-mode .options-row { background: rgba(255,255,255,0.05); }
+        .checkbox-group { display: flex; justify-content: space-between; align-items: center;}
+        .checkbox-group label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 500;}
+        .repeat-box { display: flex; justify-content: flex-end; align-items: center; gap: 8px; font-weight: 500;}
+        
+        .volume-control { display: flex; align-items: center; gap: 8px; width: 100%; }
+        .volume-control input[type="range"] { flex-grow: 1; cursor: pointer; accent-color: var(--title-color); }
+        .vol-num-input {
+            width: 28px; padding: 2px 0; text-align: center;
+            border: none; border-bottom: 2px solid var(--input-border); border-radius: 0;
+            background: transparent; color: var(--text-color); font-size: 13px;
+            font-weight: bold; outline: none; transition: border-color 0.3s;
+        }
+        .vol-num-input:focus { border-bottom-color: var(--title-color); }
+        .vol-num-input::-webkit-outer-spin-button, .vol-num-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .vol-num-input[type=number] { -moz-appearance: textfield; }
+
+        .action-buttons { display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 20; }
+        .action-btn { 
+            padding: 14px; border: none; border-radius: 10px; 
+            background-color: #1a73e8; color: white; cursor: pointer; 
+            font-size: 18px; font-weight: bold; transition: all 0.2s; letter-spacing: 2px;
+        }
+        .action-btn:hover { background-color: #1557b0; transform: scale(1.02); }
+        .action-btn.pause-state { background-color: #ea4335; } 
+        .action-btn.pause-state:hover { background-color: #ce3528; }
+        .action-btn.resume-state { background-color: #34a853; } 
+        .action-btn.resume-state:hover { background-color: #2d9047; }
+        .reset-timer-btn {
+            padding: 8px; border: 1px solid var(--input-border); border-radius: 8px; 
+            background-color: transparent; color: var(--status-color); cursor: pointer; 
+            font-size: 14px; font-weight: bold; transition: all 0.2s;
+        }
+        .reset-timer-btn:hover { background-color: rgba(0,0,0,0.05); color: var(--text-color); }
+        body.dark-mode .reset-timer-btn:hover { background-color: rgba(255,255,255,0.1); }
+        
+        .display { 
+            font-size: 46px; text-align: center; margin-top: 5px; 
+            font-family: monospace; font-weight: bold; color: var(--text-color); letter-spacing: 2px;
+        }
+        
+        .progress-bg {
+            width: 100%; height: 8px; background-color: rgba(0,0,0,0.1);
+            border-radius: 4px; overflow: hidden; margin-top: 2px; margin-bottom: 5px; position: relative; z-index: 20;
+        }
+        body.dark-mode .progress-bg { background-color: rgba(255,255,255,0.1); }
+        .progress-bar {
+            height: 100%; border-radius: 4px;
+            background-color: rgb(26, 115, 232); 
+            width: 100%; transition: width 0.1s linear; 
+        }
+
+        .repeat-status { text-align: center; font-size: 13px; color: var(--status-color); min-height: 18px; font-weight: 500;}
+        
+        #settingsModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: var(--card-bg); color: var(--text-color); padding: 35px; border-radius: 20px; width: 350px; 
+            display: flex; flex-direction: column; gap: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+        }
+        .modal-content h2 { margin: 0; text-align: center; color: var(--title-color); }
+        .reset-btn { background-color: #ea4335; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;}
+        .reset-btn:hover { background-color: #ce3528; }
+        .close-btn { background-color: #5f6368; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;}
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <input type="file" id="bgInput" accept="image/*" style="display: none;" onchange="handleBgUpload(event)">
+    <button onclick="document.getElementById('bgInput').click()"><span class="emoji" data-icon="img">🖼️</span> 自訂背景</button>
+    <button onclick="removeBg()"><span class="emoji" data-icon="trash">🗑️</span> 清除背景</button>
+    <button onclick="toggleTheme()" id="themeBtn"><span class="emoji" data-icon="theme">🌙</span> 深色模式</button>
+    <button onclick="openSettings()"><span class="emoji" data-icon="gear">⚙️</span> 系統設定</button>
+</div>
+
+<div class="container" id="app"></div>
+
+<div id="settingsModal">
+    <div class="modal-content">
+        <h2>系統設定</h2>
+        <div>
+            <label for="osSelect" style="display:block; margin-bottom:10px; font-weight:bold;"><span class="emoji" data-icon="gear">⚙️</span> Emoji 圖示風格：</label>
+            <select id="osSelect" onchange="saveSettings()" style="width: 100%;">
+                <option value="win11">Windows 11 (現代立體)</option>
+                <option value="win10">Windows 10 (高相容性舊版)</option>
+            </select>
+        </div>
+        <div style="margin-top: 10px;">
+            <label for="voiceSelect" style="display:block; margin-bottom:10px; font-weight:bold;"><span class="emoji" data-icon="speak">🗣️</span> AI 語音模型：</label>
+            <select id="voiceSelect" onchange="saveSettings()" style="width: 100%;"></select>
+        </div>
+        <button class="reset-btn" onclick="resetAllData()"><span class="emoji" data-icon="trash">🗑️</span> 重置所有設定與記憶</button>
+        <button class="close-btn" onclick="closeSettings()"><span class="emoji" data-icon="cross">✖</span> 完成並關閉</button>
+    </div>
+</div>
+
+<script>
+    // --- 🔥 Emoji 雙版本字典 (修正 Win10 顯示異常問題) ---
+    // Win10 換成最基礎的 Unicode 符號，確保不會破圖
+    const emojiDict = {
+        win11: { img: '🖼️', trash: '🗑️', moon: '🌙', sun: '☀️', gear: '⚙️', add: '➕', speak: '🗣️', vol: '🔊', reset: '🔄', cross: '✖' },
+        win10: { img: '📷', trash: '⌫', moon: '☾', sun: '☀', gear: '⚙', add: '＋', speak: '💬', vol: '♪', reset: '↺', cross: '✕' }
+    };
+
+    // --- Web Worker 背景計時引擎 ---
+    const workerBlob = new Blob([`
+        let timerId = null;
+        self.onmessage = function(e) {
+            if (e.data === 'start') {
+                if (!timerId) timerId = setInterval(() => postMessage('tick'), 1000);
+            } else if (e.data === 'stop') {
+                clearInterval(timerId);
+                timerId = null;
+            }
+        };
+    `], { type: 'application/javascript' });
+    const ticker = new Worker(URL.createObjectURL(workerBlob));
+    
+    ticker.onmessage = function() {
+        timers.forEach(t => {
+            if (t.isRunning) tick(t.id);
+        });
+    };
+
+    // --- 系統設定與介面同步 ---
+    function applyOSStyle() {
+        const os = localStorage.getItem('osStyle') || 'win11';
+        document.getElementById('osSelect').value = os;
+
+        const isDark = document.body.classList.contains('dark-mode');
+        document.querySelectorAll('.emoji').forEach(el => {
+            const icon = el.getAttribute('data-icon');
+            if (icon === 'theme') {
+                el.textContent = isDark ? emojiDict[os]['sun'] : emojiDict[os]['moon'];
+                document.getElementById('themeBtn').innerHTML = `<span class="emoji" data-icon="theme">${el.textContent}</span> ${isDark ? '淺色模式' : '深色模式'}`;
+            } else if (emojiDict[os][icon]) {
+                el.textContent = emojiDict[os][icon];
+            }
+        });
+    }
+
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        applyOSStyle(); 
+    }
+
+    if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+
+    function handleBgUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    localStorage.setItem('bgImage', e.target.result);
+                    document.body.style.backgroundImage = `url(${e.target.result})`;
+                } catch (err) { alert("圖片檔案太大！請選擇檔案較小的圖片。"); }
+            };
+            reader.readAsDataURL(file);
+        }
+        event.target.value = ''; 
+    }
+    function removeBg() {
+        localStorage.removeItem('bgImage');
+        document.body.style.backgroundImage = 'none';
+        document.getElementById('bgInput').value = '';
+    }
+    const savedBg = localStorage.getItem('bgImage');
+    if (savedBg) document.body.style.backgroundImage = `url(${savedBg})`;
+
+    // --- 語音系統載入 ---
+    let voices = [];
+    function loadVoices() {
+        voices = window.speechSynthesis.getVoices().filter(v => 
+            v.lang.includes('zh-TW') || v.lang.includes('cmn-TW') || v.lang.includes('HanT-TW')
+        );
+        const voiceSelect = document.getElementById('voiceSelect');
+        voiceSelect.innerHTML = '';
+        if (voices.length === 0) {
+            voiceSelect.innerHTML = '<option value="">載入中或無可用語音...</option>';
+            return;
+        }
+        voices.forEach((voice) => {
+            const option = document.createElement('option');
+            option.value = voice.voiceURI;
+            option.textContent = voice.name;
+            voiceSelect.appendChild(option);
+        });
+        const savedVoice = localStorage.getItem('selectedVoiceURI');
+        if (savedVoice) voiceSelect.value = savedVoice;
+    }
+    loadVoices();
+    if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = loadVoices;
+    
+    function saveSettings() { 
+        localStorage.setItem('selectedVoiceURI', document.getElementById('voiceSelect').value); 
+        localStorage.setItem('osStyle', document.getElementById('osSelect').value);
+        applyOSStyle();
+    }
+
+    // --- 核心：動態鬧鐘狀態管理 ---
+    let timers = [];
+    let nextTimerId = 1;
+
+    function initApp() {
+        const saved = localStorage.getItem('timersDataV13');
+        if (saved) {
+            const data = JSON.parse(saved);
+            timers = data.map(t => ({ 
+                ...t, isRunning: false, isPaused: false, remainingSeconds: 0, 
+                currentRepeat: 0, totalRepeats: 0, totalSeconds: 0, endTime: 0 
+            }));
+            nextTimerId = (timers.length > 0 ? Math.max(...timers.map(t => t.id)) : 0) + 1;
+        } else {
+            for (let i = 1; i <= 3; i++) {
+                timers.push({ 
+                    id: i, name: `鬧鐘 ${i}`, h: 0, m: 0, s: 0, msg: "", 
+                    voiceNotify: true, repeat: 1, volume: 0.5, 
+                    isRunning: false, isPaused: false, endTime: 0 
+                });
+            }
+            nextTimerId = 4;
+        }
+        renderApp();
+        applyOSStyle(); 
+    }
+
+    function renderApp() {
+        const app = document.getElementById('app');
+        let html = timers.map(createTimerUI).join('');
+        html += `<div class="add-timer-btn" onclick="addNewTimer()" title="新增鬧鐘"><span class="emoji" data-icon="add">➕</span></div>`;
+        app.innerHTML = html;
+        loadDataToUI(); 
+        applyOSStyle(); 
+    }
+
+    function createTimerUI(timer) {
+        const isActive = timer.isRunning || timer.isPaused;
+        const disabledAttr = isActive ? "disabled" : "";
+        const btnText = timer.isRunning ? "暫停" : (timer.isPaused ? "繼續" : "開始");
+        const btnClass = timer.isRunning ? "pause-state" : (timer.isPaused ? "resume-state" : "");
+        const runningClass = timer.isRunning ? "is-running" : ""; 
+        const currentVol = timer.volume !== undefined ? timer.volume : 0.5;
+        
+        const statusText = (timer.isRunning || timer.isPaused) && timer.totalRepeats > 0 
+            ? `執行中: 第 ${timer.totalRepeats - timer.currentRepeat + 1} 輪 (共 ${timer.totalRepeats} 輪)` : "";
+
+        return `
+            <div class="timer-card ${runningClass}" id="card-${timer.id}">
+                ${timers.length > 1 ? `<button class="delete-btn" onclick="deleteTimer(${timer.id})" title="刪除此鬧鐘"><span class="emoji" data-icon="cross">✖</span></button>` : ''}
+                
+                <div class="alarm-label">鬧鐘名稱</div>
+                <input type="text" class="alarm-name" id="name-${timer.id}" value="${timer.name}" onchange="handleInputChange()" ${disabledAttr}>
+                
+                <div class="time-inputs">
+                    <div class="time-group">
+                        <label>小時</label>
+                        <input type="number" id="h-${timer.id}" min="0" onchange="handleInputChange()" ${disabledAttr}>
+                    </div>
+                    <div class="time-group">
+                        <label>分鐘</label>
+                        <input type="number" id="m-${timer.id}" min="0" max="59" onchange="handleInputChange()" ${disabledAttr}>
+                    </div>
+                    <div class="time-group">
+                        <label>秒數</label>
+                        <input type="number" id="s-${timer.id}" min="0" max="59" onchange="handleInputChange()" ${disabledAttr}>
+                    </div>
+                </div>
+                
+                <input type="text" class="msg-input" id="msg-${timer.id}" placeholder="請輸入要朗讀的內容" onchange="handleInputChange()" ${disabledAttr}>
+                
+                <div class="options-row">
+                    <div class="volume-control">
+                        <label><span class="emoji" data-icon="vol">🔊</span> 音量:</label>
+                        <input type="range" id="vol-${timer.id}" min="0" max="1" step="0.01" value="${currentVol}" 
+                            oninput="handleVolRangeSync(${timer.id})" onchange="handleInputChange(); testVolume(${timer.id})">
+                        <input type="number" id="vol-num-${timer.id}" class="vol-num-input" min="0" max="100" value="${Math.round(currentVol * 100)}" onchange="handleVolNumChange(${timer.id})">
+                        <span style="font-size:13px; font-weight:bold;">%</span>
+                    </div>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="notify-voice-${timer.id}" onchange="handleInputChange()" ${disabledAttr}> <span class="emoji" data-icon="speak">🗣️</span> 語音通知</label>
+                        <div class="repeat-box">
+                            <label>重複:</label>
+                            <input type="number" id="repeat-${timer.id}" min="1" style="width: 50px;" onchange="handleInputChange()" ${disabledAttr}> 次
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn ${btnClass}" id="btn-${timer.id}" onclick="toggleTimer(${timer.id})">${btnText}</button>
+                    <button class="reset-timer-btn" onclick="resetTimer(${timer.id})"><span class="emoji" data-icon="reset">🔄</span> 重置鬧鐘</button>
+                </div>
+                
+                <div class="display" id="display-${timer.id}">00:00:00</div>
+                <div class="progress-bg"><div class="progress-bar" id="progress-${timer.id}"></div></div>
+                <div class="repeat-status" id="status-${timer.id}">${statusText}</div>
+            </div>
+        `;
+    }
+
+    function addNewTimer() {
+        syncUItoState(); 
+        const newName = `鬧鐘 ${timers.length + 1}`;
+        timers.push({ 
+            id: nextTimerId++, name: newName, h: 0, m: 0, s: 0, msg: "", 
+            voiceNotify: true, repeat: 1, volume: 0.5, 
+            isRunning: false, isPaused: false, endTime: 0 
+        });
+        saveStateToStorage();
+        renderApp();
+    }
+
+    function deleteTimer(id) {
+        if (confirm("確定要刪除這個鬧鐘嗎？")) {
+            syncUItoState();
+            const index = timers.findIndex(t => t.id === id);
+            if (index > -1) {
+                timers[index].isRunning = false;
+                timers.splice(index, 1);
+                checkTickerStatus();
+                saveStateToStorage();
+                renderApp();
+            }
+        }
+    }
+
+    function handleVolRangeSync(id) {
+        const range = document.getElementById(`vol-${id}`);
+        const num = document.getElementById(`vol-num-${id}`);
+        num.value = Math.round(range.value * 100);
+    }
+
+    function handleVolNumChange(id) {
+        const num = document.getElementById(`vol-num-${id}`);
+        let val = parseInt(num.value);
+        if (isNaN(val)) val = 50;
+        if (val < 0) val = 0;
+        if (val > 100) val = 100;
+        num.value = val;
+        
+        const range = document.getElementById(`vol-${id}`);
+        range.value = val / 100;
+        
+        handleInputChange();
+        testVolume(id);
+    }
+
+    function syncUItoState() {
+        timers.forEach(t => {
+            const nameEl = document.getElementById(`name-${t.id}`);
+            if (nameEl) {
+                t.name = nameEl.value;
+                t.h = document.getElementById(`h-${t.id}`).value;
+                t.m = document.getElementById(`m-${t.id}`).value;
+                t.s = document.getElementById(`s-${t.id}`).value;
+                t.msg = document.getElementById(`msg-${t.id}`).value;
+                t.voiceNotify = document.getElementById(`notify-voice-${t.id}`).checked;
+                t.repeat = document.getElementById(`repeat-${t.id}`).value;
+                t.volume = document.getElementById(`vol-${t.id}`).value;
+            }
+        });
+    }
+
+    function saveStateToStorage() {
+        const dataToSave = timers.map(t => ({
+            id: t.id, name: t.name, h: t.h, m: t.m, s: t.s, msg: t.msg, 
+            voiceNotify: t.voiceNotify, repeat: t.repeat, volume: t.volume
+        }));
+        localStorage.setItem('timersDataV13', JSON.stringify(dataToSave));
+    }
+
+    function handleInputChange() {
+        syncUItoState();
+        saveStateToStorage();
+        timers.forEach(t => {
+            if (!t.isRunning && !t.isPaused) updateInitialDisplay(t.id);
+        });
+    }
+
+    function loadDataToUI() {
+        timers.forEach(t => {
+            const nameEl = document.getElementById(`name-${t.id}`);
+            if (nameEl) {
+                nameEl.value = t.name;
+                document.getElementById(`h-${t.id}`).value = t.h || 0;
+                document.getElementById(`m-${t.id}`).value = t.m || 0;
+                document.getElementById(`s-${t.id}`).value = t.s || 0;
+                document.getElementById(`msg-${t.id}`).value = t.msg || "";
+                document.getElementById(`notify-voice-${t.id}`).checked = t.voiceNotify !== undefined ? t.voiceNotify : true;
+                document.getElementById(`repeat-${t.id}`).value = t.repeat || 1;
+                
+                const vol = t.volume !== undefined ? t.volume : 0.5;
+                document.getElementById(`vol-${t.id}`).value = vol;
+                document.getElementById(`vol-num-${t.id}`).value = Math.round(vol * 100);
+                
+                updateInitialDisplay(t.id);
+            }
+        });
+    }
+
+    function updateInitialDisplay(id) {
+        const h = parseInt(document.getElementById(`h-${id}`).value) || 0;
+        const m = parseInt(document.getElementById(`m-${id}`).value) || 0;
+        const s = parseInt(document.getElementById(`s-${id}`).value) || 0;
+        const total = h * 3600 + m * 60 + s;
+        formatAndShowTime(id, total);
+        
+        const bar = document.getElementById(`progress-${id}`);
+        if(bar) {
+            bar.style.width = `100%`;
+            bar.style.backgroundColor = `rgb(26, 115, 232)`; 
+        }
+    }
+
+    function formatAndShowTime(id, totalSeconds) {
+        const displayH = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+        const displayM = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+        const displayS = (totalSeconds % 60).toString().padStart(2, '0');
+        document.getElementById(`display-${id}`).textContent = `${displayH}:${displayM}:${displayS}`;
+    }
+
+    function resetAllData() {
+        if (confirm("警告：這將會清除所有鬧鐘、時間設定與背景！確定要重置嗎？")) {
+            localStorage.clear();
+            location.reload(); 
+        }
+    }
+
+    function testVolume(id) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const volumeLvl = parseFloat(document.getElementById(`vol-${id}`).value);
+            const utterance = new SpeechSynthesisUtterance("音量測試");
+            utterance.volume = volumeLvl;
+            const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
+            if (savedVoiceURI && voices.length > 0) {
+                const selectedVoice = voices.find(v => v.voiceURI === savedVoiceURI);
+                if (selectedVoice) utterance.voice = selectedVoice;
+            } else if (voices.length > 0) utterance.voice = voices[0];
+            else utterance.lang = 'zh-TW';
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    function openSettings() { document.getElementById('settingsModal').style.display = 'flex'; loadVoices(); }
+    function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
+
+    function checkTickerStatus() {
+        if (timers.some(t => t.isRunning)) {
+            ticker.postMessage('start');
+        } else {
+            ticker.postMessage('stop');
+        }
+    }
+
+    // --- 平滑藍轉紅進度條 ---
+    function updateVisuals() {
+        requestAnimationFrame(updateVisuals);
+        const now = Date.now();
+        timers.forEach(timer => {
+            const bar = document.getElementById(`progress-${timer.id}`);
+            if (!bar) return;
+
+            let percent = 100;
+            if (timer.isRunning && timer.totalSeconds > 0) {
+                let timeLeft = timer.endTime - now;
+                if (timeLeft < 0) timeLeft = 0;
+                percent = (timeLeft / (timer.totalSeconds * 1000)) * 100;
+            } else if (timer.isPaused && timer.totalSeconds > 0) {
+                percent = (timer.remainingSeconds / timer.totalSeconds) * 100;
+            }
+
+            const r = Math.round(234 - (percent / 100) * (234 - 26));
+            const g = Math.round(67 - (percent / 100) * (67 - 115));
+            const b = Math.round(53 - (percent / 100) * (53 - 232));
+
+            bar.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+            bar.style.width = `${percent}%`;
+        });
+    }
+    updateVisuals(); 
+
+    // --- 計時器開關邏輯 ---
+    function toggleTimer(id) {
+        const timer = timers.find(t => t.id === id);
+        const btn = document.getElementById(`btn-${id}`);
+        const card = document.getElementById(`card-${id}`);
+
+        if (timer.isRunning) {
+            timer.isRunning = false;
+            timer.isPaused = true;
+            timer.remainingSeconds = Math.max(0, Math.round((timer.endTime - Date.now()) / 1000));
+            
+            btn.textContent = "繼續";
+            btn.classList.remove("pause-state");
+            btn.classList.add("resume-state");
+            card.classList.remove("is-running"); 
+        } else {
+            if (timer.isPaused) {
+                timer.isRunning = true;
+                timer.isPaused = false;
+                timer.endTime = Date.now() + (timer.remainingSeconds * 1000);
+                
+                btn.textContent = "暫停";
+                btn.classList.remove("resume-state");
+                btn.classList.add("pause-state");
+                card.classList.add("is-running"); 
+            } else {
+                const h = parseInt(document.getElementById(`h-${id}`).value) || 0;
+                const m = parseInt(document.getElementById(`m-${id}`).value) || 0;
+                const s = parseInt(document.getElementById(`s-${id}`).value) || 0;
+                timer.totalSeconds = h * 3600 + m * 60 + s;
+                
+                if (timer.totalSeconds <= 0) { alert("請設定大於 0 的時間！"); return; }
+
+                timer.isRunning = true;
+                timer.isPaused = false;
+                timer.endTime = Date.now() + (timer.totalSeconds * 1000);
+                timer.totalRepeats = parseInt(document.getElementById(`repeat-${id}`).value) || 1;
+                timer.currentRepeat = timer.totalRepeats;
+                
+                setInputsDisabled(id, true);
+                btn.textContent = "暫停";
+                btn.classList.add("pause-state");
+                btn.classList.remove("resume-state");
+                card.classList.add("is-running"); 
+                
+                updateStatus(id);
+                handleInputChange(); 
+            }
+        }
+        checkTickerStatus();
+        tick(id); 
+    }
+
+    function resetTimer(id) {
+        const timer = timers.find(t => t.id === id);
+        const btn = document.getElementById(`btn-${id}`);
+        const card = document.getElementById(`card-${id}`);
+        
+        timer.isRunning = false;
+        timer.isPaused = false;
+        checkTickerStatus();
+        
+        btn.textContent = "開始";
+        btn.classList.remove("pause-state", "resume-state");
+        card.classList.remove("is-running"); 
+        document.getElementById(`status-${id}`).textContent = "";
+        
+        setInputsDisabled(id, false);
+        updateInitialDisplay(id);
+    }
+
+    function tick(id) {
+        const timer = timers.find(t => t.id === id);
+        if (!timer.isRunning) return; 
+
+        let timeLeft = Math.round((timer.endTime - Date.now()) / 1000);
+
+        if (timeLeft <= 0) {
+            triggerAlarm(id);
+            timer.currentRepeat--;
+
+            if (timer.currentRepeat > 0) {
+                // 🔥 修正重複計時飄移 Bug：直接用舊的 endTime 加上設定秒數
+                // 確保 100% 準確不掉秒
+                timer.endTime = timer.endTime + (timer.totalSeconds * 1000);
+                
+                // 重新計算當下最新的剩餘時間
+                let newTimeLeft = Math.round((timer.endTime - Date.now()) / 1000);
+                
+                updateStatus(id);
+                formatAndShowTime(id, newTimeLeft);
+            } else {
+                resetTimer(id); 
+                document.getElementById(`status-${id}`).textContent = "計時完成！";
+            }
+        } else {
+            formatAndShowTime(id, timeLeft);
+        }
+    }
+
+    function updateStatus(id) {
+        const timer = timers.find(t => t.id === id);
+        document.getElementById(`status-${id}`).textContent = `執行中: 第 ${timer.totalRepeats - timer.currentRepeat + 1} 輪 (共 ${timer.totalRepeats} 輪)`;
+    }
+
+    function triggerAlarm(id) {
+        const titleName = document.getElementById(`name-${id}`).value || `鬧鐘 ${id}`;
+        let msg = document.getElementById(`msg-${id}`).value;
+        const useVoice = document.getElementById(`notify-voice-${id}`).checked;
+        const volumeLvl = parseFloat(document.getElementById(`vol-${id}`).value);
+
+        if (!msg.trim()) msg = `${titleName} 時間到了`;
+
+        if (useVoice && 'speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(msg);
+            utterance.volume = volumeLvl; 
+
+            const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
+            if (savedVoiceURI && voices.length > 0) {
+                const selectedVoice = voices.find(v => v.voiceURI === savedVoiceURI);
+                if (selectedVoice) utterance.voice = selectedVoice;
+            } else if (voices.length > 0) utterance.voice = voices[0];
+            else utterance.lang = 'zh-TW';
+            
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    function setInputsDisabled(id, disabled) {
+        ['name', 'h', 'm', 's', 'msg', 'notify-voice', 'repeat'].forEach(prefix => {
+            document.getElementById(`${prefix}-${id}`).disabled = disabled;
+        });
+    }
+
+    initApp();
+</script>
+</body>
+</html>
