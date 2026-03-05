@@ -176,6 +176,28 @@
                 <input type="number" id="huntM" value="0" min="0" class="short-input">
             </div>
         </div>
+        
+        <div class="form-row">
+            <div>
+                <label>🎢 怪物公園 (每日 0-7次)</label>
+                <input type="number" id="mpDaily" value="0" min="0" max="7" class="short-input">
+            </div>
+            <div>
+                <label>選擇區域 (需符合等級)</label>
+                <select id="mpRegion" class="short-input">
+                    <option value="none">不打</option>
+                    <option value="morass">魔菈斯 (Lv.235+)</option>
+                    <option value="esfera">艾斯佩拉 (Lv.240+)</option>
+                    <option value="sellas">賽拉斯 (Lv.245+)</option>
+                    <option value="moonbridge">月之橋 (Lv.250+)</option>
+                    <option value="labyrinth">苦痛的迷宮 (Lv.255+)</option>
+                    <option value="limina">利曼 (Lv.260+)</option>
+                    <option value="cernium">賽爾尼溫 (Lv.260+)</option>
+                    <option value="arcs">阿爾克斯 (Lv.265+)</option>
+                    <option value="odium">奧迪溫 (Lv.270+)</option>
+                </select>
+            </div>
+        </div>
 
         <label>指定練功日</label>
         <div class="check-group">
@@ -264,9 +286,11 @@
         295:870403132500696, 296:957443445750765, 297:1053187790325840, 298:1158506569358420, 299:1737759854037630
     };
     
+    // 紅月與終極怪公
     const RM_BASE = { 260: 2652e8, 270: 5670e8, 280: 10614.2e8, 290: 10993.3e8 };
     const EX_BASE = { 260: 530.4e8, 270: 1134e8, 280: 1632.9e8, 290: 1691.2e8 };
 
+    // 高山
     const HM_DATA = {
         260: 2609e8, 261: 2647e8, 262: 2685e8, 263: 2722e8, 264: 2765e8,
         265: 3110e8, 266: 3153e8, 267: 3196e8, 268: 3245e8, 269: 3288e8,
@@ -278,6 +302,7 @@
         295: 7596e8, 296: 7596e8, 297: 7596e8, 298: 7596e8, 299: 7596e8
     };
 
+    // 安格洛
     const AC_DATA = {
         270: 5547e8, 271: 5628e8, 272: 5701.5e8, 273: 5775e8, 274: 5859e8,
         275: 6585e8, 276: 6667.5e8, 277: 6762e8, 278: 6846e8, 279: 6940.5e8,
@@ -285,6 +310,19 @@
         285: 9216e8, 286: 9322.5e8, 287: 9444e8, 288: 9565.5e8, 289: 9675e8,
         290: 10872e8, 291: 10993.5e8, 292: 11131.5e8, 293: 11271e8, 294: 11394e8,
         295: 11394e8, 296: 11394e8, 297: 11394e8, 298: 11394e8, 299: 11394e8
+    };
+
+    // 普通怪物公園數據字典
+    const MP_DATA = {
+        'morass': { req: 235, exp: 2996755520 },
+        'esfera': { req: 240, exp: 3459833685 },
+        'sellas': { req: 245, exp: 4356407460 },
+        'moonbridge': { req: 250, exp: 5858308250 },
+        'labyrinth': { req: 255, exp: 7029450500 },
+        'limina': { req: 260, exp: 7776278700 },
+        'cernium': { req: 260, exp: 43845287218 },
+        'arcs': { req: 265, exp: 51989472171 },
+        'odium': { req: 270, exp: 61798037184 }
     };
 
     function parseExp(str) {
@@ -308,11 +346,11 @@
                 data[key] = el.value;
             }
         });
-        localStorage.setItem('mapleCalcData_v11', JSON.stringify(data));
+        localStorage.setItem('mapleCalcData_v13', JSON.stringify(data));
     }
 
     function loadData() {
-        const saved = localStorage.getItem('mapleCalcData_v11');
+        const saved = localStorage.getItem('mapleCalcData_v13');
         if (saved) {
             const data = JSON.parse(saved);
             document.querySelectorAll('input, select').forEach(el => {
@@ -340,7 +378,6 @@
         document.getElementById('themeBtn').innerText = theme === 'dark' ? '🌙' : '☀️';
     }
 
-    // 終極怪公互斥邏輯
     document.getElementById('exSun').addEventListener('change', function() {
         if(this.checked) document.getElementById('exEvt').checked = false;
         calculate();
@@ -350,7 +387,6 @@
         calculate();
     });
 
-    // 史詩副本互斥邏輯 (點選一次選取，再點一次取消，且兩者只能選一個)
     document.getElementById('epiHigh').addEventListener('change', function() {
         if(this.checked) document.getElementById('epiAng').checked = false;
         calculate();
@@ -370,6 +406,9 @@
         const hM = parseInt(document.getElementById('huntM').value) || 0;
         const huntSec = (hH * 3600) + (hM * 60);
         
+        const mpDaily = parseInt(document.getElementById('mpDaily').value) || 0;
+        const mpRegion = document.getElementById('mpRegion').value;
+
         const huntDays = Array.from(document.querySelectorAll('.day-check:checked')).map(el => parseInt(el.value));
         const afkBase = parseExp(document.getElementById('afkExp').value) || 0;
         const afkSec = (parseFloat(document.getElementById('afkH').value) || 0) * 3600;
@@ -386,17 +425,27 @@
             let dayOfWeek = today.getDay();
             let dailyGain = 0;
 
+            // 打怪收益
             if(huntDays.includes(dayOfWeek)) dailyGain += eps * huntSec;
-            if(tempLvl >= 100) dailyGain += (afkBase / 5) * afkSec;
             
+            // 掛機收益
+            if(tempLvl >= 100) dailyGain += (afkBase / 5) * afkSec;
+
+            // 每日普通怪物公園
+            if(mpDaily > 0 && mpRegion !== 'none' && MP_DATA[mpRegion]) {
+                // 必須滿足等級門檻才給予經驗值
+                if (tempLvl >= MP_DATA[mpRegion].req) {
+                    dailyGain += mpDaily * MP_DATA[mpRegion].exp;
+                }
+            }
+            
+            // 週常收益
             if(dayOfWeek === 0 && tempLvl >= 260) {
-                // 紅月之森
                 if(document.getElementById('rmPart').checked) {
                     let rm = RM_BASE[Math.floor(tempLvl/10)*10] || RM_BASE[290];
                     dailyGain += document.getElementById('rmCert').checked ? rm*2 : rm;
                 }
                 
-                // 終極怪物公園
                 if(document.getElementById('exPart').checked) {
                     let mult = 1; 
                     if(document.getElementById('exSun').checked) mult = 1.5;
@@ -404,7 +453,6 @@
                     dailyGain += (EX_BASE[Math.floor(tempLvl/10)*10] || EX_BASE[290]) * mult;
                 }
 
-                // 史詩副本
                 let isEpiHigh = document.getElementById('epiHigh').checked;
                 let isEpiAng = document.getElementById('epiAng').checked;
 
@@ -418,7 +466,6 @@
                         baseEpiExp = AC_DATA[tempLvl] || AC_DATA[299];
                     }
                     
-                    // 每購買1次 = +1.074倍 (10次 = +10.74倍)
                     if (baseEpiExp > 0) {
                         let totalEpiExp = baseEpiExp * (1 + (buyCount * 1.074));
                         dailyGain += totalEpiExp;
