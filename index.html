@@ -173,24 +173,28 @@
             if(btnElement) btnElement.classList.add('active');
         }
 
-        // 深淺色模式切換與記憶
+        // 深淺色模式切換與「獨立」記憶
         function toggleTheme() {
             const body = document.documentElement;
             const currentTheme = body.getAttribute('data-theme');
             if (currentTheme === 'dark') {
                 body.removeAttribute('data-theme');
-                localStorage.setItem('theme', 'light');
+                // 使用專屬名稱 'toolbox_theme' 儲存主介面設定
+                localStorage.setItem('toolbox_theme', 'light'); 
             } else {
                 body.setAttribute('data-theme', 'dark');
-                localStorage.setItem('theme', 'dark');
+                // 使用專屬名稱 'toolbox_theme' 儲存主介面設定
+                localStorage.setItem('toolbox_theme', 'dark'); 
             }
         }
 
+        // 網頁載入時，只讀取主介面的專屬設定
         window.onload = () => {
-            if (localStorage.getItem('theme') === 'dark') {
+            if (localStorage.getItem('toolbox_theme') === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
             }
         };
     </script>
 </body>
+
 </html>
