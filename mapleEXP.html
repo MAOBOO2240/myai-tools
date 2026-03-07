@@ -58,10 +58,11 @@
             border-radius: 16px; padding: 24px; box-shadow: var(--shadow);
         }
 
+        /* 將按鈕移至左上角並固定 */
         .theme-toggle-container {
-            position: absolute;
-            left: -70px;
-            top: 20px;
+            position: fixed;
+            left: 20px;
+            top: 30px;
             width: 52px;
             height: 52px;
             border-radius: 50%;
@@ -72,7 +73,7 @@
             box-shadow: var(--shadow);
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; user-select: none;
-            z-index: 10;
+            z-index: 100;
         }
         .theme-toggle-container:hover {
             background: var(--btn-hover);
@@ -138,12 +139,12 @@
 </head>
 <body>
 
+<div class="theme-toggle-container" onclick="toggleTheme()">
+    <span id="themeBtn" class="theme-btn">☀️</span>
+</div>
+
 <div class="layout">
     <div class="panel input-panel">
-        
-        <div class="theme-toggle-container" onclick="toggleTheme()">
-            <span id="themeBtn" class="theme-btn">☀️</span>
-        </div>
 
         <h2>⚙️ 練功參數</h2>
         <div class="form-row">
@@ -234,8 +235,6 @@
             <label>終極怪物公園</label>
             <div class="check-group">
                 <label class="check-item"><input type="checkbox" id="exPart" checked> 參與</label>
-                <label class="check-item"><input type="checkbox" id="exSun"> 週日(*1.5)</label>
-                <label class="check-item"><input type="checkbox" id="exEvt"> 活動(*2)</label>
             </div>
         </div>
         
@@ -346,11 +345,11 @@
                 data[key] = el.value;
             }
         });
-        localStorage.setItem('mapleCalcData_v13', JSON.stringify(data));
+        localStorage.setItem('mapleCalcData_v14', JSON.stringify(data));
     }
 
     function loadData() {
-        const saved = localStorage.getItem('mapleCalcData_v13');
+        const saved = localStorage.getItem('mapleCalcData_v14');
         if (saved) {
             const data = JSON.parse(saved);
             document.querySelectorAll('input, select').forEach(el => {
@@ -377,15 +376,6 @@
     function updateThemeEmoji(theme) {
         document.getElementById('themeBtn').innerText = theme === 'dark' ? '🌙' : '☀️';
     }
-
-    document.getElementById('exSun').addEventListener('change', function() {
-        if(this.checked) document.getElementById('exEvt').checked = false;
-        calculate();
-    });
-    document.getElementById('exEvt').addEventListener('change', function() {
-        if(this.checked) document.getElementById('exSun').checked = false;
-        calculate();
-    });
 
     document.getElementById('epiHigh').addEventListener('change', function() {
         if(this.checked) document.getElementById('epiAng').checked = false;
@@ -433,7 +423,6 @@
 
             // 每日普通怪物公園
             if(mpDaily > 0 && mpRegion !== 'none' && MP_DATA[mpRegion]) {
-                // 必須滿足等級門檻才給予經驗值
                 if (tempLvl >= MP_DATA[mpRegion].req) {
                     dailyGain += mpDaily * MP_DATA[mpRegion].exp;
                 }
@@ -441,18 +430,18 @@
             
             // 週常收益
             if(dayOfWeek === 0 && tempLvl >= 260) {
+                // 紅月之森
                 if(document.getElementById('rmPart').checked) {
                     let rm = RM_BASE[Math.floor(tempLvl/10)*10] || RM_BASE[290];
                     dailyGain += document.getElementById('rmCert').checked ? rm*2 : rm;
                 }
                 
+                // 終極怪物公園 (已無倍率選項，預設x1)
                 if(document.getElementById('exPart').checked) {
-                    let mult = 1; 
-                    if(document.getElementById('exSun').checked) mult = 1.5;
-                    if(document.getElementById('exEvt').checked) mult = 2;
-                    dailyGain += (EX_BASE[Math.floor(tempLvl/10)*10] || EX_BASE[290]) * mult;
+                    dailyGain += (EX_BASE[Math.floor(tempLvl/10)*10] || EX_BASE[290]);
                 }
 
+                // 史詩副本
                 let isEpiHigh = document.getElementById('epiHigh').checked;
                 let isEpiAng = document.getElementById('epiAng').checked;
 
