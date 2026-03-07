@@ -36,25 +36,62 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             transition: background-color 0.3s, color 0.3s;
+            overflow: hidden; /* 防止整個網頁出現多餘滾動條 */
         }
         
-        /* 側邊導覽列 */
+        /* 側邊導覽列外框 (包含收合動畫) */
         .sidebar {
-            width: 260px;
+            position: relative;
             background: var(--sidebar-bg);
-            color: var(--sidebar-text);
+            height: 100vh;
+            z-index: 10;
+        }
+
+        /* 側邊欄內容遮罩，用來隱藏縮進去的內容 */
+        .sidebar-content {
+            width: 260px;
+            height: 100%;
+            overflow: hidden;
+            transition: width 0.3s ease;
+        }
+
+        /* 當被加上 collapsed 類別時，寬度變為 0 */
+        .sidebar.collapsed .sidebar-content {
+            width: 0px;
+        }
+
+        /* 內部實際大小維持不變，確保排版不會擠壓變形 */
+        .sidebar-inner {
+            width: 260px;
+            height: 100%;
             display: flex;
             flex-direction: column;
-            transition: 0.3s;
+            color: var(--sidebar-text);
         }
         
+        /* 工具箱標題與深淺色按鈕區塊 */
         .sidebar-header {
             padding: 20px;
             font-size: 1.5rem;
             font-weight: bold;
             border-bottom: 1px solid rgba(255,255,255,0.1);
             margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between; /* 讓文字靠左，按鈕靠右 */
+            align-items: center;
         }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--sidebar-text);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            transition: 0.2s;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.2); }
 
         .nav-menu {
             flex-grow: 1;
@@ -81,30 +118,38 @@
         .nav-btn:hover { background: rgba(255,255,255,0.1); }
         .nav-btn.active { background: var(--accent-color); font-weight: bold; }
 
-        /* 側邊欄底部控制區 */
-        .sidebar-footer {
-            padding: 15px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            display: flex;
-            justify-content: center;
-        }
-
-        .icon-btn {
-            background: transparent;
-            border: none;
+        /* 縮進去/展開的側邊小按鈕 */
+        .toggle-sidebar-btn {
+            position: absolute;
+            right: -20px; /* 凸出在側邊欄外面 */
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 60px;
+            background: var(--sidebar-bg);
             color: var(--sidebar-text);
-            font-size: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-left: none;
+            border-radius: 0 8px 8px 0;
             cursor: pointer;
-            padding: 10px;
-            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            z-index: 20;
+            transition: background 0.3s;
+            padding: 0;
         }
-        .icon-btn:hover { background: rgba(255,255,255,0.1); }
+        .toggle-sidebar-btn:hover {
+            background: var(--accent-color);
+        }
 
         /* 主內容區 */
         .main-content {
             flex-grow: 1;
             padding: 20px;
             overflow-y: auto;
+            transition: 0.3s;
         }
 
         .tool-section { 
@@ -129,41 +174,39 @@
 </head>
 <body>
 
-    <div class="sidebar">
-        <div class="sidebar-header">🛠️ 工具箱</div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-content">
+            <div class="sidebar-inner">
+                <div class="sidebar-header">
+                    <span>🛠️ 工具箱</span>
+                    <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="切換深淺色">🌙</button>
+                </div>
+                
+                <div class="nav-menu" id="nav-menu">
+                    <button class="nav-btn active" onclick="showTool('timer', this)">⏳ 倒數計時器</button>
+                    <button class="nav-btn" onclick="showTool('gift', this)">🎁 送禮計算機</button>
+                    <button class="nav-btn" onclick="showTool('mapleEXP', this)">🌟 楓之谷經驗值計算</button>
+                    <button class="nav-btn" onclick="showTool('renamer', this)">📂 批量名稱更改器</button>
+                </div>
+            </div>
+        </div>
         
-        <div class="nav-menu" id="nav-menu">
-            
-            <button class="nav-btn active" onclick="showTool('timer', this)">⏳ 倒數計時器</button>
-            <button class="nav-btn" onclick="showTool('gift', this)">🎁 送禮計算機</button>
-            <button class="nav-btn" onclick="showTool('mapleEXP', this)">🌟 楓之谷經驗值計算</button>
-            <button class="nav-btn" onclick="showTool('renamer', this)">📂 批量名稱更改器</button>
-            
-        </div>
-
-        <div class="sidebar-footer">
-            <button class="icon-btn" onclick="toggleTheme()" title="切換深淺色">🌓</button>
-        </div>
+        <button class="toggle-sidebar-btn" id="toggle-btn" onclick="toggleSidebar()" title="收合選單">❰</button>
     </div>
 
     <div class="main-content" id="main-content">
-
         <div id="timer" class="tool-section active">
             <iframe src="timer.html"></iframe>
         </div>
-
         <div id="renamer" class="tool-section">
             <iframe src="rename.html"></iframe>
         </div>
-
         <div id="mapleEXP" class="tool-section">
             <iframe src="mapleEXP.html"></iframe>
         </div>
-
         <div id="gift" class="tool-section">
             <iframe src="gift.html"></iframe>
         </div>
-
     </div>
 
     <script>
@@ -179,32 +222,51 @@
             if(btnElement) btnElement.classList.add('active');
         }
 
-        // 深淺色模式切換與「獨立」記憶
+        // 深淺色模式切換與圖示變更
         function toggleTheme() {
             const body = document.documentElement;
             const currentTheme = body.getAttribute('data-theme');
+            const themeBtn = document.getElementById('theme-btn');
+
             if (currentTheme === 'dark') {
                 body.removeAttribute('data-theme');
-                // 使用專屬名稱 'toolbox_theme' 儲存主介面設定
                 localStorage.setItem('toolbox_theme', 'light'); 
+                themeBtn.innerText = '🌙'; // 回到淺色模式，顯示月亮(代表點擊切換深色)
             } else {
                 body.setAttribute('data-theme', 'dark');
-                // 使用專屬名稱 'toolbox_theme' 儲存主介面設定
                 localStorage.setItem('toolbox_theme', 'dark'); 
+                themeBtn.innerText = '☀️'; // 進入深色模式，顯示太陽(代表點擊切換淺色)
             }
         }
 
-        // 網頁載入時，只讀取主介面的專屬設定
+        // 側邊欄展開與收合控制
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('toggle-btn');
+            
+            // 切換 collapsed 類別
+            sidebar.classList.toggle('collapsed');
+            
+            // 變更按鈕圖示
+            if (sidebar.classList.contains('collapsed')) {
+                toggleBtn.innerText = '❱'; // 縮進去後，顯示向右箭頭
+                toggleBtn.title = "展開選單";
+            } else {
+                toggleBtn.innerText = '❰'; // 展開時，顯示向左箭頭
+                toggleBtn.title = "收合選單";
+            }
+        }
+
+        // 網頁載入時，讀取主介面的專屬設定並更新按鈕圖示
         window.onload = () => {
+            const themeBtn = document.getElementById('theme-btn');
             if (localStorage.getItem('toolbox_theme') === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
+                themeBtn.innerText = '☀️';
+            } else {
+                themeBtn.innerText = '🌙';
             }
         };
     </script>
 </body>
-
 </html>
-
-
-
-
