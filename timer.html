@@ -54,9 +54,6 @@
             display: flex; gap: 25px; flex-wrap: wrap; justify-content: center; 
             align-items: stretch; max-width: 1950px; /* 5個鬧鐘(365px) + 4個間隔(25px) = 1925px */
         }
-        .add-btn-wrapper {
-            display: flex; justify-content: center; width: 100%; padding-bottom: 50px;
-        }
         
         /* 🔥 鬧鐘卡片主體 (寬度 365px) */
         .timer-card { 
@@ -87,16 +84,31 @@
         }
         .delete-btn:hover { color: #ea4335; transform: scale(1.2); }
         
-        /* 新增按鈕樣式 (移除 margin 讓置中更準確) */
+        /* 🔥 新增：佔位用的虛線卡片樣式 */
+        .add-timer-card {
+            display: flex; justify-content: center; align-items: center;
+            width: 365px; min-height: 430px; border-radius: 20px; box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.02); border: 3px dashed var(--input-border);
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        body.dark-mode .add-timer-card { background: rgba(255, 255, 255, 0.03); }
+        .add-timer-card:hover {
+            border-color: var(--title-color); background: rgba(0, 0, 0, 0.05);
+        }
+        body.dark-mode .add-timer-card:hover { background: rgba(255, 255, 255, 0.08); }
+
+        /* 新增按鈕樣式 */
         .add-timer-btn {
             display: flex; justify-content: center; align-items: center;
             width: 60px; height: 60px; border-radius: 50%;
             background-color: var(--card-bg); color: var(--title-color);
-            font-size: 28px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            font-size: 28px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
             backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.3s ease;
+            transition: all 0.3s ease; pointer-events: none; /* 事件交由外層卡片處理 */
         }
-        .add-timer-btn:hover { transform: scale(1.1); background-color: var(--title-color); color: white; }
+        .add-timer-card:hover .add-timer-btn { 
+            transform: scale(1.1); background-color: var(--title-color); color: white; 
+        }
         
         .alarm-label {
             font-size: 12px; font-weight: bold; color: var(--status-color);
@@ -226,14 +238,11 @@
 </div>
 
 <script>
-    // --- 🔥 Emoji 雙版本字典 (修正 Win10 顯示異常問題) ---
-    // Win10 換成最基礎的 Unicode 符號，確保不會破圖
     const emojiDict = {
         win11: { img: '🖼️', trash: '🗑️', moon: '🌙', sun: '☀️', gear: '⚙️', add: '➕', speak: '🗣️', vol: '🔊', reset: '🔄', cross: '✖' },
         win10: { img: '📷', trash: '⌫', moon: '☾', sun: '☀', gear: '⚙', add: '＋', speak: '💬', vol: '♪', reset: '↺', cross: '✕' }
     };
 
-    // --- Web Worker 背景計時引擎 ---
     const workerBlob = new Blob([`
         let timerId = null;
         self.onmessage = function(e) {
@@ -253,7 +262,6 @@
         });
     };
 
-    // --- 系統設定與介面同步 ---
     function applyOSStyle() {
         const os = localStorage.getItem('osStyle') || 'win11';
         document.getElementById('osSelect').value = os;
@@ -301,7 +309,6 @@
     const savedBg = localStorage.getItem('bgImage');
     if (savedBg) document.body.style.backgroundImage = `url(${savedBg})`;
 
-    // --- 語音系統載入 ---
     let voices = [];
     function loadVoices() {
         voices = window.speechSynthesis.getVoices().filter(v => 
@@ -331,7 +338,6 @@
         applyOSStyle();
     }
 
-    // --- 核心：動態鬧鐘狀態管理 ---
     let timers = [];
     let nextTimerId = 1;
 
@@ -360,11 +366,18 @@
 
     function renderApp() {
         const app = document.getElementById('app');
-        // 🔥 將鬧鐘與新增按鈕分別放入不同的 wrapper 區塊
+        // 🔥 將鬧鐘與新增按鈕放入同一個 wrapper 區塊
         let html = '<div class="timers-wrapper">';
         html += timers.map(createTimerUI).join('');
+        
+        // 🔥 以卡片的形式呈現「新增鬧鐘」，佔用一個欄位空間
+        html += `
+            <div class="add-timer-card" onclick="addNewTimer()" title="新增鬧鐘">
+                <div class="add-timer-btn"><span class="emoji" data-icon="add">➕</span></div>
+            </div>
+        `;
+        
         html += '</div>';
-        html += `<div class="add-btn-wrapper"><button class="add-timer-btn" onclick="addNewTimer()" title="新增鬧鐘"><span class="emoji" data-icon="add">➕</span></button></div>`;
         app.innerHTML = html;
         loadDataToUI(); 
         applyOSStyle(); 
@@ -589,7 +602,6 @@
         }
     }
 
-    // --- 平滑藍轉紅進度條 ---
     function updateVisuals() {
         requestAnimationFrame(updateVisuals);
         const now = Date.now();
@@ -616,7 +628,6 @@
     }
     updateVisuals(); 
 
-    // --- 計時器開關邏輯 ---
     function toggleTimer(id) {
         const timer = timers.find(t => t.id === id);
         const btn = document.getElementById(`btn-${id}`);
