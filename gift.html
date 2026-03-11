@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🍁 楓之谷送禮營利計算機</title>
+    <title>🍁 楓之谷送禮與比值計算機</title>
     <style>
         :root {
             /* 淺色模式變數 (純白底、黑字) */
@@ -27,9 +27,9 @@
 
         [data-theme="dark"] {
             /* 深色模式變數 (深灰底、灰框、漸層白光) */
-            --bg-color: #151515; /* 較黑的灰底 */
-            --panel-bg: #282828; /* 框體以灰色為主 */
-            --panel-border: rgba(255, 255, 255, 0.08); /* 極淡的實體邊框輔助 */
+            --bg-color: #151515;
+            --panel-bg: #282828;
+            --panel-border: rgba(255, 255, 255, 0.08);
             --text-main: #ffffff;
             --text-muted: #aaaaaa;
             --input-bg: #1c1c1c;
@@ -39,8 +39,7 @@
             --btn-secondary: #383838;
             --btn-secondary-hover: #4a4a4a;
             
-            /* 【核心重點】利用雙層 box-shadow 創造框邊緣的漸層白光效果 */
-            /* 外層光暈 18px 擴散 + 內層邊緣 1px 白色微光 */
+            /* 雙層 box-shadow 創造漸層白光效果 */
             --shadow: 0 0 18px rgba(255, 255, 255, 0.12), inset 0 0 1px rgba(255, 255, 255, 0.25);
             
             --profit-color: #4CAF50;
@@ -62,7 +61,6 @@
             align-items: flex-start;
         }
 
-        /* 文字大小變數控制 */
         body.text-sm { font-size: 14px; }
         body.text-md { font-size: 16px; }
         body.text-lg { font-size: 18px; }
@@ -79,7 +77,6 @@
             .container { grid-template-columns: 1fr; }
         }
 
-        /* 極簡面板 */
         .glass-panel {
             background: var(--panel-bg);
             border: 1px solid var(--panel-border);
@@ -103,10 +100,19 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
 
-        /* 帶文字的按鈕 */
+        /* 頁籤切換區 */
+        .tabs-container {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
         .btn-text-icon {
             background: var(--btn-secondary);
             border: 1px solid var(--panel-border);
@@ -124,7 +130,6 @@
         }
         .btn-text-icon:hover { 
             background: var(--btn-secondary-hover); 
-            /* 滑鼠移上去時，按鈕也會微微發出白光 */
             box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
         }
 
@@ -182,25 +187,26 @@
         }
         input[type="number"]:focus, select:focus {
             border-color: var(--text-main);
-            /* 深色模式下，輸入框點擊時也會有白色發光效果 */
             box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
         }
         [data-theme="light"] input[type="number"]:focus, [data-theme="light"] select:focus {
-            box-shadow: none; /* 淺色模式保持俐落不發光 */
+            box-shadow: none;
         }
 
         button.primary {
             background: var(--btn-primary);
             color: var(--btn-primary-text);
             border: 1px solid var(--panel-border);
-            padding: 12px;
-            border-radius: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
             cursor: pointer;
-            width: 100%;
             font-weight: 600;
-            font-size: 1.1em;
+            font-size: 1em;
             transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
-            margin-top: 10px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
         }
         button.primary:hover { 
             background: var(--btn-primary-hover); 
@@ -274,7 +280,6 @@
         }
         #settings-modal.active { display: flex; opacity: 1; }
 
-        /* 捲軸美化 */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
@@ -284,75 +289,119 @@
 
     <div class="container">
         <div class="header-controls">
-            <h1 style="margin:0;">🍁 楓之谷即時營利計算機</h1>
+            <h1 style="margin:0;">🍁 楓之谷實用計算工具</h1>
             <div style="display:flex; gap:10px;">
                 <button class="btn-text-icon" id="theme-toggle" title="切換深淺色">🌙 深色模式</button>
                 <button class="btn-icon-only" id="settings-btn" title="設定">⚙️</button>
             </div>
         </div>
 
-        <div class="glass-panel">
-            <h2>📝 參數設定</h2>
-            
-            <div class="form-group">
-                <label id="label-amount">🎁 道具原價 (送禮金額)</label>
-                <input type="number" id="input-gift-amount" min="0" step="100">
-                <div class="hint">📌 對方玩家想購買的道具原本價格</div>
+        <div class="tabs-container">
+            <button id="tab-gift" class="primary" onclick="switchTab('gift')">🎁 送禮計算機</button>
+            <button id="tab-rate" class="btn-text-icon" onclick="switchTab('rate')">💰 楓點比值</button>
+        </div>
+
+        <div id="view-gift" style="display: contents;">
+            <div class="glass-panel">
+                <h2>📝 參數設定</h2>
+                
+                <div class="form-group">
+                    <label id="label-amount">🎁 道具原價 (送禮金額)</label>
+                    <input type="number" id="input-gift-amount" min="0" step="100">
+                    <div class="hint">📌 對方玩家想購買的道具原本價格</div>
+                </div>
+
+                <div class="form-group">
+                    <label>🤝 送禮折數</label>
+                    <input type="number" id="input-discount" step="1" min="1" max="100">
+                    <div class="hint">📌 8折輸入 8，84折輸入 84，82折輸入 82</div>
+                </div>
+
+                <div class="form-group">
+                    <label>📈 楓點換楓幣比率</label>
+                    <input type="number" id="input-mp-rate" step="1" min="1">
+                    <div class="hint">📌 多少楓點可換 1E (一億) 楓幣</div>
+                </div>
+
+                <div class="form-group">
+                    <label>💵 遊戲幣值比率</label>
+                    <input type="number" id="input-meso-rate" step="10" min="0">
+                    <div class="hint">📌 每多少「萬」楓幣 = 1 台幣</div>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>🤝 送禮折數</label>
-                <input type="number" id="input-discount" step="1" min="1" max="100">
-                <div class="hint">📌 8折輸入 8，84折輸入 84，82折輸入 82</div>
-            </div>
+            <div class="glass-panel">
+                <h2>📊 即時計算結果</h2>
+                <div class="result-box">
+                    <div class="result-row highlight-cost-row">
+                        <span style="font-weight: bold;">💸 實際儲值成本</span>
+                        <span id="res-recharge-cost" style="font-weight: bold;">0 TWD</span>
+                    </div>
+                    <div class="hint" style="text-align: right; margin-top: -5px; margin-bottom: 10px;">(道具原價 ÷ 1.05 的官方回饋)</div>
 
-            <div class="form-group">
-                <label>📈 楓點換楓幣比率</label>
-                <input type="number" id="input-mp-rate" step="1" min="1">
-                <div class="hint">📌 多少楓點可換 1E (一億) 楓幣</div>
-            </div>
-
-            <div class="form-group">
-                <label>💵 遊戲幣值比率</label>
-                <input type="number" id="input-meso-rate" step="10" min="0">
-                <div class="hint">📌 每多少「萬」楓幣 = 1 台幣</div>
+                    <div class="result-row highlight-row">
+                        <span style="font-weight: bold;">🤝 對方需繳金額 (實收)</span>
+                        <span id="res-buyer-pay" style="font-weight: bold;">0 TWD</span>
+                    </div>
+                    
+                    <div class="result-row">
+                        <span>💎 獲得 VIP 點數</span>
+                        <span id="res-vip">0 點</span>
+                    </div>
+                    <div class="result-row">
+                        <span>🍁 VIP 兌換楓點 (300:1)</span>
+                        <span id="res-mp">0 點</span>
+                    </div>
+                    <div class="result-row">
+                        <span>🪙 楓點換成楓幣</span>
+                        <span id="res-mesos">0 億</span>
+                    </div>
+                    <div class="result-row">
+                        <span>💵 楓幣換算額外台幣</span>
+                        <span id="res-meso-revenue">0 TWD</span>
+                    </div>
+                </div>
+                
+                <div class="final-profit" id="res-final">
+                    等待計算...
+                </div>
             </div>
         </div>
 
-        <div class="glass-panel">
-            <h2>📊 即時計算結果</h2>
-            <div class="result-box">
-                <div class="result-row highlight-cost-row">
-                    <span style="font-weight: bold;">💸 實際儲值成本</span>
-                    <span id="res-recharge-cost" style="font-weight: bold;">0 TWD</span>
-                </div>
-                <div class="hint" style="text-align: right; margin-top: -5px; margin-bottom: 10px;">(道具原價 ÷ 1.05 的官方回饋)</div>
-
-                <div class="result-row highlight-row">
-                    <span style="font-weight: bold;">🤝 對方需繳金額 (實收)</span>
-                    <span id="res-buyer-pay" style="font-weight: bold;">0 TWD</span>
-                </div>
+        <div id="view-rate" style="display: none;">
+            <div class="glass-panel">
+                <h2>📝 比值參數設定</h2>
                 
-                <div class="result-row">
-                    <span>💎 獲得 VIP 點數</span>
-                    <span id="res-vip">0 點</span>
+                <div class="form-group">
+                    <label>💵 目前 1 台幣 = 多少萬楓幣</label>
+                    <input type="number" id="input-rate-meso" step="100" min="0">
+                    <div class="hint">📌 以「萬」為單位 </div>
                 </div>
-                <div class="result-row">
-                    <span>🍁 VIP 兌換楓點 (300:1)</span>
-                    <span id="res-mp">0 點</span>
-                </div>
-                <div class="result-row">
-                    <span>🪙 楓點換成楓幣</span>
-                    <span id="res-mesos">0 億</span>
-                </div>
-                <div class="result-row">
-                    <span>💵 楓幣換算額外台幣</span>
-                    <span id="res-meso-revenue">0 TWD</span>
+
+                <div class="form-group">
+                    <label>📈 目前 1 億楓幣 = 多少楓點</label>
+                    <input type="number" id="input-rate-mp" step="1" min="0">
+                    <div class="hint">📌 (預設 6，即 1E = 6點)</div>
                 </div>
             </div>
-            
-            <div class="final-profit" id="res-final">
-                等待計算...
+
+            <div class="glass-panel">
+                <h2>📊 實質折數計算結果</h2>
+                <div class="result-box">
+                    <div class="result-row">
+                        <span>🪙 1億楓幣的台幣成本</span>
+                        <span id="res-rate-cost100m">0 TWD</span>
+                    </div>
+                    <div class="result-row highlight-cost-row">
+                        <span style="font-weight: bold;">🍁 1點楓點的實質成本</span>
+                        <span id="res-rate-cost1mp" style="font-weight: bold;">0 TWD</span>
+                    </div>
+                    <div class="hint" style="text-align: right; margin-top: -5px; margin-bottom: 10px;">(標準價格：1楓點 = 1台幣)</div>
+                </div>
+                
+                <div class="final-profit" id="res-rate-final">
+                    等待計算...
+                </div>
             </div>
         </div>
     </div>
@@ -363,7 +412,7 @@
             
             <div class="form-group">
                 <label>👑 VIP 等級 (影響獲得點數)</label>
-                <select id="vip-tier-select" onchange="calculate()">
+                <select id="vip-tier-select" onchange="calculateGift()">
                     <option value="16">非VIP (1 TWD = 16點)</option>
                     <option value="16">銀牌 (1 TWD = 16點)</option>
                     <option value="24">金牌 (1 TWD = 24點)</option>
@@ -381,7 +430,7 @@
                 </select>
             </div>
 
-            <button class="primary" onclick="closeSettings()" style="margin-top: 20px;">完成</button>
+            <button class="primary" style="width: 100%; margin-top: 20px;" onclick="closeSettings()">完成</button>
         </div>
     </div>
 
@@ -389,8 +438,29 @@
         const themeToggleBtn = document.getElementById('theme-toggle');
         const body = document.body;
 
-        // --- 1. 初始化與儲存設定 ---
+        // --- 頁籤切換邏輯 ---
+        function switchTab(tabId) {
+            const viewGift = document.getElementById('view-gift');
+            const viewRate = document.getElementById('view-rate');
+            const tabGift = document.getElementById('tab-gift');
+            const tabRate = document.getElementById('tab-rate');
+
+            if (tabId === 'gift') {
+                viewGift.style.display = 'contents';
+                viewRate.style.display = 'none';
+                tabGift.className = 'primary';
+                tabRate.className = 'btn-text-icon';
+            } else {
+                viewGift.style.display = 'none';
+                viewRate.style.display = 'contents';
+                tabGift.className = 'btn-text-icon';
+                tabRate.className = 'primary';
+            }
+        }
+
+        // --- 初始化與儲存設定 ---
         function init() {
+            // 主題與字體
             const savedTheme = localStorage.getItem('ms_theme') || 'light';
             setTheme(savedTheme);
 
@@ -401,16 +471,28 @@
             const savedVipRate = localStorage.getItem('ms_val_vip') || '40';
             document.getElementById('vip-tier-select').value = savedVipRate;
 
+            // 送禮計算機預設值
             document.getElementById('input-gift-amount').value = localStorage.getItem('ms_val_amount') || 1500;
             document.getElementById('input-discount').value = localStorage.getItem('ms_val_discount') || 84;
             document.getElementById('input-mp-rate').value = localStorage.getItem('ms_val_mpRate') || 8;
             document.getElementById('input-meso-rate').value = localStorage.getItem('ms_val_mesoRate') || 2000;
 
-            document.querySelectorAll('input').forEach(input => {
-                input.addEventListener('input', calculate);
-            });
+            // 楓點比值預設值 (依照要求：以萬計算預設2000, 1億換楓點預設6)
+            document.getElementById('input-rate-meso').value = localStorage.getItem('ms_rate_meso') || 2000;
+            document.getElementById('input-rate-mp').value = localStorage.getItem('ms_rate_mp') || 6;
 
-            calculate();
+            // 綁定所有輸入框的即時計算事件
+            document.getElementById('input-gift-amount').addEventListener('input', calculateGift);
+            document.getElementById('input-discount').addEventListener('input', calculateGift);
+            document.getElementById('input-mp-rate').addEventListener('input', calculateGift);
+            document.getElementById('input-meso-rate').addEventListener('input', calculateGift);
+            
+            document.getElementById('input-rate-meso').addEventListener('input', calculateRate);
+            document.getElementById('input-rate-mp').addEventListener('input', calculateRate);
+
+            // 初始執行一次雙邊計算
+            calculateGift();
+            calculateRate();
         }
 
         // --- 主題切換 ---
@@ -444,11 +526,11 @@
         });
         function closeSettings() {
             document.getElementById('settings-modal').classList.remove('active');
-            calculate();
+            calculateGift();
         }
 
-        // --- 2. 核心即時計算邏輯 ---
-        function calculate() {
+        // --- 核心即時計算：送禮 ---
+        function calculateGift() {
             const giftAmount = parseFloat(document.getElementById('input-gift-amount').value) || 0;
             const discountRaw = parseFloat(document.getElementById('input-discount').value) || 0;
             const mpRate = parseFloat(document.getElementById('input-mp-rate').value) || 1; 
@@ -493,6 +575,36 @@
             } else {
                 finalEl.innerHTML = `📉 本次總虧損: <span class="loss">${profitOrLoss.toFixed(0)} TWD</span>`;
             }
+        }
+
+        // --- 核心即時計算：楓點比值 ---
+        function calculateRate() {
+            const mesoPerTwd = parseFloat(document.getElementById('input-rate-meso').value) || 0;
+            const mpPer100m = parseFloat(document.getElementById('input-rate-mp').value) || 0;
+
+            localStorage.setItem('ms_rate_meso', mesoPerTwd);
+            localStorage.setItem('ms_rate_mp', mpPer100m);
+
+            const finalEl = document.getElementById('res-rate-final');
+
+            if (mesoPerTwd === 0 || mpPer100m === 0) {
+                document.getElementById('res-rate-cost100m').innerText = '0 TWD';
+                document.getElementById('res-rate-cost1mp').innerText = '0 TWD';
+                finalEl.innerHTML = `等待輸入有效數值...`;
+                return;
+            }
+
+            // 1億 = 10000萬，算出 1億楓幣需要多少台幣
+            const costPer100m = 10000 / mesoPerTwd;
+            // 算出 1點楓點需要多少台幣
+            const costPerMp = costPer100m / mpPer100m;
+            // 換算成折數 (因為原價 1TWD = 1點，所以成本0.79等於7.9折)
+            const discount = costPerMp * 10;
+
+            document.getElementById('res-rate-cost100m').innerText = costPer100m.toFixed(2) + ' TWD';
+            document.getElementById('res-rate-cost1mp').innerText = costPerMp.toFixed(3) + ' TWD';
+
+            finalEl.innerHTML = `✨ 實質折數: <span class="profit">${discount.toFixed(2)} 折</span>`;
         }
 
         // 啟動初始化
