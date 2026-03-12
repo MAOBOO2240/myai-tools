@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>機率模擬器 - Win11 Edition</title>
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-color: #f3f3f3;
+            --text-color: #202020;
+            --panel-bg: rgba(255, 255, 255, 0.7);
+            --panel-border: rgba(255, 255, 255, 0.5);
+            --border-color: #d1d1d1;
+            --primary: #0067c0;
+            --primary-hover: #005a9e;
+            --danger: #c42b1c;
+            --success: #0f7b0f;
+            --radius-main: 12px;
+            --radius-btn: 8px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --font-scale: 16px;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #202020;
+            --text-color: #ffffff;
+            --panel-bg: rgba(40, 40, 40, 0.7);
+            --panel-border: rgba(80, 80, 80, 0.5);
+            --border-color: #444444;
+            --primary: #4cc2ff;
+            --primary-hover: #47b1e8;
+            --danger: #ff99a4;
+            --success: #6ccb5f;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        html { font-size: var(--font-scale); }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h2 { margin: 0; font-size: 1.8rem; }
+        
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 25px;
+            border-radius: var(--radius-main);
+            border: 1px solid var(--panel-border);
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        
+        input, select, textarea {
+            padding: 10px 12px;
+            margin: 5px 0;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-btn);
+            background-color: transparent;
+            color: var(--text-color);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.2s;
+            width: 100%;
+            max-width: 100%;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(0, 103, 192, 0.2);
+            background-color: var(--bg-color);
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: var(--radius-btn);
+            background-color: var(--primary);
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        button:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+        button.danger { background-color: var(--danger); }
+        button.danger:hover { filter: brightness(0.9); }
+        button.success { background-color: var(--success); }
+        button.success:hover { filter: brightness(0.9); }
+        button.secondary { background-color: transparent; color: var(--text-color); border: 1px solid var(--border-color); }
+        button.secondary:hover { background-color: var(--border-color); }
+        button.icon-only { padding: 10px; font-size: 1.2rem; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { text-align: left; padding: 10px; border-bottom: 2px solid var(--border-color); font-weight: 600; }
+        td { padding: 8px 10px; border-bottom: 1px solid var(--border-color); }
+        td input { width: 100%; margin: 0; padding: 6px; } 
+
+        .flex-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .flex-col { display: flex; flex-direction: column; gap: 10px; }
+        .form-group { flex: 1; display: flex; flex-direction: column; }
+        .form-group label { font-size: 0.9rem; margin-bottom: 4px; opacity: 0.8; white-space: nowrap; }
+        
+        textarea#smartInput { width: 100%; height: 80px; resize: vertical; margin-bottom: 10px; }
+
+        /* 2x2 網格設計的損益看板 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px 20px;
+            background: rgba(0,0,0,0.03);
+            padding: 20px;
+            border-radius: var(--radius-main);
+            margin-top: 20px;
+            font-size: 1.15rem;
+            font-weight: bold;
+        }
+        [data-theme="dark"] .stats-grid { background: rgba(255,255,255,0.05); }
+        .stats-grid > div { display: flex; align-items: center; gap: 5px; }
+        .profit { color: var(--success); } .loss { color: var(--danger); }
+
+        #settingsModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: var(--bg-color); width: 400px; padding: 30px; border-radius: var(--radius-main);
+            box-shadow: var(--shadow); border: 1px solid var(--panel-border);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>🎮 專業轉蛋模擬器</h2>
+        <div style="display: flex; gap: 10px;">
+            <button class="secondary icon-only" id="themeToggleBtn" onclick="toggleTheme()">🌙</button>
+            <button class="secondary icon-only" onclick="openSettings()">⚙️</button>
+        </div>
+    </div>
+
+    <div class="panel flex-col">
+        <div class="flex-row" style="margin-bottom: 10px;">
+            <button onclick="createNewTheme()">➕ 新增活動</button>
+            <button class="danger" onclick="deleteCurrentTheme()">🗑️ 刪除活動</button>
+        </div>
+        <div class="flex-row">
+            <div class="form-group" style="flex: none; width: 250px;">
+                <label>📁 當前抽獎活動</label>
+                <select id="themeSelect" onchange="switchTheme()"></select>
+            </div>
+            <div class="form-group" style="flex: none; width: 120px; margin-left: 10px;">
+                <label>💰 每一抽成本 (元)</label>
+                <input type="number" id="costPerDraw" value="0" min="0" step="10" onchange="updateThemeConfig()">
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="panel">
+            <h3>📝 獎池道具</h3>
+            
+            <details style="margin-bottom: 20px; background: rgba(0,0,0,0.03); padding: 10px; border-radius: var(--radius-btn);">
+                <summary style="cursor: pointer; font-weight: bold;">🪄 智慧文字解析</summary>
+                <div style="margin-top: 10px;">
+                    <p style="font-size: 0.85rem; opacity: 0.8; margin-top: 0;">直接貼上帶有數值%數的文字，例如：<br>回真卷軸 100% 1.20%</p>
+                    <textarea id="smartInput" placeholder="在此貼上文字..."></textarea>
+                    <button class="success" onclick="smartParse()">⚡ 解析並加入</button>
+                </div>
+            </details>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px 10px; margin-bottom: 15px; align-items: end;">
+                <div class="form-group" style="grid-column: 1 / 2;">
+                    <label>道具名稱</label>
+                    <input type="text" id="itemName" placeholder="名稱">
+                </div>
+                
+                <div style="grid-column: 2 / 3; display: flex; gap: 10px;">
+                    <div class="form-group" style="flex: 1;"><label>機率(%)</label><input type="number" id="itemProb" placeholder="0.0" step="0.1"></div>
+                    <div class="form-group" style="flex: 1;"><label>價值</label><input type="number" id="itemValue" placeholder="0" step="100"></div>
+                </div>
+
+                <button onclick="addItem()" style="grid-column: 1 / 2; margin: 0; width: 100%;">➕ 新增</button>
+                <button class="danger" onclick="clearPrizePool()" style="grid-column: 2 / 3; margin: 0; width: 100%;">🗑️ 重製</button>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th width="45%">道具名稱</th>
+                        <th width="20%">機率(%)</th>
+                        <th width="20%">價值</th>
+                        <th width="15%">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="itemPoolList"></tbody>
+            </table>
+        </div>
+
+        <div class="panel">
+            <h3>🎯 抽獎模擬</h3>
+            <div class="flex-row">
+                <button class="success" style="flex: 1;" onclick="drawGacha(10)">🎲 10 抽</button>
+                <button class="success" style="flex: 1;" onclick="drawGacha(100)">🎲 100 抽</button>
+                <button class="success" style="flex: 1;" onclick="drawGacha(1000)">🎲 1000 抽</button>
+                <button class="danger" style="flex: 0.5; font-size: 0.85rem; padding: 10px 4px;" onclick="resetStats()">🔄 重置</button>
+            </div>
+            
+            <div class="stats-grid">
+                <div>💸 花費: <span id="statCost">0</span></div>
+                <div>💎 價值: <span id="statValue">0</span></div>
+                <div>⚖️ 損益: <span id="statProfit">0</span></div>
+                <div>🎯 總抽數: <span id="statDraws">0</span></div>
+            </div>
+
+            <h4>📦 獲得道具清單</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th width="45%">名稱</th>
+                        <th width="15%">數量</th>
+                        <th width="20%">總價值</th>
+                        <th width="20%">機率(%)</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryList"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="settingsModal">
+    <div class="modal-content flex-col">
+        <h3>系統設定</h3>
+        <div class="form-group">
+            <label>🔍 UI 介面大小</label>
+            <select id="uiScale" onchange="changeUiScale()">
+                <option value="14px">小 (Small)</option>
+                <option value="16px" selected>中 (Medium - 預設)</option>
+                <option value="19px">大 (Large)</option>
+            </select>
+        </div>
+        <hr style="width: 100%; border: 0; border-top: 1px solid var(--border-color); margin: 10px 0;">
+        <div class="form-group">
+            <label>💾 資料備份</label>
+            <button class="success" onclick="exportData()" style="justify-content: center;">📤 匯出資料 (JSON)</button>
+            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+            <button class="primary" onclick="document.getElementById('importFile').click()" style="justify-content: center; margin-top: 5px;">📥 匯入資料 (JSON)</button>
+        </div>
+        <button class="danger" onclick="closeSettings()" style="margin-top: 15px; justify-content: center;">❌ 關閉</button>
+    </div>
+</div>
+
+<script>
+    let appData = { themes: {}, currentThemeId: null };
+
+    function init() {
+        let btn = document.getElementById('themeToggleBtn');
+        if(localStorage.getItem('gachaTheme') === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+            btn.innerText = '☀️';
+        } else {
+            btn.innerText = '🌙';
+        }
+
+        let scale = localStorage.getItem('gachaScale') || '16px';
+        document.documentElement.style.setProperty('--font-scale', scale);
+        document.getElementById('uiScale').value = scale;
+
+        let savedData = localStorage.getItem('gachaAppData');
+        if (savedData) appData = JSON.parse(savedData);
+        else {
+            let id = Date.now().toString();
+            appData.themes[id] = { id: id, name: "預設轉蛋池", cost: 100, items: [], inventory: {}, totalDraws: 0 };
+            appData.currentThemeId = id;
+        }
+        if(!appData.themes[appData.currentThemeId]) appData.currentThemeId = Object.keys(appData.themes)[0];
+
+        renderThemeSelect();
+        renderThemeData();
+    }
+
+    function toggleTheme() {
+        let body = document.body;
+        let btn = document.getElementById('themeToggleBtn');
+        if (body.getAttribute('data-theme') === 'dark') { 
+            body.removeAttribute('data-theme'); 
+            localStorage.setItem('gachaTheme', 'light');
+            btn.innerText = '🌙';
+        } else { 
+            body.setAttribute('data-theme', 'dark'); 
+            localStorage.setItem('gachaTheme', 'dark');
+            btn.innerText = '☀️';
+        }
+    }
+
+    function openSettings() { document.getElementById('settingsModal').style.display = 'flex'; }
+    function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
+    function changeUiScale() {
+        let scale = document.getElementById('uiScale').value;
+        document.documentElement.style.setProperty('--font-scale', scale);
+        localStorage.setItem('gachaScale', scale);
+    }
+
+    function smartParse() {
+        let text = document.getElementById('smartInput').value;
+        if (!text.trim()) { alert("請先貼上文字！"); return; }
+        
+        let lines = text.split('\n');
+        let addedCount = 0;
+        let theme = appData.themes[appData.currentThemeId];
+
+        lines.forEach(line => {
+            if (!line.trim()) return;
+            let match = line.trim().match(/^(.*)[\s\t:：]+([0-9.]+)\s*%?$/);
+            if (match) {
+                let name = match[1].trim();
+                let prob = parseFloat(match[2]);
+                if (name && !isNaN(prob)) {
+                    theme.items.push({ id: 'item_' + Date.now() + Math.random(), name: name, prob: prob, value: 0 });
+                    addedCount++;
+                }
+            }
+        });
+
+        document.getElementById('smartInput').value = ''; 
+        renderThemeData();
+        saveData();
+        alert(`✨ 成功解析並加入了 ${addedCount} 個道具！`);
+    }
+
+    function renderThemeSelect() {
+        let select = document.getElementById('themeSelect');
+        select.innerHTML = '';
+        for (let key in appData.themes) {
+            let option = document.createElement('option');
+            option.value = key; option.innerText = appData.themes[key].name;
+            if (key === appData.currentThemeId) option.selected = true;
+            select.appendChild(option);
+        }
+    }
+
+    function renderThemeData() {
+        let theme = appData.themes[appData.currentThemeId];
+        document.getElementById('costPerDraw').value = theme.cost;
+        
+        let poolHtml = '';
+        theme.items.forEach((item, index) => {
+            poolHtml += `<tr>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <button class="primary" title="抽到有為止" onclick="drawUntilGot('${item.id}')" style="padding: 0; width: 32px; height: 32px; flex-shrink: 0; font-size: 0.9rem; border-radius: 6px;">抽</button>
+                        <input type="text" value="${item.name}" onchange="updateItem(${index}, 'name', this.value)">
+                    </div>
+                </td>
+                <td><input type="number" step="0.1" value="${item.prob}" onchange="updateItem(${index}, 'prob', this.value)"></td>
+                <td><input type="number" step="100" value="${item.value}" onchange="updateItem(${index}, 'value', this.value)"></td>
+                <td><button class="danger" onclick="deleteItem(${index})" style="padding: 6px; font-size: 0.8rem;">❌</button></td>
+            </tr>`;
+        });
+        document.getElementById('itemPoolList').innerHTML = poolHtml;
+        renderInventory();
+    }
+
+    function updateItem(index, field, newValue) {
+        let theme = appData.themes[appData.currentThemeId];
+        if (field === 'prob' || field === 'value') newValue = parseFloat(newValue) || 0;
+        theme.items[index][field] = newValue;
+        saveData(); renderInventory(); 
+    }
+
+    function renderInventory() {
+        let theme = appData.themes[appData.currentThemeId];
+        let invHtml = '';
+        let totalCost = theme.totalDraws * theme.cost;
+        let totalValue = 0;
+
+        theme.items.forEach(item => {
+            let count = theme.inventory[item.id] || 0;
+            
+            if (count > 0) {
+                let itemTotalValue = count * item.value;
+                totalValue += itemTotalValue;
+                
+                let actualProbNum = theme.totalDraws > 0 ? (count / theme.totalDraws) * 100 : 0;
+                let actualProbStr = actualProbNum.toFixed(1); 
+                
+                let probColor = "inherit";
+                if (theme.totalDraws > 0) {
+                    if (actualProbNum > item.prob) {
+                        probColor = "var(--primary)"; 
+                    } else if (actualProbNum < item.prob) {
+                        probColor = "var(--danger)"; 
+                    }
+                }
+
+                invHtml += `<tr>
+                    <td>${item.name}</td>
+                    <td>${count}</td>
+                    <td>${itemTotalValue}</td>
+                    <td style="font-weight: bold; color: ${probColor};">${actualProbStr}%</td>
+                </tr>`;
+            }
+        });
+
+        let missCount = theme.inventory['miss_item'] || 0;
+        if (missCount > 0) {
+            let missProbNum = theme.totalDraws > 0 ? (missCount / theme.totalDraws) * 100 : 0;
+            invHtml += `<tr style="opacity: 0.6;">
+                <td>未中獎 (銘謝惠顧)</td>
+                <td>${missCount}</td>
+                <td>0</td>
+                <td style="font-weight: bold;">${missProbNum.toFixed(1)}%</td>
+            </tr>`;
+        }
+
+        document.getElementById('inventoryList').innerHTML = invHtml;
+        document.getElementById('statCost').innerText = totalCost;
+        document.getElementById('statValue').innerText = totalValue;
+        document.getElementById('statDraws').innerText = theme.totalDraws; 
+        
+        let profit = totalValue - totalCost;
+        let profitEl = document.getElementById('statProfit');
+        profitEl.innerText = profit;
+        profitEl.className = profit >= 0 ? 'profit' : 'loss';
+    }
+
+    function switchTheme() { appData.currentThemeId = document.getElementById('themeSelect').value; renderThemeData(); saveData(); }
+    
+    function createNewTheme() {
+        let name = prompt("請輸入新活動名稱：", "新轉蛋活動");
+        if (name) {
+            let id = Date.now().toString();
+            appData.themes[id] = { id: id, name: name, cost: 0, items: [], inventory: {}, totalDraws: 0 };
+            appData.currentThemeId = id; renderThemeSelect(); renderThemeData(); saveData();
+        }
+    }
+    
+    function deleteCurrentTheme() {
+        if (Object.keys(appData.themes).length <= 1) { alert("至少需要保留一個活動！"); return; }
+        if (confirm("確定要刪除當前活動嗎？數據將會遺失。")) {
+            delete appData.themes[appData.currentThemeId]; appData.currentThemeId = Object.keys(appData.themes)[0];
+            renderThemeSelect(); renderThemeData(); saveData();
+        }
+    }
+    
+    function updateThemeConfig() { appData.themes[appData.currentThemeId].cost = parseFloat(document.getElementById('costPerDraw').value) || 0; saveData(); renderInventory(); }
+    
+    function addItem() {
+        let name = document.getElementById('itemName').value; let prob = parseFloat(document.getElementById('itemProb').value); let value = parseFloat(document.getElementById('itemValue').value) || 0;
+        if (!name || isNaN(prob)) { alert("道具名稱與機率為必填！"); return; }
+        appData.themes[appData.currentThemeId].items.push({ id: 'item_' + Date.now(), name: name, prob: prob, value: value });
+        document.getElementById('itemName').value = ''; document.getElementById('itemProb').value = ''; document.getElementById('itemValue').value = '';
+        renderThemeData(); saveData();
+    }
+    
+    function clearPrizePool() {
+        if(confirm("確定要清空當前獎池的所有道具嗎？(抽獎紀錄與庫存也會一併重置)")) {
+            appData.themes[appData.currentThemeId].items = [];
+            appData.themes[appData.currentThemeId].inventory = {};
+            appData.themes[appData.currentThemeId].totalDraws = 0;
+            renderThemeData(); 
+            saveData();
+        }
+    }
+
+    function deleteItem(index) {
+        let theme = appData.themes[appData.currentThemeId];
+        let itemId = theme.items[index].id;
+        theme.items.splice(index, 1); delete theme.inventory[itemId]; renderThemeData(); saveData();
+    }
+
+    function drawGacha(times) {
+        let theme = appData.themes[appData.currentThemeId];
+        if (theme.items.length === 0) { alert("獎池為空！"); return; }
+        theme.totalDraws += times;
+        
+        for (let i = 0; i < times; i++) {
+            let rand = Math.random() * 100, cumulative = 0, gotItem = false;
+            for (let item of theme.items) {
+                cumulative += item.prob;
+                if (rand <= cumulative) {
+                    if (!theme.inventory[item.id]) theme.inventory[item.id] = 0;
+                    theme.inventory[item.id]++;
+                    gotItem = true; break;
+                }
+            }
+            if (!gotItem) { 
+                theme.inventory['miss_item'] = (theme.inventory['miss_item'] || 0) + 1; 
+            }
+        }
+        renderInventory(); saveData();
+    }
+
+    function drawUntilGot(targetId) {
+        let theme = appData.themes[appData.currentThemeId];
+        let targetItem = theme.items.find(i => i.id === targetId);
+        
+        if (!targetItem) return;
+        if (targetItem.prob <= 0) {
+            alert("這個道具機率是 0%，永遠抽不到啦！");
+            return;
+        }
+
+        let draws = 0;
+        let gotIt = false;
+        let maxDraws = 100000; 
+
+        while (!gotIt && draws < maxDraws) {
+            draws++;
+            let rand = Math.random() * 100;
+            let cumulative = 0;
+            let gotAny = false;
+
+            for (let item of theme.items) {
+                cumulative += item.prob;
+                if (rand <= cumulative) {
+                    if (!theme.inventory[item.id]) theme.inventory[item.id] = 0;
+                    theme.inventory[item.id]++;
+                    
+                    gotAny = true;
+                    if (item.id === targetId) gotIt = true;
+                    break;
+                }
+            }
+            if (!gotAny) {
+                theme.inventory['miss_item'] = (theme.inventory['miss_item'] || 0) + 1;
+            }
+        }
+
+        theme.totalDraws += draws;
+        
+        if (draws >= maxDraws) {
+            alert(`已經連續抽了 ${maxDraws} 次都沒抽到，為了避免網頁當機已強制停止！這機率太可怕了...`);
+        }
+        
+        renderInventory();
+        saveData();
+    }
+    
+    function resetStats() {
+        if(confirm("確定要清空抽獎紀錄？(獎池會保留)")) {
+            appData.themes[appData.currentThemeId].inventory = {}; 
+            appData.themes[appData.currentThemeId].totalDraws = 0;
+            renderInventory(); saveData();
+        }
+    }
+
+    function saveData() { localStorage.setItem('gachaAppData', JSON.stringify(appData)); }
+    
+    function exportData() {
+        let dataStr = JSON.stringify(appData, null, 2); let blob = new Blob([dataStr], { type: "application/json" });
+        let url = URL.createObjectURL(blob); let a = document.createElement('a');
+        a.href = url; a.download = `gacha_data_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url);
+    }
+    
+    function importData(event) {
+        let file = event.target.files[0]; if (!file) return;
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            try { 
+                let imported = JSON.parse(e.target.result); 
+                if (imported.themes) { 
+                    appData = imported; 
+                    saveData();
+                    init(); 
+                    closeSettings(); 
+                    alert("匯入成功！"); 
+                } else {
+                    alert("格式錯誤！"); 
+                }
+            }
+            catch (err) { alert("讀取失敗：" + err); }
+        }; reader.readAsText(file); event.target.value = '';
+    }
+
+    window.onload = init;
+</script>
+
+</body>
+</html>
