@@ -247,7 +247,10 @@
             <button onclick="previewReplaceText()">👀 預覽文字替換</button>
 
             <h3>🔄 批量改副檔名</h3>
-            <select id="ext-select"></select>
+            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <select id="ext-select" style="flex: 1;" onchange="toggleGifSettings()"></select>
+                <input type="number" id="gif-loop-count" placeholder="重複次數(0=無限)" min="0" style="display: none; width: 140px; margin: 0;">
+            </div>
             <button onclick="previewExtensionChange()">👀 預覽修改副檔名</button>
 
             <h3>🎞️ 圖片處理</h3>
@@ -354,7 +357,9 @@
             checkboxes.forEach(cb => { if (cb.checked) selectedExts.push(cb.value); });
             localStorage.setItem('app_active_exts', JSON.stringify(selectedExts));
 
-            applySavedSettings(); renderMainExtSelect(); closeSettings();
+            applySavedSettings(); 
+            renderMainExtSelect(); 
+            closeSettings();
         }
 
         function applySavedSettings() {
@@ -363,6 +368,20 @@
             const grid = document.getElementById('file-grid');
             if (grid) grid.className = `file-grid size-${iconSize}`;
             document.documentElement.style.setProperty('--ui-font-size', fontSize);
+        }
+
+        // --- 新增：切換 GIF 專屬設定的顯示狀態 ---
+        function toggleGifSettings() {
+            const select = document.getElementById('ext-select');
+            const loopInput = document.getElementById('gif-loop-count');
+            if (select && select.value === '.gif') {
+                loopInput.style.display = 'block';
+            } else {
+                if (loopInput) {
+                    loopInput.style.display = 'none';
+                    loopInput.value = ''; // 切換其他副檔名時清空數值
+                }
+            }
         }
 
         function renderMainExtSelect() {
@@ -374,6 +393,7 @@
                     select.innerHTML += `<option value="${item.ext}">${item.ext} (${item.desc})</option>`;
                 }
             });
+            toggleGifSettings(); // 渲染完後檢查一次是否為 GIF
         }
 
         function cleanupObjectUrls() {
@@ -493,6 +513,10 @@
                     statusClass = 'status-rename';
                     statusText = file.action === 'rename' ? '📝 將被改名' : '';
                     if (file.removeAnim) statusText += (statusText ? ' + ' : '') + '🛑 轉為靜態';
+                    // --- 新增：若為 GIF 且有設定迴圈，顯示在預覽狀態中 ---
+                    if (file.newName.toLowerCase().endsWith('.gif') && file.gifLoop !== undefined) {
+                        statusText += ` (重複: ${file.gifLoop === '0' ? '無限' : file.gifLoop})`;
+                    }
                 }
 
                 const deleteBtnHtml = file.action === 'delete' 
@@ -560,7 +584,6 @@
             renderGrid();
         }
 
-        // --- 新增：文字替換功能 ---
         function previewReplaceText() {
             const targetText = document.getElementById('replace-target').value;
             const replaceText = document.getElementById('replace-with').value;
@@ -594,12 +617,22 @@
         function previewExtensionChange() {
             const newExt = document.getElementById('ext-select').value;
             if (!newExt) return alert("請選擇副檔名！");
+            
+            // 抓取 GIF 的重複次數設定
+            const gifLoopValue = document.getElementById('gif-loop-count').value;
 
             filesData.forEach(file => {
                 if (file.action !== 'delete') {
                     const baseName = file.newName.substring(0, file.newName.lastIndexOf('.')) || file.newName;
                     file.newName = baseName + newExt;
                     file.action = file.newName !== file.oldName ? 'rename' : 'none';
+                    
+                    // --- 新增：將設定的迴圈次數記錄到物件中，以便預覽顯示 ---
+                    if (newExt === '.gif' && file.action === 'rename' && gifLoopValue !== '') {
+                        file.gifLoop = gifLoopValue;
+                    } else {
+                        delete file.gifLoop;
+                    }
                 }
             });
             renderGrid();
