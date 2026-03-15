@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Win11 風格 - 批量檔案管理工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/gif.js/dist/gif.js"></script>
+    
     <style>
         /* CSS 變數：用於控制黑白模式及全域字體大小 */
         :root {
@@ -41,11 +43,11 @@
             flex-direction: column;
             overflow: hidden;
             font-size: var(--ui-font-size);
+            user-select: none; 
         }
 
         body.theme-transition { transition: background 0.3s, color 0.3s; }
 
-        /* 頂部工具列：改為置中 (center) */
         .top-bar {
             padding: 15px 25px; display: flex; justify-content: center;
             align-items: center; background: var(--glass-bg);
@@ -63,7 +65,7 @@
         }
 
         .left-panel { width: 300px; flex-shrink: 0; gap: 12px; }
-        .right-panel { flex: 1; display: flex; flex-direction: column; }
+        .right-panel { flex: 1; display: flex; flex-direction: column; position: relative; }
 
         h3 { margin-top: 5px; margin-bottom: 10px; font-size: 1.15em; border-bottom: 1px solid var(--glass-border); padding-bottom: 5px; }
         h4 { margin: 10px 0 5px 0; font-size: 1.05em; }
@@ -76,27 +78,33 @@
         button { background: var(--btn-bg); cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 5px; }
         button:hover { background: var(--btn-hover); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
-        input[type="text"], input[type="number"], select { background: var(--input-bg); width: 100%; box-sizing: border-box; margin-bottom: 8px; }
+        input[type="text"], input[type="number"], select { background: var(--input-bg); width: 100%; box-sizing: border-box; margin-bottom: 8px; user-select: text; }
 
-        /* 專屬的主按鈕藍色樣式 */
         .btn-primary { background: #0078d4; color: white; border: none; }
         .btn-primary:hover { background: #005a9e; }
+        .btn-active { background: #0078d4; color: white; border: 1px solid #005a9e; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); }
 
         .view-controls { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
 
         .file-grid {
             display: flex; flex-wrap: wrap; gap: 15px; overflow-y: auto;
-            align-content: flex-start; flex: 1; padding-right: 5px; padding-top: 10px;
+            align-content: flex-start; flex: 1; padding-right: 5px; padding-top: 10px; position: relative;
         }
 
         .file-card {
             position: relative; display: flex; flex-direction: column; align-items: center;
             padding: 10px; background: var(--glass-bg); border: 2px solid transparent;
-            border-radius: 8px; transition: border 0.2s, transform 0.1s; text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05); box-sizing: border-box;
+            border-radius: 8px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); box-sizing: border-box; cursor: pointer;
         }
 
-        .file-card:hover { border-color: var(--hover-border); }
+        .file-card:hover { border-color: var(--hover-border); transform: translateY(-2px); }
+
+        .file-card.selected {
+            border-color: #0078d4;
+            background-color: rgba(0, 120, 212, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 120, 212, 0.2);
+        }
 
         .delete-x {
             position: absolute; top: -8px; right: -8px; background: #ff4c4c; color: white;
@@ -111,21 +119,25 @@
         .preview-img-container {
             display: flex; align-items: center; justify-content: center; background: var(--input-bg);
             border-radius: 8px; margin-bottom: 8px; overflow: hidden;
+            background-image: linear-gradient(45deg, rgba(0,0,0,0.05) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.05) 75%, rgba(0,0,0,0.05)), 
+                              linear-gradient(45deg, rgba(0,0,0,0.05) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.05) 75%, rgba(0,0,0,0.05));
+            background-size: 10px 10px;
+            background-position: 0 0, 5px 5px; pointer-events: none;
         }
         
-        .preview-img { width: 100%; height: 100%; object-fit: cover; }
+        .preview-img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 
         .file-old-name { 
             font-size: 0.9em; margin-bottom: 5px; opacity: 0.8; word-break: break-all; 
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; 
-            overflow: hidden; min-height: 2.5em; 
+            overflow: hidden; min-height: 2.5em; pointer-events: none;
         }
         .file-name-input { 
             font-size: 0.9em; text-align: center; padding: 4px; margin-bottom: 5px; 
             border: 1px solid transparent; background: transparent; 
         }
         .file-name-input:focus { border: 1px solid var(--input-btn-border); background: var(--input-bg); }
-        .file-status { font-size: 0.8em; font-weight: bold; }
+        .file-status { font-size: 0.8em; font-weight: bold; pointer-events: none; }
 
         .size-small .file-card { width: 110px; }
         .size-small .preview-img-container { width: 64px; height: 64px; font-size: 24px; }
@@ -142,8 +154,8 @@
         .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px); z-index: 999; display: none;
-            justify-content: center; align-items: center;
+            -webkit-backdrop-filter: blur(5px); z-index: 99999; display: none;
+            justify-content: center; align-items: center; pointer-events: auto;
         }
 
         .dialog-box { width: 350px; text-align: center; }
@@ -163,10 +175,15 @@
         }
         .progress-fill { width: 100%; height: 100%; background: #0078d4; transition: width 0.3s ease-out; }
 
-        /* 頂部按鈕微調 */
         .icon-btn-circle {
             padding: 8px; border-radius: 50%; width: 42px; height: 42px; 
             font-size: 1.2em; display: flex; justify-content: center; align-items: center;
+        }
+
+        #selection-box {
+            position: fixed; background: rgba(0, 120, 212, 0.3);
+            border: 1px solid rgba(0, 120, 212, 0.8); pointer-events: none;
+            z-index: 9999; display: none;
         }
     </style>
 </head>
@@ -176,13 +193,29 @@
         if (localStorage.getItem('app_theme') === 'dark') {
             document.body.classList.add('dark-mode');
         }
+        
+        // 全域攔截器開關
+        let isProcessing = false;
+
+        // 強制攔截所有鍵盤與滑鼠事件 (防 Enter / 防連點 Bug)
+        const blockEvent = (e) => {
+            if (isProcessing) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        };
+        document.addEventListener('keydown', blockEvent, { capture: true });
+        document.addEventListener('mousedown', blockEvent, { capture: true });
     </script>
+
+    <div id="selection-box"></div>
 
     <div id="progress-overlay" class="overlay">
         <div class="dialog-box win11-panel">
-            <h3 style="margin: 0; border: none;">⏳ 正在套用修改，請稍候...</h3>
+            <h3 style="margin: 0; border: none;" id="progress-main-title">⏳ 正在處理中，請稍候...</h3>
             <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
-            <div id="progress-text" style="font-size: 0.9em; margin-top: 10px; opacity: 0.8;">剩餘項目計算中...</div>
+            <div id="progress-text" style="font-size: 0.9em; margin-top: 10px; opacity: 0.8;">進度計算中...</div>
         </div>
     </div>
 
@@ -233,28 +266,36 @@
             <button onclick="refreshFolder()" style="padding: 8px; margin-bottom: 10px;">🔄 刷新檔案列表</button>
 
             <h3>🗑️ 批量刪除</h3>
-            <input type="text" id="keyword-del" placeholder="輸入包含的檔名關鍵字...">
-            <button onclick="previewDelete()">👀 預覽刪除</button>
+            <input type="text" id="keyword-del" placeholder="輸入包含的檔名關鍵字..." oninput="applyRules()">
 
             <h3>📝 批量改名 (序列)</h3>
-            <input type="text" id="rename-prefix" placeholder="前綴名稱 (選填)">
-            <input type="text" id="rename-start" placeholder="起始數字 (例如:001)">
-            <button onclick="previewRenameSequential()">👀 預覽序列改名</button>
+            <input type="text" id="rename-prefix" placeholder="前綴名稱 (選填)" oninput="applyRules()">
+            <input type="text" id="rename-start" placeholder="起始數字 (例如:001)" oninput="applyRules()">
 
             <h3>🔤 文字替換</h3>
-            <input type="text" id="replace-target" placeholder="輸入想替換的內容...">
-            <input type="text" id="replace-with" placeholder="替換成...? (留空代表刪除該文字)">
-            <button onclick="previewReplaceText()">👀 預覽文字替換</button>
+            <input type="text" id="replace-target" placeholder="輸入想替換的內容..." oninput="applyRules()">
+            <input type="text" id="replace-with" placeholder="替換成...? (留空為刪除)" oninput="applyRules()">
 
             <h3>🔄 批量改副檔名</h3>
             <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                <select id="ext-select" style="flex: 1;" onchange="toggleGifSettings()"></select>
-                <input type="number" id="gif-loop-count" placeholder="重複次數(0=無限)" min="0" style="display: none; width: 140px; margin: 0;">
+                <select id="ext-select" style="flex: 1;" onchange="toggleGifSettings(); applyRules();"></select>
             </div>
-            <button onclick="previewExtensionChange()">👀 預覽修改副檔名</button>
 
-            <h3>🎞️ 圖片處理</h3>
-            <button onclick="previewRemoveAnimation()" title="將動態圖(如 WebP, APNG, GIF)擷取第一幀轉為靜態">🛑 移除圖片動畫</button>
+            <div id="gif-settings-panel" style="display: none; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px dashed var(--glass-border);">
+                <div style="display: flex; gap: 8px;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.8em; font-weight: bold; margin-bottom: 4px; display: block;">⏳ 延遲 (毫秒)</label>
+                        <input type="number" id="gif-delay" placeholder="預設: 原檔速度" min="1" style="margin: 0;" oninput="applyRules()">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.8em; font-weight: bold; margin-bottom: 4px; display: block;">🔁 重複 (0=無限)</label>
+                        <input type="number" id="gif-loop" placeholder="0=無限" min="0" value="0" style="margin: 0;" oninput="applyRules()">
+                    </div>
+                </div>
+            </div>
+
+            <h3>🎞️ 靜態圖片處理</h3>
+            <button id="toggle-anim-btn" onclick="toggleRemoveAnimation()" title="將動態圖(如 WebP, APNG)擷取第一幀轉為靜態" style="width: 100%;">🛑 移除圖片動畫 (關閉)</button>
 
             <div style="margin-top: auto; margin-bottom: 20px;"></div>
             
@@ -264,13 +305,15 @@
             </div>
         </div>
 
-        <div class="right-panel win11-panel">
+        <div class="right-panel win11-panel" id="right-panel">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; margin-bottom: 15px;">
-                <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
                     <h3 id="preview-header" style="margin: 0; border: none; padding: 0;">📂 檔案預覽區域</h3>
                     <button id="reset-btn" onclick="resetWorkspace()" style="padding: 5px 10px; font-size: 0.85em; display: none; background: #ff4c4c; color: white; border: none;" title="清空畫面，不影響實體檔案">🧹 重設</button>
+                    <button id="undo-btn" onclick="undoChanges()" style="padding: 5px 10px; font-size: 0.85em; display: none; background: #2eb82e; color: white; border: none;" title="復原剛剛執行的所有操作">↩️ 返回</button>
+                    <button id="delete-selected-btn" onclick="deleteSelected()" style="padding: 5px 10px; font-size: 0.85em; display: none; background: #ff4c4c; color: white; border: none;" title="將選取的檔案標記為刪除">🗑️ 刪除選取</button>
+                    <span id="selection-status" style="font-size: 0.85em; color: #0078d4; font-weight: bold; display: none; margin-left: 5px;">✅ 局部選取</span>
                 </div>
-                
                 <div class="view-controls" style="margin: 0;">
                     <span style="font-size: 0.9em;">🖼️ 顯示大小：</span>
                     <button onclick="changeViewSize('small')">小</button>
@@ -288,8 +331,33 @@
     <script>
         let directoryHandle = null;
         let filesData = [];
+        let undoStack = []; 
+        let isRemoveAnimActive = false; 
+        
+        let gifWorkerUrl = null;
+        let parseAPNG = null;
+        let parseGIF = null;
+        let decompressFrames = null;
 
-        // --- 全域預設設定與副檔名庫 ---
+        async function initWorkersAndModules() {
+            try {
+                const res = await fetch('https://cdn.jsdelivr.net/npm/gif.js/dist/gif.worker.js');
+                const blob = await res.blob();
+                gifWorkerUrl = URL.createObjectURL(blob);
+            } catch(e) { gifWorkerUrl = 'https://cdn.jsdelivr.net/npm/gif.js/dist/gif.worker.js'; }
+
+            try {
+                const moduleApng = await import('https://cdn.skypack.dev/apng-js');
+                parseAPNG = moduleApng.default;
+            } catch(e) { console.error("APNG parser 載入失敗", e); }
+            
+            try {
+                const moduleGif = await import('https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/+esm');
+                parseGIF = moduleGif.parseGIF || (moduleGif.default && moduleGif.default.parseGIF);
+                decompressFrames = moduleGif.decompressFrames || (moduleGif.default && moduleGif.default.decompressFrames);
+            } catch(e) { console.error("GIF parser 載入失敗", e); }
+        }
+
         const ALL_EXTENSIONS = [
             { ext: '.txt', desc: '純文字' }, { ext: '.jpg', desc: '圖片' },
             { ext: '.png', desc: '圖片' }, { ext: '.mp4', desc: '影片' },
@@ -303,14 +371,147 @@
         window.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('app_theme');
             const btn = document.getElementById('theme-btn');
-            // 只改變 Emoji
-            if (savedTheme === 'dark') { btn.innerHTML = "☀️"; } 
-            else { btn.innerHTML = "🌙"; }
+            if (savedTheme === 'dark') { btn.innerHTML = "☀️"; } else { btn.innerHTML = "🌙"; }
             setTimeout(() => { document.body.classList.add('theme-transition'); }, 100);
 
             applySavedSettings();
             renderMainExtSelect();
+            initWorkersAndModules(); 
+            initDragSelect(); 
         });
+
+        function initDragSelect() {
+            const selectionBox = document.getElementById('selection-box');
+            let isDragging = false;
+            let hasDragged = false;
+            let startX = 0, startY = 0;
+            let initialSelection = [];
+
+            document.addEventListener('mousedown', (e) => {
+                if (isProcessing) return; // 鎖定狀態不可選取
+                if (!e.target.closest('#right-panel')) return;
+                if (e.target.closest('button, input, select, .delete-x')) return;
+                if (e.button !== 0) return; 
+
+                isDragging = true;
+                hasDragged = false;
+                startX = e.clientX;
+                startY = e.clientY;
+                
+                selectionBox.style.display = 'none';
+
+                const keepPrevious = e.shiftKey || e.ctrlKey;
+                initialSelection = filesData.map(f => keepPrevious ? f.selected : false);
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging || isProcessing) return;
+
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                if (!hasDragged && Math.sqrt(dx*dx + dy*dy) > 3) {
+                    hasDragged = true;
+                    selectionBox.style.display = 'block';
+
+                    const keepPrevious = e.shiftKey || e.ctrlKey;
+                    if (!keepPrevious) {
+                        filesData.forEach(f => f.selected = false);
+                        document.querySelectorAll('.file-card').forEach(card => card.classList.remove('selected'));
+                    }
+                }
+
+                if (hasDragged) {
+                    const currentX = e.clientX;
+                    const currentY = e.clientY;
+
+                    const left = Math.min(startX, currentX);
+                    const top = Math.min(startY, currentY);
+                    const width = Math.abs(currentX - startX);
+                    const height = Math.abs(currentY - startY);
+
+                    selectionBox.style.left = left + 'px';
+                    selectionBox.style.top = top + 'px';
+                    selectionBox.style.width = width + 'px';
+                    selectionBox.style.height = height + 'px';
+
+                    const boxRect = selectionBox.getBoundingClientRect();
+                    const cards = document.querySelectorAll('.file-card');
+
+                    cards.forEach((card, index) => {
+                        const cardRect = card.getBoundingClientRect();
+                        const isIntersecting = !(
+                            cardRect.right < boxRect.left || 
+                            cardRect.left > boxRect.right || 
+                            cardRect.bottom < boxRect.top || 
+                            cardRect.top > boxRect.bottom
+                        );
+
+                        filesData[index].selected = initialSelection[index] || isIntersecting;
+                        if (filesData[index].selected) {
+                            card.classList.add('selected');
+                        } else {
+                            card.classList.remove('selected');
+                        }
+                    });
+
+                    updateSelectionUI();
+                }
+            });
+
+            document.addEventListener('mouseup', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                selectionBox.style.display = 'none';
+
+                if (hasDragged) {
+                    applyRules(); 
+                } else {
+                    const card = e.target.closest('.file-card');
+                    if (card) {
+                        const index = Array.from(document.querySelectorAll('.file-card')).indexOf(card);
+                        if (index > -1) {
+                            const keepPrevious = e.shiftKey || e.ctrlKey;
+                            if (!keepPrevious) {
+                                filesData.forEach((f, i) => f.selected = (i === index ? !f.selected : false));
+                            } else {
+                                filesData[index].selected = !filesData[index].selected;
+                            }
+                            updateSelectionUI();
+                            renderGrid();
+                            applyRules();
+                        }
+                    } else if (e.target.closest('#file-grid')) {
+                        filesData.forEach(f => f.selected = false);
+                        updateSelectionUI();
+                        renderGrid();
+                        applyRules();
+                    }
+                }
+                hasDragged = false;
+            });
+        }
+
+        function updateSelectionUI() {
+            const selectedFiles = filesData.filter(f => f.selected);
+            const hasSelection = selectedFiles.length > 0;
+            document.getElementById('selection-status').style.display = hasSelection ? 'inline-block' : 'none';
+            
+            const delBtn = document.getElementById('delete-selected-btn');
+            if (hasSelection) {
+                delBtn.style.display = 'inline-block';
+                const allDeleted = selectedFiles.every(f => f.isManuallyDeleted);
+                if (allDeleted) {
+                    delBtn.innerText = "↩️ 取消刪除選取";
+                    delBtn.style.background = "#2eb82e";
+                } else {
+                    delBtn.innerText = "🗑️ 刪除選取";
+                    delBtn.style.background = "#ff4c4c"; 
+                }
+            } else {
+                delBtn.style.display = 'none';
+            }
+        }
 
         function toggleTheme() {
             const isDark = document.body.classList.toggle('dark-mode');
@@ -334,15 +535,9 @@
             const activeExts = JSON.parse(localStorage.getItem('app_active_exts')) || DEFAULT_EXTENSIONS;
             const container = document.getElementById('ext-checkbox-container');
             container.innerHTML = '';
-            
             ALL_EXTENSIONS.forEach(item => {
                 const isChecked = activeExts.includes(item.ext) ? 'checked' : '';
-                container.innerHTML += `
-                    <label class="ext-item">
-                        <input type="checkbox" value="${item.ext}" class="ext-checkbox" ${isChecked}>
-                        ${item.ext} <span style="opacity: 0.6">(${item.desc})</span>
-                    </label>
-                `;
+                container.innerHTML += `<label class="ext-item"><input type="checkbox" value="${item.ext}" class="ext-checkbox" ${isChecked}> ${item.ext} <span style="opacity: 0.6">(${item.desc})</span></label>`;
             });
         }
 
@@ -351,15 +546,11 @@
         function saveSettings() {
             localStorage.setItem('app_icon_size', document.getElementById('set-icon-size').value);
             localStorage.setItem('app_font_size', document.getElementById('set-font-size').value);
-
             const checkboxes = document.querySelectorAll('.ext-checkbox');
             const selectedExts = [];
             checkboxes.forEach(cb => { if (cb.checked) selectedExts.push(cb.value); });
             localStorage.setItem('app_active_exts', JSON.stringify(selectedExts));
-
-            applySavedSettings(); 
-            renderMainExtSelect(); 
-            closeSettings();
+            applySavedSettings(); renderMainExtSelect(); closeSettings();
         }
 
         function applySavedSettings() {
@@ -370,17 +561,13 @@
             document.documentElement.style.setProperty('--ui-font-size', fontSize);
         }
 
-        // --- 新增：切換 GIF 專屬設定的顯示狀態 ---
         function toggleGifSettings() {
             const select = document.getElementById('ext-select');
-            const loopInput = document.getElementById('gif-loop-count');
+            const panel = document.getElementById('gif-settings-panel');
             if (select && select.value === '.gif') {
-                loopInput.style.display = 'block';
+                panel.style.display = 'block';
             } else {
-                if (loopInput) {
-                    loopInput.style.display = 'none';
-                    loopInput.value = ''; // 切換其他副檔名時清空數值
-                }
+                if (panel) panel.style.display = 'none';
             }
         }
 
@@ -393,31 +580,30 @@
                     select.innerHTML += `<option value="${item.ext}">${item.ext} (${item.desc})</option>`;
                 }
             });
-            toggleGifSettings(); // 渲染完後檢查一次是否為 GIF
+            toggleGifSettings();
         }
 
         function cleanupObjectUrls() {
             filesData.forEach(f => { if (f.previewUrl) URL.revokeObjectURL(f.previewUrl); });
         }
 
-        // --- 檢查目錄權限保護：僅針對「刪除」功能提出警告 ---
         function checkDirHandle() {
             if (!directoryHandle) {
-                alert("⚠️ 目前為『選擇檔案』模式，無法直接進行本地【刪除】操作！\n\n若需使用刪除功能，請點擊左側按鈕改用『選擇資料夾』。");
+                alert("⚠️ 目前為『選擇檔案』模式，無法直接進行本地【刪除】或完美【復原】操作！\n\n強烈建議點擊左側按鈕改用『選擇資料夾』以獲得完整體驗。");
                 return false;
             }
             return true;
         }
 
-        // --- 重設畫面功能 ---
         function resetWorkspace() {
             if (filesData.length === 0) return;
-            cleanupObjectUrls();
-            filesData = [];
-            directoryHandle = null;
-            
+            cleanupObjectUrls(); filesData = []; directoryHandle = null;
+            undoStack = []; 
             document.getElementById('preview-header').innerText = `📂 檔案預覽區域`;
-            document.getElementById('reset-btn').style.display = 'none';
+            document.getElementById('reset-btn').style.display = 'none'; 
+            document.getElementById('undo-btn').style.display = 'none';
+            document.getElementById('delete-selected-btn').style.display = 'none';
+            document.getElementById('selection-status').style.display = 'none';
             renderGrid();
         }
 
@@ -425,7 +611,8 @@
             try {
                 directoryHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'downloads' });
                 document.getElementById('preview-header').innerText = `📂 ${directoryHandle.name} 內檔案預覽`;
-                document.getElementById('reset-btn').style.display = 'flex'; 
+                document.getElementById('reset-btn').style.display = 'inline-block';
+                undoStack = []; document.getElementById('undo-btn').style.display = 'none';
                 await loadFiles();
             } catch (error) { console.log(error); }
         }
@@ -433,19 +620,18 @@
         async function selectFiles() {
             try {
                 const fileHandles = await window.showOpenFilePicker({ multiple: true, startIn: 'downloads' });
-                directoryHandle = null; 
-                cleanupObjectUrls();
-                filesData = [];
+                directoryHandle = null; cleanupObjectUrls(); filesData = [];
+                undoStack = []; document.getElementById('undo-btn').style.display = 'none';
                 for (const handle of fileHandles) {
-                    filesData.push({
-                        handle: handle, oldName: handle.name, newName: handle.name,
-                        action: 'none', removeAnim: false, previewUrl: null
+                    filesData.push({ 
+                        handle: handle, oldName: handle.name, newName: handle.name, 
+                        action: 'none', removeAnim: false, previewUrl: null, selected: false,
+                        isManuallyDeleted: false 
                     });
                 }
                 filesData.sort((a, b) => a.oldName.localeCompare(b.oldName, undefined, { numeric: true }));
                 document.getElementById('preview-header').innerText = `📄 已載入 ${filesData.length} 個獨立檔案`;
-                document.getElementById('reset-btn').style.display = 'flex'; 
-                renderGrid();
+                document.getElementById('reset-btn').style.display = 'inline-block'; renderGrid();
             } catch (error) { console.log(error); }
         }
 
@@ -456,17 +642,131 @@
         }
 
         async function loadFiles() {
-            cleanupObjectUrls();
-            filesData = [];
+            cleanupObjectUrls(); filesData = [];
             for await (const entry of directoryHandle.values()) {
                 if (entry.kind === 'file') {
-                    filesData.push({
-                        handle: entry, oldName: entry.name, newName: entry.name,
-                        action: 'none', removeAnim: false, previewUrl: null
+                    filesData.push({ 
+                        handle: entry, oldName: entry.name, newName: entry.name, 
+                        action: 'none', removeAnim: false, previewUrl: null, selected: false,
+                        isManuallyDeleted: false 
                     });
                 }
             }
             filesData.sort((a, b) => a.oldName.localeCompare(b.oldName, undefined, { numeric: true }));
+            renderGrid();
+        }
+
+        function deleteSelected() {
+            if(!checkDirHandle()) return;
+            const selectedFiles = filesData.filter(f => f.selected);
+            if (selectedFiles.length === 0) return;
+            
+            const allDeleted = selectedFiles.every(f => f.isManuallyDeleted);
+            
+            filesData.forEach(f => {
+                if (f.selected) f.isManuallyDeleted = !allDeleted;
+            });
+            applyRules();
+        }
+        
+        function toggleRemoveAnimation() {
+            isRemoveAnimActive = !isRemoveAnimActive;
+            const btn = document.getElementById('toggle-anim-btn');
+            if (isRemoveAnimActive) {
+                btn.classList.add('btn-active');
+                btn.innerText = "🛑 移除圖片動畫 (已啟用)";
+            } else {
+                btn.classList.remove('btn-active');
+                btn.innerText = "🛑 移除圖片動畫 (關閉)";
+            }
+            applyRules();
+        }
+
+        function applyRules() {
+            if (filesData.length === 0) return;
+
+            const delKeyword = document.getElementById('keyword-del').value;
+            const renPrefix = document.getElementById('rename-prefix').value;
+            const renStart = document.getElementById('rename-start').value;
+            const repTarget = document.getElementById('replace-target').value;
+            const repWith = document.getElementById('replace-with').value;
+            const newExt = document.getElementById('ext-select').value;
+            const delayValue = document.getElementById('gif-delay').value;
+            const loopValue = document.getElementById('gif-loop').value;
+
+            // 留空為 null
+            const delay = delayValue === '' ? null : parseInt(delayValue);
+            const loop = loopValue === '' ? 0 : parseInt(loopValue);
+
+            const hasSelected = filesData.some(f => f.selected);
+
+            let currentNum = renStart ? parseInt(renStart, 10) : NaN;
+            const padLength = renStart ? renStart.length : 0;
+
+            filesData.forEach(file => {
+                file.newName = file.oldName;
+                file.action = 'none';
+                delete file.gifDelay;
+                delete file.gifLoop;
+                
+                const shouldApply = !hasSelected || file.selected;
+                file.removeAnim = isRemoveAnimActive && shouldApply && ['jpg','jpeg','png','gif','webp','bmp','apng'].includes(file.oldName.split('.').pop().toLowerCase());
+
+                if (file.isManuallyDeleted) {
+                    file.action = 'delete';
+                    return; 
+                }
+
+                if (shouldApply && delKeyword && file.oldName.includes(delKeyword)) {
+                    file.action = 'delete';
+                    return;
+                }
+
+                if (hasSelected && !file.selected) return; 
+
+                let tempName = file.newName;
+
+                if (repTarget) {
+                    const extIndex = tempName.lastIndexOf('.');
+                    const baseName = extIndex > -1 ? tempName.substring(0, extIndex) : tempName;
+                    const ext = extIndex > -1 ? tempName.substring(extIndex) : '';
+                    if (baseName.includes(repTarget)) {
+                        tempName = baseName.split(repTarget).join(repWith) + ext;
+                    }
+                }
+
+                if (!isNaN(currentNum)) {
+                    const extIndex = tempName.lastIndexOf('.');
+                    const ext = extIndex > -1 ? tempName.substring(extIndex) : '';
+                    tempName = `${renPrefix}${String(currentNum).padStart(padLength, '0')}${ext}`;
+                    currentNum++;
+                }
+
+                if (newExt) {
+                    const extIndex = tempName.lastIndexOf('.');
+                    const baseName = extIndex > -1 ? tempName.substring(0, extIndex) : tempName;
+                    const oldExt = extIndex > -1 ? tempName.substring(extIndex).toLowerCase() : '';
+                    
+                    if (newExt === '.gif' && ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif', '.apng'].includes(oldExt)) {
+                        tempName = baseName + '.gif';
+                        file.action = 'convert_gif';
+                        file.gifDelay = delay; 
+                        file.gifLoop = loop;
+                    } else {
+                        tempName = baseName + newExt;
+                    }
+                }
+
+                if (file.action !== 'convert_gif' && file.action !== 'delete') {
+                    if (tempName !== file.oldName) {
+                        file.newName = tempName;
+                        file.action = 'rename';
+                    }
+                } else if (file.action === 'convert_gif') {
+                    file.newName = tempName;
+                }
+            });
+
             renderGrid();
         }
 
@@ -476,12 +776,13 @@
             
             if (filesData.length === 0) {
                 grid.innerHTML = '<div style="width: 100%; text-align: center; opacity: 0.6; margin-top: 20px;">請先從左側選擇資料夾或檔案</div>';
+                updateSelectionUI();
                 return;
             }
 
             filesData.forEach((file, index) => {
                 const card = document.createElement('div');
-                card.className = 'file-card';
+                card.className = file.selected ? 'file-card selected' : 'file-card';
                 
                 const ext = file.oldName.split('.').pop().toLowerCase();
                 const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'apng'].includes(ext);
@@ -491,12 +792,12 @@
                 
                 if (isImage) {
                     if (file.previewUrl) {
-                        imgContainer.innerHTML = `<img src="${file.previewUrl}" class="preview-img">`;
+                        imgContainer.innerHTML = `<img src="${file.previewUrl}" class="preview-img" draggable="false">`;
                     } else {
                         imgContainer.innerHTML = `⏳`;
                         file.handle.getFile().then(fileData => {
                             file.previewUrl = URL.createObjectURL(fileData);
-                            imgContainer.innerHTML = `<img src="${file.previewUrl}" class="preview-img">`;
+                            imgContainer.innerHTML = `<img src="${file.previewUrl}" class="preview-img" draggable="false">`;
                         });
                     }
                 } else {
@@ -509,17 +810,17 @@
 
                 if (file.action === 'delete') {
                     statusClass = 'status-delete'; statusText = '🗑️ 將被刪除'; inputClass += ' deleted-text';
+                } else if (file.action === 'convert_gif') {
+                    statusClass = 'status-rename';
+                    const delayStr = file.gifDelay === null ? '自動極限速度' : `${file.gifDelay}ms`;
+                    statusText = `🔄 轉 GIF (延遲:${delayStr}, 重複:${file.gifLoop === 0 ? '無限' : file.gifLoop})`;
                 } else if (file.action === 'rename' || file.removeAnim) {
                     statusClass = 'status-rename';
                     statusText = file.action === 'rename' ? '📝 將被改名' : '';
                     if (file.removeAnim) statusText += (statusText ? ' + ' : '') + '🛑 轉為靜態';
-                    // --- 新增：若為 GIF 且有設定迴圈，顯示在預覽狀態中 ---
-                    if (file.newName.toLowerCase().endsWith('.gif') && file.gifLoop !== undefined) {
-                        statusText += ` (重複: ${file.gifLoop === '0' ? '無限' : file.gifLoop})`;
-                    }
                 }
 
-                const deleteBtnHtml = file.action === 'delete' 
+                const deleteBtnHtml = file.action === 'delete' || file.isManuallyDeleted
                     ? `<span class="delete-x undo-x" onclick="undoDelete(${index}, event)" title="取消刪除">↺</span>`
                     : `<span class="delete-x" onclick="markDelete(${index}, event)" title="刪除此檔案">✖</span>`;
 
@@ -534,169 +835,404 @@
                 `;
                 card.insertBefore(imgContainer, card.firstChild); grid.appendChild(card);
             });
+            updateSelectionUI();
         }
 
-        // 標記刪除依然需要目錄權限
-        function markDelete(index, event) {
-            event.stopPropagation();
-            if(!checkDirHandle()) return;
-            filesData[index].action = 'delete'; renderGrid();
+        function markDelete(index, event) { 
+            if(!checkDirHandle()) return; 
+            filesData[index].isManuallyDeleted = true; 
+            applyRules(); 
         }
-
-        function undoDelete(index, event) {
-            event.stopPropagation();
-            filesData[index].action = 'none'; renderGrid();
+        function undoDelete(index, event) { 
+            filesData[index].isManuallyDeleted = false; 
+            applyRules(); 
         }
 
         function manualEdit(index, value) {
-            if (filesData[index].oldName !== value) {
-                filesData[index].newName = value; filesData[index].action = 'rename';
-            } else { filesData[index].action = 'none'; }
-            renderGrid();
+            if (filesData[index].oldName !== value) { 
+                filesData[index].newName = value; 
+                filesData[index].action = 'rename'; 
+            } 
         }
 
-        function previewDelete() {
-            if(!checkDirHandle()) return;
-            const keyword = document.getElementById('keyword-del').value;
-            if (!keyword) return alert("請輸入關鍵字！");
-            filesData.forEach(file => { if (file.oldName.includes(keyword)) file.action = 'delete'; });
-            renderGrid();
-        }
-
-        function previewRenameSequential() {
-            const prefix = document.getElementById('rename-prefix').value;
-            const startInput = document.getElementById('rename-start').value; 
-            if (!startInput) return alert("請輸入起始數字！");
-            
-            const padLength = startInput.length; 
-            let currentNum = parseInt(startInput, 10);
-            if (isNaN(currentNum)) return alert("請輸入有效的起始數字！");
-
-            filesData.forEach(file => {
-                if (file.action !== 'delete') {
-                    const extIndex = file.oldName.lastIndexOf('.');
-                    const ext = extIndex > -1 ? file.oldName.substring(extIndex) : '';
-                    const numStr = String(currentNum).padStart(padLength, '0');
-                    file.newName = `${prefix}${numStr}${ext}`;
-                    file.action = 'rename'; currentNum++;
-                }
-            });
-            renderGrid();
-        }
-
-        function previewReplaceText() {
-            const targetText = document.getElementById('replace-target').value;
-            const replaceText = document.getElementById('replace-with').value;
-
-            if (!targetText) return alert("請輸入想替換的內容！");
-
-            let matchCount = 0;
-            filesData.forEach(file => {
-                if (file.action !== 'delete') {
-                    // 分離主檔名和副檔名，確保替換不會動到副檔名
-                    const extIndex = file.newName.lastIndexOf('.');
-                    const baseName = extIndex > -1 ? file.newName.substring(0, extIndex) : file.newName;
-                    const ext = extIndex > -1 ? file.newName.substring(extIndex) : '';
-
-                    if (baseName.includes(targetText)) {
-                        // 使用 split 和 join 來達成全局替換
-                        const newBaseName = baseName.split(targetText).join(replaceText);
-                        file.newName = newBaseName + ext;
-                        file.action = 'rename';
-                        matchCount++;
-                    }
-                }
-            });
-
-            if (matchCount === 0) {
-                alert("沒有找到包含該文字的檔案名稱。");
-            }
-            renderGrid();
-        }
-
-        function previewExtensionChange() {
-            const newExt = document.getElementById('ext-select').value;
-            if (!newExt) return alert("請選擇副檔名！");
-            
-            // 抓取 GIF 的重複次數設定
-            const gifLoopValue = document.getElementById('gif-loop-count').value;
-
-            filesData.forEach(file => {
-                if (file.action !== 'delete') {
-                    const baseName = file.newName.substring(0, file.newName.lastIndexOf('.')) || file.newName;
-                    file.newName = baseName + newExt;
-                    file.action = file.newName !== file.oldName ? 'rename' : 'none';
-                    
-                    // --- 新增：將設定的迴圈次數記錄到物件中，以便預覽顯示 ---
-                    if (newExt === '.gif' && file.action === 'rename' && gifLoopValue !== '') {
-                        file.gifLoop = gifLoopValue;
-                    } else {
-                        delete file.gifLoop;
-                    }
-                }
-            });
-            renderGrid();
-        }
-
-        function previewRemoveAnimation() {
-            let found = false;
-            filesData.forEach(file => {
-                if (file.action !== 'delete') {
-                    const ext = file.oldName.split('.').pop().toLowerCase();
-                    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'apng'].includes(ext)) {
-                        file.removeAnim = true; found = true;
-                    }
-                }
-            });
-            if (!found) alert("目前列表中沒有可處理的圖片檔案！");
-            renderGrid();
-        }
-
-        const getStaticBlob = (fileData) => {
+        const loadImgFromBlob = (blob) => {
             return new Promise((resolve, reject) => {
-                const img = new Image(); const url = URL.createObjectURL(fileData);
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width; canvas.height = img.height;
-                    const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0); 
-                    canvas.toBlob((blob) => { URL.revokeObjectURL(url); resolve(blob); }, fileData.type || 'image/png');
-                };
-                img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+                const img = new Image(); const url = URL.createObjectURL(blob);
+                img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image load failed")); };
                 img.src = url;
             });
         };
 
+        const getStaticBlob = async (fileData) => {
+            const img = await loadImgFromBlob(fileData);
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width; canvas.height = img.height;
+            const ctx = canvas.getContext('2d'); 
+            ctx.drawImage(img, 0, 0); 
+            return new Promise(resolve => canvas.toBlob(resolve, fileData.type || 'image/png'));
+        };
+
+        async function undoChanges() {
+            if (undoStack.length === 0) return;
+            isProcessing = true; // 啟動攔截
+            const tx = undoStack.pop(); 
+            
+            const overlay = document.getElementById('progress-overlay');
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            document.getElementById('progress-main-title').innerText = "⏪ 正在時光倒流，還原檔案中...";
+            overlay.style.display = 'flex';
+            
+            let total = tx.length; let curr = 0;
+            
+            for (const record of tx) {
+                curr++;
+                progressText.innerText = `🔄 正在還原: ${record.originalName} ...`;
+                progressFill.style.width = `${(curr / total) * 100}%`;
+                
+                if (directoryHandle) {
+                    if (record.newName !== record.originalName && record.action !== 'delete') {
+                        try { await directoryHandle.removeEntry(record.newName); } catch(e) {}
+                    }
+                    try {
+                        const fileHandle = await directoryHandle.getFileHandle(record.originalName, { create: true });
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(record.blob);
+                        await writable.close();
+                    } catch(e) { console.error("還原寫入失敗:", e); }
+                } else {
+                    if (record.newName !== record.originalName && record.action !== 'delete') {
+                        if (typeof record.handle.move === 'function') {
+                            try { await record.handle.move(record.originalName); } catch(e) {}
+                        }
+                    }
+                    try {
+                        const writable = await record.handle.createWritable();
+                        await writable.write(record.blob);
+                        await writable.close();
+                    } catch(e) { console.error("還原寫入失敗:", e); }
+                }
+            }
+            
+            setTimeout(async () => {
+                overlay.style.display = 'none';
+                document.getElementById('progress-main-title').innerText = "⏳ 正在處理中，請稍候...";
+                
+                if (undoStack.length === 0) {
+                    document.getElementById('undo-btn').style.display = 'none';
+                }
+                
+                isProcessing = false; // 解除攔截
+                alert("✅ 已成功復原剛剛的所有修改，檔案已回到最初的狀態！");
+                
+                if (directoryHandle) {
+                    await loadFiles();
+                } else {
+                    filesData.forEach(f => {
+                        const rec = tx.find(t => t.handle === f.handle);
+                        if (rec) {
+                            f.oldName = rec.originalName; f.newName = rec.originalName;
+                            f.action = 'none'; f.removeAnim = false; f.selected = false; f.isManuallyDeleted = false;
+                            if (f.previewUrl) { URL.revokeObjectURL(f.previewUrl); f.previewUrl = null; }
+                        }
+                    });
+                    applyRules();
+                }
+            }, 300);
+        }
+
         async function applyChanges() {
             const filesToProcess = filesData.filter(f => f.action !== 'none' || f.removeAnim);
             if (filesToProcess.length === 0) return alert("目前沒有需要被修改的檔案！");
-            
-            if (!confirm("確定要執行這些修改嗎？\n⚠️ 此操作將直接修改/覆蓋您的原本檔案！")) return;
+            if (!confirm("確定要執行這些修改嗎？\n⚠️ 此操作將直接修改/覆蓋您的原本檔案，或生成新檔案！")) return;
+
+            isProcessing = true; // 啟動攔截
 
             const overlay = document.getElementById('progress-overlay');
             const progressFill = document.getElementById('progress-fill');
             const progressText = document.getElementById('progress-text');
             overlay.style.display = 'flex';
             
+            const transaction = [];
+            for (const file of filesToProcess) {
+                try {
+                    const originalFileHandle = file.handle;
+                    const liveFile = await originalFileHandle.getFile();
+                    const buffer = await liveFile.arrayBuffer(); 
+                    const safeCloneBlob = new Blob([buffer], { type: liveFile.type });
+                    
+                    transaction.push({
+                        handle: originalFileHandle,
+                        originalName: file.oldName,
+                        newName: file.newName,
+                        action: file.action,
+                        blob: safeCloneBlob
+                    });
+                } catch(e) { console.warn("無法深層備份檔案", e); }
+            }
+            
             const totalTasks = filesToProcess.length; let remainingTasks = totalTasks;
-            progressFill.style.width = '100%'; progressText.innerText = `剩餘項目: ${remainingTasks} / ${totalTasks}`;
+            progressFill.style.width = '0%'; progressText.innerText = `處理中...`;
+
+            // 去背演算法 (保留不變)
+            const applyAlphaThreshold = (ctx, width, height) => {
+                const imgData = ctx.getImageData(0, 0, width, height);
+                const data = imgData.data;
+                for (let j = 0; j < data.length; j += 4) {
+                    if (data[j+3] < 128) {
+                        data[j] = 255;   
+                        data[j+1] = 0;   
+                        data[j+2] = 255; 
+                        data[j+3] = 255; 
+                    } else {
+                        data[j+3] = 255; 
+                        if (data[j] === 255 && data[j+1] === 0 && data[j+2] === 255) {
+                            data[j+1] = 1;
+                        }
+                    }
+                }
+                ctx.putImageData(imgData, 0, 0);
+            };
 
             for (const file of filesToProcess) {
                 try {
                     const originalFileHandle = file.handle;
-                    
+
+                    if (file.action === 'convert_gif') {
+                        progressText.innerText = `正在分析 ${file.oldName} ...`;
+                        const fData = await originalFileHandle.getFile();
+                        
+                        let apng = null; let isApng = false;
+                        let parsedGifFrames = null; let gifLsd = null;
+                        let isGif = file.oldName.toLowerCase().endsWith('.gif');
+                        
+                        if (parseAPNG && file.oldName.toLowerCase().endsWith('.png')) {
+                            try {
+                                const buffer = await fData.arrayBuffer();
+                                apng = parseAPNG(buffer);
+                                if (!(apng instanceof Error) && apng.frames && apng.frames.length > 1) {
+                                    isApng = true;
+                                }
+                            } catch (e) { console.warn("APNG 解析失敗:", e); }
+                        }
+
+                        if (isGif && parseGIF && decompressFrames) {
+                            try {
+                                const buffer = await fData.arrayBuffer();
+                                const parsed = parseGIF(buffer);
+                                gifLsd = parsed.lsd;
+                                parsedGifFrames = decompressFrames(parsed, true);
+                            } catch (e) { console.warn("GIF 拆解失敗:", e); }
+                        }
+
+                        const gif = new GIF({
+                            workers: 2, 
+                            quality: 10, 
+                            repeat: file.gifLoop, 
+                            workerScript: gifWorkerUrl,
+                            transparent: 0xFF00FF 
+                        });
+
+                        // ==== 核心修復：時間誤差補償變數 ====
+                        let timeAccumulator = 0;
+
+                        if (isApng) {
+                            progressText.innerText = `重新壓製 APNG 動畫中 (${apng.frames.length} 幀)...`;
+                            await apng.createImages();
+                            
+                            const w = apng.width; const h = apng.height;
+                            gif.options.width = w; gif.options.height = h;
+
+                            const compCanvas = document.createElement('canvas');
+                            compCanvas.width = w; compCanvas.height = h;
+                            const compCtx = compCanvas.getContext('2d');
+                            
+                            const gifCanvas = document.createElement('canvas');
+                            gifCanvas.width = w; gifCanvas.height = h;
+                            const gifCtx = gifCanvas.getContext('2d');
+
+                            let prevImageData = null;
+
+                            for (let i = 0; i < apng.frames.length; i++) {
+                                const frame = apng.frames[i];
+                                
+                                if (i > 0) {
+                                    const prevFrame = apng.frames[i - 1];
+                                    if (prevFrame.disposeOp === 1) {
+                                        compCtx.clearRect(prevFrame.left, prevFrame.top, prevFrame.width, prevFrame.height);
+                                    } else if (prevFrame.disposeOp === 2 && prevImageData) {
+                                        compCtx.putImageData(prevImageData, 0, 0);
+                                    }
+                                }
+                                
+                                if (frame.disposeOp === 2) prevImageData = compCtx.getImageData(0, 0, w, h);
+                                if (frame.blendOp === 0) {
+                                    compCtx.clearRect(frame.left, frame.top, frame.width, frame.height);
+                                }
+                                
+                                if (frame.imageElement) compCtx.drawImage(frame.imageElement, frame.left, frame.top);
+                                
+                                gifCtx.clearRect(0, 0, w, h);
+                                gifCtx.drawImage(compCanvas, 0, 0);
+                                
+                                applyAlphaThreshold(gifCtx, w, h);
+                                
+                                // 精準抓取原檔毫秒
+                                let rawDelay = 100;
+                                if (file.gifDelay !== null) {
+                                    rawDelay = file.gifDelay;
+                                } else {
+                                    if (typeof frame.delay === 'number' && frame.delay > 0) {
+                                        rawDelay = frame.delay;
+                                    } else {
+                                        rawDelay = 100; // 防呆預設
+                                    }
+                                }
+                                
+                                // 加上上一幀的誤差債務
+                                let targetDelay = rawDelay + timeAccumulator;
+                                
+                                // 轉換為 GIF 的 10ms 單位
+                                let finalDelay = Math.round(targetDelay / 10) * 10;
+                                
+                                // 瀏覽器死亡區間防護
+                                if (finalDelay < 20) {
+                                    finalDelay = 20;
+                                }
+                                
+                                // 記錄這一幀的誤差，留給下一幀補償 (限制上下限避免暴走)
+                                timeAccumulator = targetDelay - finalDelay;
+                                if (timeAccumulator > 25) timeAccumulator = 25;
+                                if (timeAccumulator < -25) timeAccumulator = -25;
+
+                                gif.addFrame(gifCanvas, { delay: finalDelay, copy: true });
+                            }
+                        } else if (parsedGifFrames && parsedGifFrames.length > 0) {
+                            progressText.innerText = `重新賦予 GIF 延遲中 (${parsedGifFrames.length} 幀)...`;
+                            
+                            const w = gifLsd ? gifLsd.width : parsedGifFrames[0].dims.width;
+                            const h = gifLsd ? gifLsd.height : parsedGifFrames[0].dims.height;
+                            gif.options.width = w; gif.options.height = h;
+
+                            const compCanvas = document.createElement('canvas');
+                            compCanvas.width = w; compCanvas.height = h;
+                            const compCtx = compCanvas.getContext('2d');
+                            
+                            const gifCanvas = document.createElement('canvas');
+                            gifCanvas.width = w; gifCanvas.height = h;
+                            const gifCtx = gifCanvas.getContext('2d');
+
+                            let prevImageData = null;
+
+                            for (let i = 0; i < parsedGifFrames.length; i++) {
+                                const frame = parsedGifFrames[i];
+                                
+                                if (i > 0) {
+                                    const prevFrame = parsedGifFrames[i - 1];
+                                    if (prevFrame.disposalType === 2) {
+                                        compCtx.clearRect(prevFrame.dims.left, prevFrame.dims.top, prevFrame.dims.width, prevFrame.dims.height);
+                                    } else if (prevFrame.disposalType === 3 && prevImageData) {
+                                        compCtx.putImageData(prevImageData, 0, 0);
+                                    }
+                                }
+                                
+                                if (frame.disposalType === 3) {
+                                    prevImageData = compCtx.getImageData(0, 0, w, h);
+                                }
+                                
+                                if (frame.patch && frame.patch.length > 0) {
+                                    const patchCanvas = document.createElement('canvas');
+                                    patchCanvas.width = frame.dims.width; 
+                                    patchCanvas.height = frame.dims.height;
+                                    const patchCtx = patchCanvas.getContext('2d');
+                                    const patchData = patchCtx.createImageData(frame.dims.width, frame.dims.height);
+                                    
+                                    const patchArray = new Uint8ClampedArray(frame.patch);
+                                    const safeLen = Math.min(patchData.data.length, patchArray.length);
+                                    
+                                    for(let p=0; p < safeLen; p++) {
+                                        patchData.data[p] = patchArray[p];
+                                    }
+                                    
+                                    patchCtx.putImageData(patchData, 0, 0);
+                                    compCtx.drawImage(patchCanvas, frame.dims.left, frame.dims.top);
+                                }
+                                
+                                gifCtx.clearRect(0, 0, w, h);
+                                gifCtx.drawImage(compCanvas, 0, 0);
+                                
+                                applyAlphaThreshold(gifCtx, w, h);
+                                
+                                let rawDelay = file.gifDelay !== null ? file.gifDelay : (frame.delay ? frame.delay * 10 : 100);
+                                
+                                let targetDelay = rawDelay + timeAccumulator;
+                                let finalDelay = Math.round(targetDelay / 10) * 10;
+                                if (finalDelay < 20) finalDelay = 20;
+                                
+                                timeAccumulator = targetDelay - finalDelay;
+                                if (timeAccumulator > 25) timeAccumulator = 25;
+                                if (timeAccumulator < -25) timeAccumulator = -25;
+                                
+                                gif.addFrame(gifCanvas, { delay: finalDelay, copy: true });
+                            }
+                        } else {
+                            progressText.innerText = `轉換靜態圖片為 GIF...`;
+                            const img = await loadImgFromBlob(fData);
+                            const w = img.width; const h = img.height;
+                            gif.options.width = w; gif.options.height = h;
+                            
+                            const canvas = document.createElement('canvas');
+                            canvas.width = w; canvas.height = h;
+                            const ctx = canvas.getContext('2d');
+                            
+                            ctx.clearRect(0, 0, w, h);
+                            ctx.drawImage(img, 0, 0, w, h);
+                            
+                            applyAlphaThreshold(ctx, w, h);
+                            
+                            let rawDelay = file.gifDelay !== null ? file.gifDelay : 100;
+                            let finalDelay = Math.round(rawDelay / 10) * 10;
+                            if (finalDelay < 20) finalDelay = 20;
+
+                            gif.addFrame(canvas, { delay: finalDelay, copy: true });
+                        }
+
+                        progressText.innerText = `正在輸出新的 GIF 檔案: ${file.newName}`;
+                        const gifBlob = await new Promise(resolve => {
+                            gif.on('finished', blob => resolve(blob));
+                            gif.render();
+                        });
+
+                        if (directoryHandle) {
+                            const newFileHandle = await directoryHandle.getFileHandle(file.newName, { create: true });
+                            const writable = await newFileHandle.createWritable();
+                            await writable.write(gifBlob); await writable.close();
+                            
+                            if (file.newName !== file.oldName) {
+                                await directoryHandle.removeEntry(file.oldName);
+                            }
+                        } else {
+                            const a = document.createElement('a');
+                            a.href = URL.createObjectURL(gifBlob); a.download = file.newName; a.click();
+                        }
+                        
+                        remainingTasks--;
+                        progressFill.style.width = `${((totalTasks - remainingTasks) / totalTasks) * 100}%`;
+                        continue;
+                    }
+
+                    // 其他靜態或改名邏輯...
                     if (file.action === 'delete') {
                         if (directoryHandle) await directoryHandle.removeEntry(file.oldName);
                     } else {
-                        let dataToWrite = null; 
-                        let needsWrite = false;
+                        let dataToWrite = null; let needsWrite = false;
                         
                         if (file.removeAnim) {
                             const fileData = await originalFileHandle.getFile();
-                            dataToWrite = await getStaticBlob(fileData);
-                            needsWrite = true;
+                            dataToWrite = await getStaticBlob(fileData); needsWrite = true;
                         }
 
-                        // 如果只有改名，或改名加上去動畫，都需要取得檔案資料
                         if (!dataToWrite && (file.action === 'rename' || needsWrite)) {
                             dataToWrite = await originalFileHandle.getFile();
                         }
@@ -704,48 +1240,42 @@
                         if (file.action === 'rename') {
                             const newName = file.newName;
                             if (directoryHandle) {
-                                // 資料夾模式：標準安全作法 (建立新檔 -> 寫入 -> 刪除舊檔)
                                 const newFileHandle = await directoryHandle.getFileHandle(newName, { create: true });
                                 const writable = await newFileHandle.createWritable();
-                                await writable.write(dataToWrite); 
-                                await writable.close();
+                                await writable.write(dataToWrite); await writable.close();
                                 await directoryHandle.removeEntry(file.oldName);
                             } else {
-                                // 單一檔案模式：使用實驗性的 .move() 直接改名
                                 if (typeof originalFileHandle.move === 'function') {
                                     try {
                                         await originalFileHandle.move(newName);
-                                        // 如果同時需要去動畫，改名後把新資料寫入
                                         if (needsWrite) {
                                             const writable = await originalFileHandle.createWritable();
-                                            await writable.write(dataToWrite); 
-                                            await writable.close();
+                                            await writable.write(dataToWrite); await writable.close();
                                         }
-                                    } catch (err) {
-                                        console.error(err);
-                                        alert(`⚠️ 檔案 ${file.oldName} 改名失敗！\n瀏覽器安全限制阻擋：單選檔案模式有時不允許直接修改檔名。\n請改用「選擇資料夾」模式。`);
-                                    }
-                                } else {
-                                    alert(`⚠️ 您的瀏覽器尚未支援單選檔案直接改名功能，請改用「選擇資料夾」模式。`);
-                                }
+                                    } catch (err) { alert(`⚠️ 檔案 ${file.oldName} 改名失敗！\n請改用「選擇資料夾」模式。`); }
+                                } else { alert(`⚠️ 您的瀏覽器尚未支援單選檔案直接改名功能，請改用「選擇資料夾」模式。`); }
                             }
                         } else if (needsWrite) {
-                            // 只有修改內容 (去動畫)，沒有改名 -> 直接完美覆寫原檔！
                             const writable = await originalFileHandle.createWritable();
-                            await writable.write(dataToWrite); 
-                            await writable.close();
+                            await writable.write(dataToWrite); await writable.close();
                         }
                     }
                 } catch (e) { console.error(`處理 ${file.oldName} 時發生錯誤:`, e); }
 
                 remainingTasks--;
-                const percentage = (remainingTasks / totalTasks) * 100;
-                progressFill.style.width = `${percentage}%`;
+                progressFill.style.width = `${((totalTasks - remainingTasks) / totalTasks) * 100}%`;
                 progressText.innerText = `剩餘項目: ${remainingTasks} / ${totalTasks}`;
             }
             
             setTimeout(async () => {
                 overlay.style.display = 'none';
+                
+                if (transaction.length > 0) {
+                    undoStack.push(transaction);
+                    document.getElementById('undo-btn').style.display = 'inline-block';
+                }
+                
+                isProcessing = false; // 解除攔截
                 alert("處理完成！");
                 if (directoryHandle) await loadFiles();
             }, 300);
