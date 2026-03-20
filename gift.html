@@ -159,6 +159,19 @@
             gap: 6px;
         }
 
+        /* 手續費單選框排版 */
+        .radio-group {
+            display: flex;
+            flex-direction: row;
+            gap: 15px;
+            margin-top: 4px;
+        }
+        .radio-group label {
+            font-weight: normal;
+            font-size: 0.95em;
+            cursor: pointer;
+        }
+
         label {
             font-weight: 500;
             display: flex;
@@ -376,6 +389,15 @@
                     <label>💵 目前 1 台幣 = 多少萬楓幣</label>
                     <input type="number" id="input-rate-meso" step="50" min="0">
                     <div class="hint">📌 以「萬」為單位 </div>
+                    
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="tax-type" value="0.05" checked> 🤝 直接交易(5%)
+                        </label>
+                        <label>
+                            <input type="radio" name="tax-type" value="0.03"> 🛒 拉拍賣(3%)
+                        </label>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -477,9 +499,20 @@
             document.getElementById('input-mp-rate').value = localStorage.getItem('ms_val_mpRate') || 8;
             document.getElementById('input-meso-rate').value = localStorage.getItem('ms_val_mesoRate') || 2000;
 
-            // 楓點比值預設值 (依照要求：以萬計算預設2000, 1億換楓點預設6)
+            // 楓點比值預設值
             document.getElementById('input-rate-meso').value = localStorage.getItem('ms_rate_meso') || 2000;
             document.getElementById('input-rate-mp').value = localStorage.getItem('ms_rate_mp') || 6;
+            
+            // 手續費預設值
+            const savedTax = localStorage.getItem('ms_tax_type') || '0.05';
+            const taxRadios = document.getElementsByName('tax-type');
+            for (let radio of taxRadios) {
+                if (radio.value === savedTax) {
+                    radio.checked = true;
+                }
+                // 順便綁定手續費單選框的即時計算事件
+                radio.addEventListener('change', calculateRate);
+            }
 
             // 綁定所有輸入框的即時計算事件
             document.getElementById('input-gift-amount').addEventListener('input', calculateGift);
@@ -581,9 +614,12 @@
         function calculateRate() {
             const mesoPerTwd = parseFloat(document.getElementById('input-rate-meso').value) || 0;
             const mpPer100m = parseFloat(document.getElementById('input-rate-mp').value) || 0;
+            // 取得選擇的手續費趴數
+            const taxRate = parseFloat(document.querySelector('input[name="tax-type"]:checked').value);
 
             localStorage.setItem('ms_rate_meso', mesoPerTwd);
             localStorage.setItem('ms_rate_mp', mpPer100m);
+            localStorage.setItem('ms_tax_type', taxRate);
 
             const finalEl = document.getElementById('res-rate-final');
 
@@ -594,10 +630,15 @@
                 return;
             }
 
-            // 1億 = 10000萬，算出 1億楓幣需要多少台幣
-            const costPer100m = 10000 / mesoPerTwd;
+            // 扣除手續費後的實收幣值 (例如：輸入2000，扣掉5%手續費後，實收為 1900萬)
+            const effectiveMesoPerTwd = mesoPerTwd * (1 - taxRate);
+
+            // 1億 = 10000萬，算出 1億楓幣需要多少台幣 (使用實收幣值計算成本)
+            const costPer100m = 10000 / effectiveMesoPerTwd;
+            
             // 算出 1點楓點需要多少台幣
             const costPerMp = costPer100m / mpPer100m;
+            
             // 換算成折數 (因為原價 1TWD = 1點，所以成本0.79等於7.9折)
             const discount = costPerMp * 10;
 
@@ -613,6 +654,3 @@
     </script>
 </body>
 </html>
-
-
-
