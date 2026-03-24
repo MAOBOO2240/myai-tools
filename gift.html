@@ -21,8 +21,6 @@
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             --profit-color: #00875A;
             --loss-color: #DE350B;
-            --highlight-bg: #f5f5f5;
-            --highlight-cost-bg: #fff0f0;
         }
 
         [data-theme="dark"] {
@@ -44,8 +42,6 @@
             
             --profit-color: #4CAF50;
             --loss-color: #FF5252;
-            --highlight-bg: #333333;
-            --highlight-cost-bg: #3a1c1c;
         }
 
         body {
@@ -84,7 +80,11 @@
             padding: 24px;
             box-shadow: var(--shadow);
             transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
-            height: fit-content;
+            /* 讓左右面板等高 */
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
         }
 
         h1, h2, h3 {
@@ -170,6 +170,9 @@
             font-weight: normal;
             font-size: 0.95em;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         label {
@@ -231,17 +234,18 @@
         .result-box {
             background: var(--input-bg);
             border-radius: 8px;
-            padding: 15px;
+            padding: 20px; 
             margin-bottom: 15px;
             border: 1px solid var(--panel-border);
             transition: background-color 0.4s ease, border-color 0.4s ease;
+            flex-grow: 1; /* 讓內部框可以延伸填滿多餘空間 */
         }
 
         .result-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
-            padding-bottom: 8px;
+            margin-bottom: 14px; 
+            padding-bottom: 14px; 
             border-bottom: 1px dashed var(--panel-border);
             transition: border-color 0.4s ease;
         }
@@ -250,31 +254,13 @@
             margin-bottom: 0;
             padding-bottom: 0;
         }
-        
-        .highlight-row {
-            background: var(--highlight-bg);
-            padding: 8px;
-            border-radius: 6px;
-            border-bottom: none;
-            margin-top: 5px;
-            margin-bottom: 5px;
-            transition: background-color 0.4s ease;
-        }
-        .highlight-cost-row {
-            background: var(--highlight-cost-bg);
-            padding: 8px;
-            border-radius: 6px;
-            border-bottom: none;
-            margin-top: 5px;
-            margin-bottom: 5px;
-            transition: background-color 0.4s ease;
-        }
 
         .final-profit {
             font-size: 1.5em;
             font-weight: bold;
             text-align: center;
-            margin-top: 15px;
+            margin-top: auto; /* 將這塊推到底部 */
+            padding-top: 20px;
         }
         .profit { color: var(--profit-color); transition: color 0.4s ease; }
         .loss { color: var(--loss-color); transition: color 0.4s ease; }
@@ -344,39 +330,87 @@
             </div>
 
             <div class="glass-panel">
-                <h2>📊 即時計算結果</h2>
-                <div class="result-box">
-                    <div class="result-row highlight-cost-row">
-                        <span style="font-weight: bold;">💸 實際儲值成本</span>
-                        <span id="res-recharge-cost" style="font-weight: bold;">0 TWD</span>
-                    </div>
-                    <div class="hint" style="text-align: right; margin-top: -5px; margin-bottom: 10px;">(道具原價 ÷ 1.05 的官方回饋)</div>
-
-                    <div class="result-row highlight-row">
-                        <span style="font-weight: bold;">🤝 對方需繳金額 (實收)</span>
-                        <span id="res-buyer-pay" style="font-weight: bold;">0 TWD</span>
-                    </div>
-                    
-                    <div class="result-row">
-                        <span>💎 獲得 VIP 點數</span>
-                        <span id="res-vip">0 點</span>
-                    </div>
-                    <div class="result-row">
-                        <span>🍁 VIP 兌換楓點 (300:1)</span>
-                        <span id="res-mp">0 點</span>
-                    </div>
-                    <div class="result-row">
-                        <span>🪙 楓點換成楓幣</span>
-                        <span id="res-mesos">0 億</span>
-                    </div>
-                    <div class="result-row">
-                        <span>💵 楓幣換算額外台幣</span>
-                        <span id="res-meso-revenue">0 TWD</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">📊 計算結果</h2>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="btn-mode-sell" class="primary" onclick="switchCalcMode('sell')" style="padding: 6px 12px; font-size: 0.9em;">💰 賣掉</button>
+                        <button id="btn-mode-self" class="btn-text-icon" onclick="switchCalcMode('self')" style="padding: 6px 12px; font-size: 0.9em;">🛍️ 自用</button>
                     </div>
                 </div>
-                
-                <div class="final-profit" id="res-final">
-                    等待計算...
+
+                <div id="sell-results" style="display: flex; flex-direction: column; height: 100%;">
+                    <div class="result-box">
+                        <div class="result-row" style="border-bottom: none; margin-bottom: 4px; padding-bottom: 0;">
+                            <span style="font-weight: bold;">💸 實際儲值成本</span>
+                            <span id="res-recharge-cost" style="font-weight: bold;">0 TWD</span>
+                        </div>
+                        <div class="hint" style="text-align: right; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px dashed var(--panel-border);">(道具原價 ÷ 1.05 的官方回饋)</div>
+
+                        <div class="result-row">
+                            <span style="font-weight: bold;">🤝 對方需繳金額 (實收)</span>
+                            <span id="res-buyer-pay" style="font-weight: bold;">0 TWD</span>
+                        </div>
+                        
+                        <div class="result-row">
+                            <span>💎 獲得 VIP 點數</span>
+                            <span id="res-vip">0 點</span>
+                        </div>
+                        <div class="result-row">
+                            <span>🍁 VIP 兌換楓點 (300:1)</span>
+                            <span id="res-mp">0 點</span>
+                        </div>
+                        <div class="result-row">
+                            <span>🪙 楓點換成楓幣</span>
+                            <span id="res-mesos">0 億</span>
+                        </div>
+                        <div class="result-row">
+                            <span>💵 楓幣換算額外台幣</span>
+                            <span id="res-meso-revenue">0 TWD</span>
+                        </div>
+                    </div>
+                    
+                    <div class="final-profit" id="res-final-sell">
+                        等待計算...
+                    </div>
+                </div>
+
+                <div id="self-results" style="display: none; flex-direction: column; height: 100%;">
+                    <div class="result-box">
+                        <div class="result-row" style="border-bottom: none; margin-bottom: 4px; padding-bottom: 0;">
+                            <span style="font-weight: bold;">💸 實際儲值成本</span>
+                            <span id="res-self-recharge-cost" style="font-weight: bold;">0 TWD</span>
+                        </div>
+                        <div class="hint" style="text-align: right; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px dashed var(--panel-border);">(道具原價 ÷ 1.05 的官方回饋)</div>
+                        
+                        <div class="result-row">
+                            <span style="font-weight: bold;">🤝 對方需繳金額 (實收)</span>
+                            <span id="res-self-buyer-pay" style="font-weight: bold;">0 TWD</span>
+                        </div>
+
+                        <div class="result-row">
+                            <span style="font-weight: bold;">🔥 實際花費</span>
+                            <span id="res-self-expense" style="font-weight: bold;">0 TWD</span>
+                        </div>
+
+                        <div class="result-row">
+                            <span>💎 獲得 VIP 點數</span>
+                            <span id="res-self-vip">0 點</span>
+                        </div>
+
+                        <div class="result-row">
+                            <span>🍁 VIP 兌換楓點 (300:1)</span>
+                            <span id="res-self-mp">0 點</span>
+                        </div>
+
+                        <div class="result-row">
+                            <span style="font-weight: bold;">✨ 實質比例</span>
+                            <span id="res-self-vip-per-twd" style="font-weight: bold;">1 : 0 VIP</span>
+                        </div>
+                    </div>
+                    
+                    <div class="final-profit" id="res-final-self">
+                        等待計算...
+                    </div>
                 </div>
             </div>
         </div>
@@ -408,17 +442,17 @@
             </div>
 
             <div class="glass-panel">
-                <h2>📊 實質折數計算結果</h2>
+                <h2 style="margin-bottom: 20px;">📊 計算結果</h2>
                 <div class="result-box">
                     <div class="result-row">
                         <span>🪙 1億楓幣的台幣成本</span>
                         <span id="res-rate-cost100m">0 TWD</span>
                     </div>
-                    <div class="result-row highlight-cost-row">
+                    <div class="result-row" style="border-bottom: none; margin-bottom: 4px; padding-bottom: 0;">
                         <span style="font-weight: bold;">🍁 1點楓點的實質成本</span>
                         <span id="res-rate-cost1mp" style="font-weight: bold;">0 TWD</span>
                     </div>
-                    <div class="hint" style="text-align: right; margin-top: -5px; margin-bottom: 10px;">(標準價格：1楓點 = 1台幣)</div>
+                    <div class="hint" style="text-align: right; padding-bottom: 0; margin-bottom: 0;">(標準價格：1楓點 = 1台幣)</div>
                 </div>
                 
                 <div class="final-profit" id="res-rate-final">
@@ -460,6 +494,9 @@
         const themeToggleBtn = document.getElementById('theme-toggle');
         const body = document.body;
 
+        // --- 全域變數：目前送禮計算模式 ---
+        let currentCalcMode = 'sell';
+
         // --- 頁籤切換邏輯 ---
         function switchTab(tabId) {
             const viewGift = document.getElementById('view-gift');
@@ -478,6 +515,22 @@
                 tabGift.className = 'btn-text-icon';
                 tabRate.className = 'primary';
             }
+        }
+
+        // --- 子模式切換邏輯 (賣掉 / 自用) ---
+        function switchCalcMode(mode) {
+            currentCalcMode = mode;
+            const btnSell = document.getElementById('btn-mode-sell');
+            const btnSelf = document.getElementById('btn-mode-self');
+            
+            if (mode === 'sell') {
+                btnSell.className = 'primary';
+                btnSelf.className = 'btn-text-icon';
+            } else {
+                btnSell.className = 'btn-text-icon';
+                btnSelf.className = 'primary';
+            }
+            calculateGift();
         }
 
         // --- 初始化與儲存設定 ---
@@ -510,7 +563,6 @@
                 if (radio.value === savedTax) {
                     radio.checked = true;
                 }
-                // 順便綁定手續費單選框的即時計算事件
                 radio.addEventListener('change', calculateRate);
             }
 
@@ -562,7 +614,7 @@
             calculateGift();
         }
 
-        // --- 核心即時計算：送禮 ---
+        // --- 核心即時計算：送禮/自用 ---
         function calculateGift() {
             const giftAmount = parseFloat(document.getElementById('input-gift-amount').value) || 0;
             const discountRaw = parseFloat(document.getElementById('input-discount').value) || 0;
@@ -581,6 +633,7 @@
                 actualDiscount = discountRaw < 10 ? discountRaw / 10 : discountRaw / 100;
             }
 
+            // 共用變數計算
             const rechargeCost = Math.ceil(giftAmount / 1.05);
             const buyerPays = giftAmount * actualDiscount;
             const vipPoints = giftAmount * vipMultiplier;
@@ -592,21 +645,59 @@
             const totalRevenue = buyerPays + mesoRevenue;
             const profitOrLoss = totalRevenue - rechargeCost;
 
-            document.getElementById('res-recharge-cost').innerText = rechargeCost.toLocaleString() + ' TWD';
-            document.getElementById('res-buyer-pay').innerText = buyerPays.toFixed(0) + ' TWD';
-            
-            document.getElementById('res-vip').innerHTML = `${Math.floor(vipPoints).toLocaleString()} 點 <span style="font-size:0.8em; color:var(--text-muted);">(x${vipMultiplier})</span>`;
-            document.getElementById('res-mp').innerText = Math.floor(maplePoints).toLocaleString() + ' 點';
-            document.getElementById('res-mesos').innerText = mesosInE.toFixed(2) + ' 億';
-            document.getElementById('res-meso-revenue').innerText = mesoRevenue.toFixed(0) + ' TWD';
+            // 判斷當前模式 (賣掉 或 自用)
+            if (currentCalcMode === 'sell') {
+                // 顯示賣掉面板，隱藏自用面板
+                document.getElementById('sell-results').style.display = 'flex';
+                document.getElementById('self-results').style.display = 'none';
 
-            const finalEl = document.getElementById('res-final');
-            if (giftAmount === 0) {
-                finalEl.innerHTML = `等待輸入數值...`;
-            } else if (profitOrLoss >= 0) {
-                finalEl.innerHTML = `✨ 本次總營利: <span class="profit">+${profitOrLoss.toFixed(0)} TWD</span>`;
+                document.getElementById('res-recharge-cost').innerText = rechargeCost.toLocaleString() + ' TWD';
+                document.getElementById('res-buyer-pay').innerText = buyerPays.toFixed(0) + ' TWD';
+                
+                document.getElementById('res-vip').innerHTML = `${Math.floor(vipPoints).toLocaleString()} 點 <span style="font-size:0.8em; color:var(--text-muted);">(x${vipMultiplier})</span>`;
+                document.getElementById('res-mp').innerText = Math.floor(maplePoints).toLocaleString() + ' 點';
+                document.getElementById('res-mesos').innerText = mesosInE.toFixed(2) + ' 億';
+                document.getElementById('res-meso-revenue').innerText = mesoRevenue.toFixed(0) + ' TWD';
+
+                const finalEl = document.getElementById('res-final-sell');
+                if (giftAmount === 0) {
+                    finalEl.innerHTML = `等待輸入數值...`;
+                } else if (profitOrLoss >= 0) {
+                    finalEl.innerHTML = `✨ 本次總營利: <span class="profit">+${profitOrLoss.toFixed(0)} TWD</span>`;
+                } else {
+                    finalEl.innerHTML = `📉 本次總虧損: <span class="loss">${profitOrLoss.toFixed(0)} TWD</span>`;
+                }
             } else {
-                finalEl.innerHTML = `📉 本次總虧損: <span class="loss">${profitOrLoss.toFixed(0)} TWD</span>`;
+                // 顯示自用面板，隱藏賣掉面板
+                document.getElementById('sell-results').style.display = 'none';
+                document.getElementById('self-results').style.display = 'flex';
+
+                // 1. 實際花費 = 實際儲值成本 - 對方需繳金額
+                const expense = rechargeCost - buyerPays;
+                // 2. 動態比例 (1 : 多少 VIP)
+                const vipPerTwd = expense > 0 ? (vipPoints / expense) : 0;
+
+                // 更新顯示順序
+                document.getElementById('res-self-recharge-cost').innerText = rechargeCost.toLocaleString() + ' TWD';
+                document.getElementById('res-self-buyer-pay').innerText = buyerPays.toFixed(0) + ' TWD';
+                document.getElementById('res-self-expense').innerText = expense.toFixed(0) + ' TWD';
+                
+                document.getElementById('res-self-vip').innerHTML = `${Math.floor(vipPoints).toLocaleString()} 點 <span style="font-size:0.8em; color:var(--text-muted);">(x${vipMultiplier})</span>`;
+                document.getElementById('res-self-mp').innerText = Math.floor(maplePoints).toLocaleString() + ' 點';
+                
+                // 動態 VIP 比例文字
+                document.getElementById('res-self-vip-per-twd').innerText = `1 : ${vipPerTwd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} VIP`;
+
+                const finalEl = document.getElementById('res-final-self');
+                if (giftAmount === 0) {
+                    finalEl.innerHTML = `等待輸入數值...`;
+                } else if (expense <= 0) {
+                    finalEl.innerHTML = `✨ 購買東西相當於: <span class="profit">免費 (還有賺)</span>`;
+                } else {
+                    // 顯示購買東西的話算是幾折 (花費成本 / 獲得的等值楓點 * 10)
+                    const equivalentDiscount = maplePoints > 0 ? (expense / maplePoints) * 10 : 0;
+                    finalEl.innerHTML = `✨ 購買東西相當於: <span class="profit">${equivalentDiscount.toFixed(2)} 折</span>`;
+                }
             }
         }
 
