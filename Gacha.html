@@ -10,6 +10,34 @@
         }
 
         :root {
+            /* =========================================
+               尺寸與長寬設定區 (統一在此修改大小)
+               ========================================= */
+            --app-max-width: 1400px;       /* 整個應用程式外框的最大寬度 */
+            --app-padding: 30px;           /* 整個應用程式外框的內部留白 */
+            --app-border-width: 2px;       /* 整個應用程式外框的線條粗細 */
+            
+            --panel-padding: 25px;         /* 內部各個區塊(面板)的內部留白 */
+            --panel-gap: 25px;             /* 左右兩個大區塊之間的間距 */
+            
+            --table-max-height: 5000px;     /* 表格(獎池、獲得清單)的最大高度，超過會出現滾動條 */
+            --textarea-height: 80px;       /* 「智慧文字解析」輸入框的高度 */
+            --modal-width: 400px;          /* 「設定」彈出視窗的寬度 */
+            
+            --scrollbar-width: 12px;       /* 垂直滾動條的寬度 */
+            --scrollbar-height: 12px;      /* 水平滾動條的高度 */
+            --scrollbar-thumb-radius: 10px;/* 滾動條滑塊的圓角程度 */
+            --scrollbar-thumb-border: 3px; /* 滾動條滑塊的透明邊距 (製造懸浮感) */
+            
+            --radius-main: 12px;           /* 主要面板的圓角程度 */
+            --radius-outer: 16px;          /* 最外層大框的圓角程度 */
+            --radius-btn: 8px;             /* 按鈕與輸入框的圓角程度 */
+            
+            --font-scale: 16px;            /* 基礎字體大小 */
+
+            /* =========================================
+               顏色設定區
+               ========================================= */
             --bg-color: #f3f3f3;
             --text-color: #202020;
             --panel-bg: rgba(255, 255, 255, 0.7);
@@ -19,10 +47,7 @@
             --primary-hover: #005a9e;
             --danger: #c42b1c;
             --success: #0f7b0f;
-            --radius-main: 12px;
-            --radius-btn: 8px;
             --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-            --font-scale: 16px;
         }
 
         [data-theme="dark"] {
@@ -38,6 +63,26 @@
             --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
+        /* 現代風格滾動條 */
+        ::-webkit-scrollbar {
+            width: var(--scrollbar-width); 
+            height: var(--scrollbar-height); 
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: rgba(136, 136, 136, 0.4); 
+            border-radius: var(--scrollbar-thumb-radius); 
+            border: var(--scrollbar-thumb-border) solid transparent; 
+            background-clip: padding-box;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(136, 136, 136, 0.7); 
+        }
+        [data-theme="dark"] ::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.2); }
+        [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.4); }
+
         html { font-size: var(--font-scale); }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -48,7 +93,17 @@
             transition: all 0.3s ease;
         }
 
-        .container { max-width: 1100px; margin: 0 auto; }
+        /* 整體範圍外框設計 */
+        .container { 
+            max-width: var(--app-max-width); 
+            margin: 0 auto; 
+            border: var(--app-border-width) solid var(--border-color);
+            border-radius: var(--radius-outer); 
+            padding: var(--app-padding); 
+            background: rgba(255, 255, 255, 0.3); 
+            box-shadow: var(--shadow); 
+        }
+        [data-theme="dark"] .container { background: rgba(0, 0, 0, 0.15); }
         
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .header h2 { margin: 0; font-size: 1.8rem; }
@@ -57,15 +112,15 @@
             background: var(--panel-bg);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            padding: 25px;
+            padding: var(--panel-padding);
             border-radius: var(--radius-main);
             border: 1px solid var(--panel-border);
-            box-shadow: var(--shadow);
-            margin-bottom: 25px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+            margin-bottom: var(--panel-gap);
             transition: all 0.3s ease;
         }
 
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--panel-gap); }
         
         input, select, textarea {
             padding: 10px 12px;
@@ -113,8 +168,15 @@
         button.secondary:hover { background-color: var(--border-color); }
         button.icon-only { padding: 10px; font-size: 1.2rem; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { text-align: left; padding: 10px; border-bottom: 2px solid var(--border-color); font-weight: 600; }
+        .table-container {
+            max-height: var(--table-max-height);
+            overflow-y: auto;
+            margin-top: 15px;
+            border-radius: var(--radius-btn);
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 10px; border-bottom: 2px solid var(--border-color); font-weight: 600; position: sticky; top: 0; background: var(--panel-bg); backdrop-filter: blur(10px); z-index: 1;}
         td { padding: 8px 10px; border-bottom: 1px solid var(--border-color); }
         td input { width: 100%; margin: 0; padding: 6px; } 
 
@@ -123,9 +185,8 @@
         .form-group { flex: 1; display: flex; flex-direction: column; }
         .form-group label { font-size: 0.9rem; margin-bottom: 4px; opacity: 0.8; white-space: nowrap; }
         
-        textarea#smartInput { width: 100%; height: 80px; resize: vertical; margin-bottom: 10px; }
+        textarea#smartInput { width: 100%; height: var(--textarea-height); resize: vertical; margin-bottom: 10px; }
 
-        /* 2x2 網格設計的損益看板 */
         .stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -147,7 +208,7 @@
             backdrop-filter: blur(5px);
         }
         .modal-content {
-            background: var(--bg-color); width: 400px; padding: 30px; border-radius: var(--radius-main);
+            background: var(--bg-color); width: var(--modal-width); padding: 30px; border-radius: var(--radius-main);
             box-shadow: var(--shadow); border: 1px solid var(--panel-border);
         }
     </style>
@@ -175,7 +236,7 @@
             </div>
             <div class="form-group" style="flex: none; width: 120px; margin-left: 10px;">
                 <label>💰 每一抽成本 (元)</label>
-                <input type="number" id="costPerDraw" value="0" min="0" step="1" onchange="updateThemeConfig()">
+                <input type="number" id="costPerDraw" placeholder="0" min="0" step="1" onchange="updateThemeConfig()">
             </div>
         </div>
     </div>
@@ -184,14 +245,14 @@
         <div class="panel">
             <h3>📝 獎池道具</h3>
             
-            <details style="margin-bottom: 20px; background: rgba(0,0,0,0.03); padding: 10px; border-radius: var(--radius-btn);">
-                <summary style="cursor: pointer; font-weight: bold;">🪄 智慧文字解析</summary>
-                <div style="margin-top: 10px;">
-                    <p style="font-size: 0.85rem; opacity: 0.8; margin-top: 0;">直接貼上帶有數值%數的文字，例如：<br>回真卷軸 100% 1.20%</p>
-                    <textarea id="smartInput" placeholder="在此貼上文字..."></textarea>
-                    <button class="success" onclick="smartParse()">⚡ 解析並加入</button>
-                </div>
-            </details>
+		<div style="margin-bottom: 20px; background: rgba(0,0,0,0.03); padding: 15px; border-radius: var(--radius-btn); border: 1px solid var(--border-color);">
+    		<div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 10px;">🪄 智慧文字解析</div>
+    		<div>
+        		<p style="font-size: 0.85rem; opacity: 0.8; margin-top: 0;">直接貼上帶有數值%數的文字<br>例如：回真卷軸 100% 1.20%</p>
+        		<textarea id="smartInput" placeholder="在此貼上文字..."></textarea>
+        		<button class="success" onclick="smartParse()">⚡ 解析並加入</button>
+    		</div>
+		</div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px 10px; margin-bottom: 15px; align-items: end;">
                 <div class="form-group" style="grid-column: 1 / 2;">
@@ -208,17 +269,19 @@
                 <button class="danger" onclick="clearPrizePool()" style="grid-column: 2 / 3; margin: 0; width: 100%;">🗑️ 重製</button>
             </div>
             
-            <table>
-                <thead>
-                    <tr>
-                        <th width="60%">道具名稱</th>
-                        <th width="15%">機率(%)</th>
-                        <th width="15%">價值</th>
-                        <th width="10%">操作</th>
-                    </tr>
-                </thead>
-                <tbody id="itemPoolList"></tbody>
-            </table>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="58%">道具名稱</th>
+                            <th width="16%">機率(%)</th>
+                            <th width="16%">價值</th>
+                            <th width="10%">刪除</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemPoolList"></tbody>
+                </table>
+            </div>
         </div>
 
         <div class="panel">
@@ -238,17 +301,19 @@
             </div>
 
             <h4>📦 獲得道具清單</h4>
-            <table>
-                <thead>
-                    <tr>
-                        <th width="70%">名稱</th>
-                        <th width="10%">數量</th>
-                        <th width="10%">總價值</th>
-                        <th width="10%">機率(%)</th>
-                    </tr>
-                </thead>
-                <tbody id="inventoryList"></tbody>
-            </table>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="70%">名稱</th>
+                            <th width="10%">數量</th>
+                            <th width="10%">總價值</th>
+                            <th width="10%">機率(%)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryList"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -366,10 +431,12 @@
 
     function renderThemeData() {
         let theme = appData.themes[appData.currentThemeId];
-        document.getElementById('costPerDraw').value = theme.cost;
+        document.getElementById('costPerDraw').value = theme.cost === 0 ? '' : theme.cost;
         
         let poolHtml = '';
         theme.items.forEach((item, index) => {
+	    let valueDisplay = item.value === 0 ? '' : item.value;
+
             poolHtml += `<tr>
                 <td>
                     <div style="display: flex; align-items: center; gap: 5px;">
@@ -378,7 +445,7 @@
                     </div>
                 </td>
                 <td><input type="number" step="0.1" value="${item.prob}" onchange="updateItem(${index}, 'prob', this.value)"></td>
-                <td><input type="number" step="100" value="${item.value}" onchange="updateItem(${index}, 'value', this.value)"></td>
+                <td><input type="number" step="100" value="${valueDisplay}" placeholder="0" onchange="updateItem(${index}, 'value', this.value)"></td>
                 <td><button class="danger" onclick="deleteItem(${index})" style="padding: 6px; font-size: 0.8rem;">❌</button></td>
             </tr>`;
         });
@@ -602,5 +669,4 @@
 </script>
 
 </body>
-
 </html>
