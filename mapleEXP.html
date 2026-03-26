@@ -5,7 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MapleStory EXP Pro</title>
     <style>
+        /* =========================================================
+           統一設定區：所有的大小、長度、位子、字體大小都在這裡調整
+           ========================================================= */
         :root {
+            /* --- 1. 排版與框架大小 --- */
+            --layout-max-width: 1300px;      /* 網頁最大寬度 */
+            --layout-gap: 20px;              /* 左右兩大區塊的間距 */
+            --layout-left-col: 1fr;          /* 左側區塊寬度 (1fr代表填滿剩餘空間) */
+            --layout-right-col: 550px;       /* 右側區塊寬度 */
+
+            /* --- 2. 內外邊距 (位子與距離) --- */
+            --body-padding: 30px 20px 30px 90px; /* 網頁整體邊距 (上 右 下 左) */
+            --panel-padding: 24px;               /* 面板內部的邊距 */
+            --h2-margin-bottom: 15px;            /* 標題下方的外邊距 */
+            --h2-padding-bottom: 8px;            /* 標題底線與文字的距離 */
+            --form-row-gap: 15px;                /* 表單左右欄位的間距 */
+            --form-row-margin-bottom: 12px;      /* 表單上下的間距 */
+            --input-padding: 10px;               /* 輸入框內部的文字邊距 */
+            
+            /* --- 3. 寬度與高度 --- */
+            --input-width: 100%;             /* 輸入框預設寬度 */
+            --short-input-width: 80%;        /* 短輸入框的寬度 */
+            --theme-btn-size: 52px;          /* 太陽/月亮按鈕的尺寸 (長寬) */
+            --checkbox-size: 16px;           /* 勾選框的尺寸 (長寬) */
+            
+            /* --- 4. 字體大小 --- */
+            --font-size-base: 1rem;          /* 網頁基礎字體大小 */
+            --font-size-h2: 1.1rem;          /* 標題字體大小 */
+            --font-size-label: 0.85rem;      /* 標籤(如: 當前等級)字體大小 */
+            --font-size-check: 0.8rem;       /* 勾選框旁的文字大小 */
+            --font-size-forecast: 0.85rem;   /* 預測列表的文字大小 */
+            --font-size-theme-btn: 1.6rem;   /* 太陽/月亮圖示大小 */
+            --font-size-lock-btn: 0.9rem;    /* 鎖定按鈕字體大小 */
+
+            /* --- 5. 顏色設定 (亮色主題) --- */
             --bg: linear-gradient(135deg, #f3f9ff 0%, #e2eafc 100%);
             --glass: rgba(255, 255, 255, 0.75);
             --glass-border: rgba(255, 255, 255, 0.5);
@@ -17,6 +51,7 @@
             --btn-hover: rgba(255, 255, 255, 0.9);
         }
 
+        /* --- 顏色設定 (暗色主題) --- */
         [data-theme="dark"] {
             --bg: linear-gradient(135deg, #1a1a1e 0%, #111114 100%);
             --glass: rgba(40, 40, 45, 0.8);
@@ -36,35 +71,38 @@
         body {
             font-family: "Segoe UI", sans-serif;
             margin: 0; 
-            padding: 30px 20px 30px 90px; 
+            padding: var(--body-padding); 
+            font-size: var(--font-size-base);
             min-height: 100vh;
             background: var(--bg); color: var(--text);
             display: flex; justify-content: center;
         }
 
         .layout {
-            display: grid; grid-template-columns: 1fr 550px;
-            gap: 20px; width: 100%; max-width: 1300px;
+            display: grid; 
+            grid-template-columns: var(--layout-left-col) var(--layout-right-col);
+            gap: var(--layout-gap); 
+            width: 100%; 
+            max-width: var(--layout-max-width);
         }
 
-        .input-panel {
-            position: relative; 
-        }
+        .input-panel { position: relative; }
 
         .panel {
             background: var(--glass); backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
-            border-radius: 16px; padding: 24px; box-shadow: var(--shadow);
+            border-radius: 16px; 
+            padding: var(--panel-padding); 
+            box-shadow: var(--shadow);
         }
 
-        /* 將按鈕移至左上角並固定 */
         .theme-toggle-container {
             position: fixed;
             left: 20px;
             top: 30px;
-            width: 52px;
-            height: 52px;
+            width: var(--theme-btn-size);
+            height: var(--theme-btn-size);
             border-radius: 50%;
             background: var(--glass);
             backdrop-filter: blur(20px);
@@ -75,28 +113,45 @@
             cursor: pointer; user-select: none;
             z-index: 100;
         }
-        .theme-toggle-container:hover {
-            background: var(--btn-hover);
-            transform: scale(1.05);
+        .theme-toggle-container:hover { background: var(--btn-hover); transform: scale(1.05); }
+        .theme-toggle-container:active { transform: scale(0.95); }
+        .theme-btn { font-size: var(--font-size-theme-btn); margin: 0; }
+
+        .header-flex {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: var(--h2-margin-bottom);
         }
-        .theme-toggle-container:active {
-            transform: scale(0.95);
-        }
-        .theme-btn { font-size: 1.6rem; margin: 0; }
 
         h2 { 
-            margin: 0 0 15px 0; font-size: 1.1rem; 
+            margin: 0; 
+            font-size: var(--font-size-h2); 
             border-bottom: 2px solid var(--accent); 
-            padding-bottom: 8px; width: fit-content; 
+            padding-bottom: var(--h2-padding-bottom); 
+            width: fit-content; 
         }
 
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 12px; }
-        .short-input { width: 80%; }
+        .lock-btn {
+            background: var(--accent); color: #fff;
+            border: none; padding: 6px 18px; border-radius: 20px;
+            cursor: pointer; font-size: var(--font-size-lock-btn);
+            font-weight: bold; box-shadow: var(--shadow);
+        }
+        .lock-btn.locked { background: #ff4d4f; }
 
-        label { display: block; font-size: 0.85rem; margin-bottom: 5px; font-weight: 600; }
+        .form-row { 
+            display: grid; grid-template-columns: 1fr 1fr; 
+            gap: var(--form-row-gap); margin-bottom: var(--form-row-margin-bottom); 
+        }
+        .short-input { width: var(--short-input-width); }
+
+        label { display: block; font-size: var(--font-size-label); margin-bottom: 5px; font-weight: 600; }
         
         input, select {
-            width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border);
+            width: var(--input-width); padding: var(--input-padding); 
+            border-radius: 8px; border: 1px solid var(--glass-border);
             background: var(--input); color: var(--text); outline: none; box-sizing: border-box;
         }
 
@@ -105,15 +160,26 @@
             box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.2);
         }
 
+        /* 移除數字輸入框預設的上下箭頭 */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield; /* Firefox */
+        }
+
         .check-group { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0; }
-        .check-item { display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 0.8rem; }
+        .check-item { display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-size-check); }
         
         input[type="radio"], input[type="checkbox"] {
-            appearance: none; width: 16px; height: 16px; border: 2px solid var(--accent);
+            appearance: none; width: var(--checkbox-size); height: var(--checkbox-size); 
+            border: 2px solid var(--accent);
             border-radius: 50%; cursor: pointer; position: relative; background: var(--input);
         }
         input:checked::before {
-            content: ""; position: absolute; width: 8px; height: 8px;
+            content: ""; position: absolute; width: calc(var(--checkbox-size) / 2); height: calc(var(--checkbox-size) / 2);
             background: var(--accent); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);
         }
 
@@ -124,7 +190,7 @@
         }
         .forecast-item {
             display: flex; justify-content: space-between; padding: 10px;
-            background: var(--item-bg); border-radius: 8px; font-size: 0.85rem;
+            background: var(--item-bg); border-radius: 8px; font-size: var(--font-size-forecast);
             border-left: 3px solid var(--accent);
         }
         .lvl-tag { font-weight: bold; }
@@ -145,8 +211,9 @@
 
 <div class="layout">
     <div class="panel input-panel">
-
-        <h2>⚙️ 練功參數</h2>
+        <div class="header-flex">
+            <h2>⚙️ 練功參數</h2>
+        </div>
         <div class="form-row">
             <div>
                 <label>👤 當前等級</label>
@@ -157,31 +224,33 @@
                 <input type="number" id="targetLevel" value="300" class="short-input">
             </div>
         </div>
-        <div class="form-group">
-            <label>📊 當前經驗 %</label>
-            <input type="number" id="curExpP" step="0.0001" value="0" class="short-input">
-        </div>
-
-        <div class="form-group" style="margin-top:20px;">
-            <label>⚔️ 打怪每秒經驗</label>
-            <input type="text" id="expPerSec" placeholder="11E">
+        
+        <div class="form-row">
+            <div>
+                <label>📊 當前經驗 %</label>
+                <input type="number" id="curExpP" step="0.0001" value="0" class="short-input">
+            </div>
+            <div>
+                <label>⚔️ 打怪每秒經驗</label>
+                <input type="text" id="expPerSec" placeholder="11E" class="short-input">
+            </div>
         </div>
 
         <div class="form-row">
             <div>
                 <label>每日時數 (hr)</label>
-                <input type="number" id="huntH" value="1" min="0" class="short-input">
+                <input type="number" id="huntH" value="1" min="0" max="23" oninput="if(this.value > 23) this.value = 23; if(this.value < 0) this.value = 0;" class="short-input">
             </div>
             <div>
                 <label>每日分鐘 (min)</label>
-                <input type="number" id="huntM" value="0" min="0" class="short-input">
+                <input type="number" id="huntM" value="0" min="0" max="60" oninput="if(this.value > 60) this.value = 60; if(this.value < 0) this.value = 0;" class="short-input">
             </div>
         </div>
         
         <div class="form-row">
             <div>
                 <label>🎢 怪物公園 (每日 0-7次)</label>
-                <input type="number" id="mpDaily" value="0" min="0" max="7" class="short-input">
+                <input type="number" id="mpDaily" value="0" min="0" max="7" oninput="if(this.value > 7) this.value = 7; if(this.value < 0) this.value = 0;" class="short-input">
             </div>
             <div>
                 <label>選擇區域 (需符合等級)</label>
@@ -219,7 +288,7 @@
             </div>
             <div>
                 <label>每日掛機時數 (hr)</label>
-                <input type="number" id="afkH" value="0" min="0" max="24" class="short-input">
+                <input type="number" id="afkH" placeholder="0" min="0" max="24" oninput="if(this.value > 24) this.value = 24; if(this.value < 0) this.value = 0;" class="short-input">
             </div>
         </div>
 
@@ -266,13 +335,36 @@
     </div>
 
     <div class="panel">
-        <h2>📅 升等時程預測</h2>
+        <div class="header-flex">
+            <h2>📅 升等時程預測</h2>
+            <button id="lockBtn" class="lock-btn" onclick="toggleLock()">鎖定</button>
+        </div>
         <div id="summary" style="margin-bottom:10px; font-weight:bold; color:var(--accent);"></div>
         <div class="forecast-list" id="forecastList"></div>
     </div>
 </div>
 
 <script>
+    // --- 鎖定狀態與切換邏輯 ---
+    let isLocked = false;
+
+    function toggleLock(isInit = false) {
+        if (!isInit) {
+            isLocked = !isLocked; 
+            localStorage.setItem('maple_isLocked', isLocked); 
+        }
+        
+        const btn = document.getElementById('lockBtn');
+        if (isLocked) {
+            btn.innerText = '🔒 已鎖定';
+            btn.classList.add('locked');
+        } else {
+            btn.innerText = '鎖定';
+            btn.classList.remove('locked');
+            if (!isInit) calculate(); 
+        }
+    }
+
     const EXP_REQ = {
         1:15, 2:34, 3:57, 4:92, 5:135, 200:2207026470, 250:442457484960, 
         260:1731919984062, 261:1749239183902, 262:1766731575741, 263:1784398891498, 264:1802242880412,
@@ -415,33 +507,25 @@
             let dayOfWeek = today.getDay();
             let dailyGain = 0;
 
-            // 打怪收益
             if(huntDays.includes(dayOfWeek)) dailyGain += eps * huntSec;
-            
-            // 掛機收益
             if(tempLvl >= 100) dailyGain += (afkBase / 5) * afkSec;
 
-            // 每日普通怪物公園
             if(mpDaily > 0 && mpRegion !== 'none' && MP_DATA[mpRegion]) {
                 if (tempLvl >= MP_DATA[mpRegion].req) {
                     dailyGain += mpDaily * MP_DATA[mpRegion].exp;
                 }
             }
             
-            // 週常收益
             if(dayOfWeek === 0 && tempLvl >= 260) {
-                // 紅月之森
                 if(document.getElementById('rmPart').checked) {
                     let rm = RM_BASE[Math.floor(tempLvl/10)*10] || RM_BASE[290];
                     dailyGain += document.getElementById('rmCert').checked ? rm*2 : rm;
                 }
                 
-                // 終極怪物公園 (已無倍率選項，預設x1)
                 if(document.getElementById('exPart').checked) {
                     dailyGain += (EX_BASE[Math.floor(tempLvl/10)*10] || EX_BASE[290]);
                 }
 
-                // 史詩副本
                 let isEpiHigh = document.getElementById('epiHigh').checked;
                 let isEpiAng = document.getElementById('epiAng').checked;
 
@@ -471,8 +555,10 @@
             }
         }
 
-        document.getElementById('forecastList').innerHTML = listHtml || "無法升等，請檢查收益設定";
-        document.getElementById('summary').innerText = `預計花費：${dayCount} 天`;
+        if (!isLocked) {
+            document.getElementById('forecastList').innerHTML = listHtml || "無法升等，請檢查收益設定";
+            document.getElementById('summary').innerText = `預計花費：${dayCount} 天`;
+        }
         
         saveData();
     }
@@ -492,9 +578,14 @@
             document.getElementById('expPerSec').value = "11E";
         }
         calculate();
+
+        const savedLock = localStorage.getItem('maple_isLocked');
+        if (savedLock === 'true') {
+            isLocked = true;
+            toggleLock(true); 
+        }
     };
 </script>
 
 </body>
 </html>
-
