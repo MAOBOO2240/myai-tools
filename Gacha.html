@@ -11,6 +11,14 @@
 
         :root {
             /* =========================================
+               「期望抽數」懸浮框設定區 (可在此統一修改大小)
+               ========================================= */
+            --expected-modal-width: 1600px;         /* 期望抽數懸浮框的最大寬度 */
+            --expected-modal-height: 100vh;         /* 期望抽數懸浮框的最大高度 */
+            --expected-font-size: 16px;             /* 期望抽數懸浮框內的基礎字體大小 */
+            --expected-grid-cols: 180px;            /* 期望抽數懸浮框內，每個格子的最小寬度 */
+
+            /* =========================================
                尺寸與長寬設定區 (統一在此修改大小)
                ========================================= */
             --app-max-width: 1400px;       /* 整個應用程式外框的最大寬度 */
@@ -48,19 +56,25 @@
             --danger: #c42b1c;
             --success: #0f7b0f;
             --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+
+            /* 最新抽到道具的高亮顏色 */
+            --new-draw-bg: #e0f7fa; /* 非常淡的淺藍色 */
         }
 
         [data-theme="dark"] {
-            --bg-color: #202020;
-            --text-color: #ffffff;
-            --panel-bg: rgba(40, 40, 40, 0.7);
-            --panel-border: rgba(80, 80, 80, 0.5);
-            --border-color: #444444;
-            --primary: #4cc2ff;
-            --primary-hover: #47b1e8;
-            --danger: #ff99a4;
-            --success: #6ccb5f;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --bg-color: #202020;             /* 背景顏色：極深灰色（接近黑但較柔和） */
+            --text-color: #ffffff;           /* 文字顏色：純白色 */
+            --panel-bg: rgba(40, 40, 40, 0.7); /* 面板背景：深灰色，且帶有 70% 的透明度（半透明感） */
+            --panel-border: rgba(80, 80, 80, 0.5); /* 面板邊框：中灰色，帶有 50% 的透明度 */
+            --border-color: #444444;         /* 一般邊框顏色：深灰色（比背景稍微亮一點點） */
+            --primary: #4cc2ff;              /* 主要色彩：亮天藍色（通常用於按鈕或標題） */
+            --primary-hover: #47b1e8;        /* 主要色彩懸停：略深的藍色（滑鼠移上去時的效果） */
+            --danger: #ff99a4;               /* 危險/錯誤色彩：淺粉紅色（這就是你說的紅字，在深底上很清晰） */
+            --success: #6ccb5f;              /* 成功/正確色彩：草綠色 */
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* 陰影：向下的黑色半透明柔和陰影 */
+
+		 深色模式下的最新抽到道具的高亮顏色 */
+		new-draw-bg: rgba(76, 194, 255, 0.15); /* 帶有透明度的微光藍，讓文字能跳出來 */
         }
 
         /* 現代風格滾動條 */
@@ -159,13 +173,14 @@
             gap: 6px;
         }
 
-        button:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+        button:hover:not(:disabled) { background-color: var(--primary-hover); transform: translateY(-1px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(50%); }
         button.danger { background-color: var(--danger); }
-        button.danger:hover { filter: brightness(0.9); }
+        button.danger:hover:not(:disabled) { filter: brightness(0.9); }
         button.success { background-color: var(--success); }
-        button.success:hover { filter: brightness(0.9); }
+        button.success:hover:not(:disabled) { filter: brightness(0.9); }
         button.secondary { background-color: transparent; color: var(--text-color); border: 1px solid var(--border-color); }
-        button.secondary:hover { background-color: var(--border-color); }
+        button.secondary:hover:not(:disabled) { background-color: var(--border-color); }
         button.icon-only { padding: 10px; font-size: 1.2rem; }
 
         .table-container {
@@ -175,10 +190,42 @@
             border-radius: var(--radius-btn);
         }
 
-        table { width: 100%; border-collapse: collapse; }
+        /* =========================================
+           表格全面修正區域 (確保四角圓角且不跑版)
+           ========================================= */
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
         th { text-align: left; padding: 10px; border-bottom: 2px solid var(--border-color); font-weight: 600; position: sticky; top: 0; background: var(--panel-bg); backdrop-filter: blur(10px); z-index: 1;}
         td { padding: 8px 10px; border-bottom: 1px solid var(--border-color); }
         td input { width: 100%; margin: 0; padding: 6px; } 
+
+        #inventoryList tr:nth-child(even) { background-color: transparent; }
+        [data-theme="dark"] #inventoryList tr:nth-child(even) { background-color: transparent; }
+
+	/* --- 針對最新抽到道具的高亮列 (實體底色、還原機率顏色版) --- */
+        .new-draw-highlight td {
+            background-color: #e0f7fa !important; 
+            color: #202020; /* 這裡拔掉 !important，讓 JS 的紅藍色可以透出來 */
+            
+            border-top: 3px solid transparent;
+            border-bottom: 3px solid transparent;
+            background-clip: padding-box; 
+        }
+
+        .new-draw-highlight td:first-child {
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+        }
+
+        .new-draw-highlight td:last-child {
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        [data-theme="dark"] .new-draw-highlight td {
+            background-color: #1a365d !important; /* 維持實體的深海藍色背景 */
+            color: #ffffff; /* 這裡拔掉 !important，讓紅字和藍字回來！ */
+            text-shadow: none; 
+        }
 
         .flex-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .flex-col { display: flex; flex-direction: column; gap: 10px; }
@@ -202,14 +249,50 @@
         .stats-grid > div { display: flex; align-items: center; gap: 5px; }
         .profit { color: var(--success); } .loss { color: var(--danger); }
 
-        #settingsModal {
+        /* 彈出視窗共同設定 */
+        .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center;
             backdrop-filter: blur(5px);
         }
         .modal-content {
-            background: var(--bg-color); width: var(--modal-width); padding: 30px; border-radius: var(--radius-main);
+            background: var(--bg-color); padding: 30px; border-radius: var(--radius-main);
             box-shadow: var(--shadow); border: 1px solid var(--panel-border);
+        }
+
+        /* 設定視窗專屬 */
+        #settingsModal .modal-content { width: var(--modal-width); }
+
+        /* 期望抽數懸浮框專屬設定 */
+        #expectedModal .modal-content {
+            width: 90%; max-width: var(--expected-modal-width);
+            max-height: var(--expected-modal-height);
+            display: flex; flex-direction: column;
+            font-size: var(--expected-font-size);
+        }
+        .expected-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(var(--expected-grid-cols), 1fr));
+            gap: 12px;
+            overflow-y: auto;
+            margin-top: 15px;
+            padding: 5px;
+        }
+        .expected-item {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-btn);
+            background: var(--panel-bg);
+            transition: all 0.2s;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        /* 白底特效 (強制黑字白底) */
+        .expected-item:hover {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-color: #ffffff;
         }
     </style>
 </head>
@@ -245,14 +328,17 @@
         <div class="panel">
             <h3>📝 獎池道具</h3>
             
-		<div style="margin-bottom: 20px; background: rgba(0,0,0,0.03); padding: 15px; border-radius: var(--radius-btn); border: 1px solid var(--border-color);">
-    		<div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 10px;">🪄 智慧文字解析</div>
-    		<div>
-        		<p style="font-size: 0.85rem; opacity: 0.8; margin-top: 0;">直接貼上帶有數值%數的文字<br>例如：回真卷軸 100% 1.20%</p>
-        		<textarea id="smartInput" placeholder="在此貼上文字..."></textarea>
-        		<button class="success" onclick="smartParse()">⚡ 解析並加入</button>
-    		</div>
-		</div>
+            <div style="margin-bottom: 20px; background: rgba(0,0,0,0.03); padding: 15px; border-radius: var(--radius-btn); border: 1px solid var(--border-color);">
+                <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 10px;">🪄 智慧文字解析</div>
+                <div>
+                    <p style="font-size: 0.85rem; opacity: 0.8; margin-top: 0;">直接貼上帶有數值%數的文字<br>例如：回真卷軸 100% 1.20%</p>
+                    <textarea id="smartInput" placeholder="在此貼上文字..."></textarea>
+                    <div class="flex-row" style="gap: 10px;">
+                        <button class="success" onclick="smartParse()">⚡ 解析並加入</button>
+                        <button class="primary" id="expectedBtn" onclick="openExpectedModal()" disabled>📊 期望抽數</button>
+                    </div>
+                </div>
+            </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px 10px; margin-bottom: 15px; align-items: end;">
                 <div class="form-group" style="grid-column: 1 / 2;">
@@ -318,7 +404,7 @@
     </div>
 </div>
 
-<div id="settingsModal">
+<div id="settingsModal" class="modal-overlay">
     <div class="modal-content flex-col">
         <h3>系統設定</h3>
         <div class="form-group">
@@ -340,8 +426,21 @@
     </div>
 </div>
 
+<div id="expectedModal" class="modal-overlay">
+    <div class="modal-content flex-col">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">📊 期望抽數預估</h3>
+            <button class="danger icon-only" onclick="closeExpectedModal()" style="padding: 5px 10px;">❌</button>
+        </div>
+        <div class="expected-grid" id="expectedGrid">
+            </div>
+    </div>
+</div>
+
 <script>
     let appData = { themes: {}, currentThemeId: null };
+    // 儲存最新抽到的道具 ID (用於庫存高亮)
+    let latestDrawItemIds = [];
 
     function init() {
         let btn = document.getElementById('themeToggleBtn');
@@ -391,6 +490,28 @@
         localStorage.setItem('gachaScale', scale);
     }
 
+    // 期望抽數懸浮框功能
+    function openExpectedModal() {
+        let theme = appData.themes[appData.currentThemeId];
+        if (theme.items.length === 0) return;
+
+        let html = '';
+        theme.items.forEach(item => {
+            // 期望值 E = 1 / p (換算成百分比就是 100 / p)
+            let expectedDraws = item.prob > 0 ? parseFloat((100 / item.prob).toFixed(2)) : "∞";
+            html += `
+                <div class="expected-item">
+                    <strong style="font-size: 1.05em; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">${item.name}</strong>
+                    <span style="font-size: 0.9em; margin-top: 4px;">機率: ${item.prob}%</span>
+                    <span style="color: #0067c0; font-weight: bold;">期望抽數: ${expectedDraws} 抽</span>
+                </div>
+            `;
+        });
+        document.getElementById('expectedGrid').innerHTML = html;
+        document.getElementById('expectedModal').style.display = 'flex';
+    }
+    function closeExpectedModal() { document.getElementById('expectedModal').style.display = 'none'; }
+
     function smartParse() {
         let text = document.getElementById('smartInput').value;
         if (!text.trim()) { alert("請先貼上文字！"); return; }
@@ -435,7 +556,7 @@
         
         let poolHtml = '';
         theme.items.forEach((item, index) => {
-	    let valueDisplay = item.value === 0 ? '' : item.value;
+            let valueDisplay = item.value === 0 ? '' : item.value;
 
             poolHtml += `<tr>
                 <td>
@@ -450,6 +571,15 @@
             </tr>`;
         });
         document.getElementById('itemPoolList').innerHTML = poolHtml;
+
+        // 判斷「期望抽數」按鈕是否啟用
+        let expectedBtn = document.getElementById('expectedBtn');
+        if (theme.items.length > 0) {
+            expectedBtn.removeAttribute('disabled');
+        } else {
+            expectedBtn.setAttribute('disabled', 'true');
+        }
+
         renderInventory();
     }
 
@@ -465,6 +595,12 @@
         let invHtml = '';
         let totalCost = theme.totalDraws * theme.cost;
         let totalValue = 0;
+
+        // 判斷最低機率 (用於標記星星)
+        let minProb = -1;
+        if (theme.items.length > 0) {
+            minProb = Math.min(...theme.items.map(i => i.prob));
+        }
 
         theme.items.forEach(item => {
             let count = theme.inventory[item.id] || 0;
@@ -485,8 +621,20 @@
                     }
                 }
 
-                invHtml += `<tr>
-                    <td>${item.name}</td>
+                // 加入星星判定
+                let displayName = item.name;
+                if (item.prob === minProb) {
+                    displayName = `⭐ ${displayName}`;
+                }
+
+                // 判斷是否為最新抽到的道具 (用於常駐淡藍色底)
+                let trClass = '';
+                if (latestDrawItemIds.includes(item.id)) {
+                    trClass = 'new-draw-highlight';
+                }
+
+                invHtml += `<tr class="${trClass}">
+                    <td>${displayName}</td>
                     <td>${count}</td>
                     <td>${itemTotalValue}</td>
                     <td style="font-weight: bold; color: ${probColor};">${actualProbStr}%</td>
@@ -497,7 +645,14 @@
         let missCount = theme.inventory['miss_item'] || 0;
         if (missCount > 0) {
             let missProbNum = theme.totalDraws > 0 ? (missCount / theme.totalDraws) * 100 : 0;
-            invHtml += `<tr style="opacity: 0.6;">
+
+            // 判斷未中獎是否為最新抽到的 (用於常駐淡藍色底)
+            let missTrClass = '';
+            if (latestDrawItemIds.includes('miss_item')) {
+                missTrClass = 'new-draw-highlight';
+            }
+
+            invHtml += `<tr style="opacity: 0.6;" class="${missTrClass}">
                 <td>未中獎 (銘謝惠顧)</td>
                 <td>${missCount}</td>
                 <td>0</td>
@@ -564,6 +719,9 @@
     function drawGacha(times) {
         let theme = appData.themes[appData.currentThemeId];
         if (theme.items.length === 0) { alert("獎池為空！"); return; }
+        
+        // 開始抽獎前，清空上一次的抽獎高亮記錄
+        latestDrawItemIds = [];
         theme.totalDraws += times;
         
         for (let i = 0; i < times; i++) {
@@ -573,11 +731,20 @@
                 if (rand <= cumulative) {
                     if (!theme.inventory[item.id]) theme.inventory[item.id] = 0;
                     theme.inventory[item.id]++;
+                    
+                    // 記錄新抽到的道具 ID
+                    if (!latestDrawItemIds.includes(item.id)) {
+                        latestDrawItemIds.push(item.id);
+                    }
                     gotItem = true; break;
                 }
             }
             if (!gotItem) { 
                 theme.inventory['miss_item'] = (theme.inventory['miss_item'] || 0) + 1; 
+                // 記錄未中獎為新抽到的 (miss_item 也視為一種道具 ID)
+                if (!latestDrawItemIds.includes('miss_item')) {
+                    latestDrawItemIds.push('miss_item');
+                }
             }
         }
         renderInventory(); saveData();
@@ -592,6 +759,9 @@
             alert("這個道具機率是 0%，永遠抽不到啦！");
             return;
         }
+
+        // 開始抽獎前，清空上一次的抽獎高亮記錄
+        latestDrawItemIds = [];
 
         let draws = 0;
         let gotIt = false;
@@ -609,6 +779,11 @@
                     if (!theme.inventory[item.id]) theme.inventory[item.id] = 0;
                     theme.inventory[item.id]++;
                     
+                    // 記錄新抽到的道具 ID
+                    if (!latestDrawItemIds.includes(item.id)) {
+                        latestDrawItemIds.push(item.id);
+                    }
+
                     gotAny = true;
                     if (item.id === targetId) gotIt = true;
                     break;
@@ -616,6 +791,10 @@
             }
             if (!gotAny) {
                 theme.inventory['miss_item'] = (theme.inventory['miss_item'] || 0) + 1;
+                // 記錄未中獎為新抽到的 (miss_item 也視為一種道具 ID)
+                if (!latestDrawItemIds.includes('miss_item')) {
+                    latestDrawItemIds.push('miss_item');
+                }
             }
         }
 
@@ -633,6 +812,8 @@
         if(confirm("確定要清空抽獎紀錄？(獎池會保留)")) {
             appData.themes[appData.currentThemeId].inventory = {}; 
             appData.themes[appData.currentThemeId].totalDraws = 0;
+            // 清空最新抽獎高亮記錄
+            latestDrawItemIds = [];
             renderInventory(); saveData();
         }
     }
