@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>行事曆</title>
+    <style>
+        /* =========================================
+           1. 所有控制框框、邊界、字型大小的核心數據
+           ========================================= */
+        :root {
+            --zoom-image-scale: 90%;            
+
+            --font-size-base: 16px;
+            --font-size-title: 1.5rem;          
+            --font-size-cal-header: 1.3rem;     
+            --font-size-cal-date: 1.1rem;       
+            --font-size-event-title: 1.6rem;    
+            --font-size-time: 1rem;             
+            --font-size-cal-event: 0.85rem;     
+
+            --border-radius-panel: 20px;        
+            --border-radius-item: 16px;         
+            --border-radius-btn: 20px;          
+            --border-radius-img: 12px;          
+            --border-radius-scroll: 10px;       
+
+            --spacing-main: 20px;               
+            --spacing-item: 15px;               
+            --border-width: 1px;                
+            
+            --img-size-left: 90px;              
+            --img-size-cal: 24px;               
+
+            --bg-color: #1a1a1a;
+            --panel-bg: #252526;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+            --border-color: #333333;
+            --accent-color: #4CAF50;
+            --accent-hover: #45a049;
+            --danger-color: #f44336;
+            --danger-hover: #d32f2f;
+            --edit-color: #2196F3;
+            --edit-hover: #1976D2;
+            --item-bg: #333333;
+            --item-bg-hover: #3d3d3d;
+            --scroll-track: #1e1e1e;
+            --scroll-thumb: #555555;
+            --today-bg: rgba(76, 175, 80, 0.2);
+            --modal-bg: #2d2d2d;
+            --input-bg: #1e1e1e;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f5f5f5;
+            --panel-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --border-color: #dddddd;
+            --accent-color: #4CAF50;
+            --accent-hover: #45a049;
+            --item-bg: #f9f9f9;
+            --item-bg-hover: #f0f0f0;
+            --scroll-track: #f0f0f0;
+            --scroll-thumb: #cccccc;
+            --today-bg: rgba(76, 175, 80, 0.1);
+            --modal-bg: #ffffff;
+            --input-bg: #f5f5f5;
+        }
+
+        * {
+            box-sizing: border-box; margin: 0; padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: var(--font-size-base);
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        body {
+            background-color: var(--bg-color); color: var(--text-main);
+            height: 100vh; display: flex; overflow: hidden;
+            user-select: none; 
+        }
+
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--scroll-track); border-radius: var(--border-radius-scroll); }
+        ::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: var(--border-radius-scroll); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-color); }
+
+        #theme-toggle {
+            position: absolute; top: 15px; left: 15px;
+            background-color: var(--panel-bg); color: var(--text-main);
+            border: var(--border-width) solid var(--border-color);
+            width: 45px; height: 45px; border-radius: 50%;
+            cursor: pointer; z-index: 100; font-size: 1.2rem;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            display: flex; width: 100%; height: 100%;
+            padding: var(--spacing-main); padding-top: 65px; gap: var(--spacing-main);
+        }
+
+        /* --- 左半部面板 --- */
+        .left-panel {
+            flex: 1; background-color: var(--panel-bg); border-radius: var(--border-radius-panel);
+            display: flex; flex-direction: column; padding: var(--spacing-main);
+            border: var(--border-width) solid var(--border-color);
+        }
+
+        .schedule-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: var(--spacing-main); padding-bottom: 10px;
+            border-bottom: var(--border-width) solid var(--border-color);
+        }
+
+        #selected-date-title { font-size: var(--font-size-title); font-weight: bold; }
+
+        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+        .action-btn {
+            color: white; border: none; padding: 8px 16px;
+            border-radius: var(--border-radius-btn); cursor: pointer; font-weight: bold;
+            display: flex; align-items: center; gap: 4px; transition: all 0.2s;
+        }
+        .btn-add { background-color: var(--accent-color); }
+        .btn-add:hover { background-color: var(--accent-hover); }
+        
+        .btn-edit { background-color: var(--edit-color); }
+        .btn-edit:hover:not(:disabled) { background-color: var(--edit-hover); }
+        
+        .btn-delete { background-color: #f44336 !important; color: white !important; }
+        .btn-delete:hover:not(:disabled) { background-color: #d32f2f !important; }
+
+        .action-btn:disabled, .action-btn.disabled {
+            background-color: #555 !important; color: #999 !important;
+            cursor: not-allowed; opacity: 0.7;
+        }
+
+        .event-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: var(--spacing-item); padding-right: 5px; }
+
+        .event-item {
+            background-color: var(--item-bg); border-radius: var(--border-radius-item);
+            padding: var(--spacing-item); display: flex; align-items: center; gap: var(--spacing-item);
+            border: 2px solid transparent; cursor: pointer;
+        }
+        .event-item:hover { background-color: var(--item-bg-hover); }
+        .event-item.selected-item { border-color: var(--accent-color); background-color: var(--today-bg); }
+
+        .event-left { display: flex; flex-direction: column; align-items: center; min-width: calc(var(--img-size-left) + 10px); }
+        
+        .event-image {
+            width: var(--img-size-left); height: var(--img-size-left); border-radius: var(--border-radius-img);
+            background-color: var(--input-bg); border: var(--border-width) solid var(--border-color);
+            display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); overflow: hidden;
+            transition: opacity 0.3s;
+        }
+        .event-image.has-image:hover { opacity: 0.8; }
+        .event-image img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .event-info { display: flex; flex-direction: column; gap: 4px; user-select: text; flex: 1; padding-bottom: 5px;}
+        .event-time-title-row { display: flex; align-items: baseline; gap: 15px; }
+        .event-time { font-size: var(--font-size-time); color: var(--text-muted); white-space: nowrap; font-weight: bold; }
+        
+        .event-title { font-size: var(--font-size-event-title); font-weight: bold; }
+        
+        .event-title-link {
+            color: #4daafc; text-decoration: none; cursor: pointer; z-index: 10;
+        }
+        [data-theme="light"] .event-title-link { color: #0066cc; }
+        .event-title-link:hover { text-decoration: underline; }
+
+        .event-right { flex: 1; display: flex; justify-content: space-between; align-items: center; }
+        .empty-state { text-align: center; color: var(--text-muted); margin-top: 50px; }
+
+        /* --- 右半部面板 --- */
+        .right-panel {
+            flex: 1; background-color: var(--panel-bg); border-radius: var(--border-radius-panel);
+            padding: var(--spacing-main); display: flex; flex-direction: column;
+            border: var(--border-width) solid var(--border-color);
+        }
+
+        .calendar-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: var(--spacing-main); }
+
+        #today-btn {
+            justify-self: start; background: var(--today-bg); color: var(--accent-color);
+            border: var(--border-width) solid var(--accent-color); padding: 6px 16px;
+            border-radius: var(--border-radius-item); cursor: pointer; font-weight: bold;
+        }
+
+        .calendar-nav { justify-self: center; display: flex; gap: var(--spacing-item); align-items: center; }
+        .nav-btn {
+            background: var(--item-bg); color: var(--text-main); border: var(--border-width) solid var(--border-color);
+            width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold;
+        }
+        .nav-btn:hover { background: var(--border-color); }
+        #current-month-year { font-size: var(--font-size-cal-header); font-weight: bold; }
+
+        .calendar-grid { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            grid-template-rows: repeat(6, 1fr);
+            gap: 10px; 
+            flex: 1; 
+            min-height: 0;
+        }
+
+        .weekday { display: flex; justify-content: center; align-items: center; padding-bottom: 10px; }
+        .weekday-circle {
+            width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; font-weight: bold; color: var(--text-muted);
+        }
+        .weekday.today .weekday-circle { background-color: var(--accent-color); color: white; }
+
+        .day-cell {
+            background-color: var(--item-bg); border-radius: var(--border-radius-item);
+            padding: 8px; cursor: pointer; display: flex; flex-direction: column; align-items: stretch;
+            min-height: 0; 
+            border: 2px solid transparent; overflow: hidden;
+            user-select: none; 
+        }
+        
+        .day-cell.other-month .day-number { color: var(--text-muted); opacity: 0.5; }
+        .day-cell.other-month { background-color: transparent; border: 1px dashed var(--border-color); }
+        
+        .day-cell:not(.active):hover { border-color: var(--border-color); background-color: var(--item-bg-hover); }
+        .day-cell.active { border-color: var(--accent-color); background-color: var(--today-bg); }
+        .day-cell.active:hover { border-color: var(--accent-color); background-color: var(--today-bg); }
+        
+        .day-cell.other-month.active .day-number { opacity: 1; color: var(--accent-color); }
+
+        .day-number { font-weight: bold; font-size: var(--font-size-cal-date); margin-bottom: 5px; text-align: left; }
+
+        .cal-events-container { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex: 1; pointer-events: auto; }
+        .cal-events-container::-webkit-scrollbar { width: 4px; }
+        
+        .cal-mini-event { display: flex; align-items: center; gap: 4px; background-color: var(--bg-color); padding: 2px 4px; border-radius: 6px; pointer-events: auto; }
+        .cal-mini-event img { width: var(--img-size-cal); height: var(--img-size-cal); border-radius: 4px; object-fit: cover; cursor: pointer; transition: transform 0.2s; flex-shrink: 0;}
+        .cal-mini-event img:hover { transform: scale(1.1); }
+        .cal-mini-event .no-img { width: var(--img-size-cal); height: var(--img-size-cal); border-radius: 4px; background-color: var(--border-color); display: inline-block; flex-shrink: 0;}
+        
+        .cal-mini-title { 
+            font-size: var(--font-size-cal-event); color: var(--text-main); 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+        }
+
+        /* --- 模態框共用 --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6);
+            display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .modal-overlay.show { opacity: 1; pointer-events: auto; }
+        .modal {
+            background: var(--modal-bg); padding: 30px; border-radius: var(--border-radius-panel);
+            width: 90%; max-width: 500px; border: var(--border-width) solid var(--border-color); display: flex; flex-direction: column; gap: 15px;
+        }
+        .modal h3 { margin-bottom: 10px; border-bottom: var(--border-width) solid var(--border-color); padding-bottom: 10px; }
+        
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-row { display: flex; gap: 10px; width: 100%; }
+        
+        .time-row select { flex: 1; padding: 12px 10px; font-size: 1.1rem; }
+
+        label { font-size: 0.9rem; color: var(--text-muted); }
+        input[type="text"], input[type="number"], input[type="date"], input[type="url"], select {
+            background: var(--input-bg); color: var(--text-main); border: var(--border-width) solid var(--border-color);
+            padding: 10px; border-radius: var(--border-radius-img); outline: none;
+        }
+        input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus, input[type="url"]:focus, select:focus { border-color: var(--accent-color); }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; }
+        
+        .custom-file-upload {
+            display: flex; align-items: center; justify-content: center; background: var(--input-bg); color: var(--text-main);
+            border: var(--border-width) solid var(--border-color); padding: 10px; border-radius: var(--border-radius-item);
+            cursor: pointer; transition: border-color 0.3s;
+        }
+        .custom-file-upload:hover { border-color: var(--accent-color); }
+        input[type="file"] { display: none; }
+
+        .week-selector { display: flex; gap: 5px; justify-content: space-between; }
+        .week-btn {
+            background: var(--input-bg); border: var(--border-width) solid var(--border-color); color: var(--text-main);
+            width: 35px; height: 35px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .week-btn.selected { background: var(--accent-color); color: white; border-color: var(--accent-color); }
+        
+        .checkbox-container {
+            display: flex; align-items: center; gap: 10px; cursor: pointer;
+            padding: 12px; background: rgba(0,0,0,0.2); border-radius: 10px; border: 1px solid var(--border-color);
+            margin-top: 5px; transition: background 0.2s;
+        }
+        .checkbox-container:hover { background: rgba(0,0,0,0.3); }
+        [data-theme="light"] .checkbox-container { background: rgba(0,0,0,0.05); }
+        [data-theme="light"] .checkbox-container:hover { background: rgba(0,0,0,0.1); }
+        .checkbox-container input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent-color); cursor: pointer; }
+        
+        .modal-actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 15px; width: 100%; }
+        
+        .btn-neutral { background: #555; color: white; border: none; padding: 10px 20px; border-radius: var(--border-radius-btn); cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .btn-neutral:hover { background: #666; }
+        
+        .btn-primary-modal { background: var(--accent-color); color: white; border: none; padding: 10px 20px; border-radius: var(--border-radius-btn); cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .btn-primary-modal:hover { background: var(--accent-hover); }
+
+        .btn-danger-modal { background: var(--danger-color); color: white; border: none; padding: 10px 20px; border-radius: var(--border-radius-btn); cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .btn-danger-modal:hover { background: var(--danger-hover); }
+
+        /* --- 圖片放大預覽背景層 --- */
+        .image-zoom-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85);
+            display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .image-zoom-overlay.show { opacity: 1; pointer-events: auto; }
+        .image-zoom-overlay img {
+            max-width: var(--zoom-image-scale); max-height: var(--zoom-image-scale); border-radius: var(--border-radius-item);
+            box-shadow: 0 4px 25px rgba(0,0,0,0.5); transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .image-zoom-overlay.show img { transform: scale(1); }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <button id="theme-toggle" title="切換主題">☀️</button>
+
+    <div class="container">
+        <div class="left-panel">
+            <div class="schedule-header">
+                <div id="selected-date-title">選擇日期</div>
+                <div class="header-actions">
+                    <button id="add-btn" class="action-btn btn-add">➕ 新增</button>
+                    <button id="edit-btn" class="action-btn btn-edit">✏️ 修改</button>
+                    <button id="delete-btn" class="action-btn btn-delete">🗑️ 刪除</button>
+                </div>
+            </div>
+            
+            <div class="event-list" id="event-list">
+                <div class="empty-state">此日無行程</div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="calendar-header">
+                <button id="today-btn">今天</button>
+                <div class="calendar-nav">
+                    <button class="nav-btn" id="prev-month">❮</button>
+                    <div id="current-month-year">2026年 4月</div>
+                    <button class="nav-btn" id="next-month">❯</button>
+                </div>
+                <div></div>
+            </div>
+            <div class="calendar-grid" id="calendar-grid">
+                <div class="weekday" id="wd-1"><div class="weekday-circle">一</div></div>
+                <div class="weekday" id="wd-2"><div class="weekday-circle">二</div></div>
+                <div class="weekday" id="wd-3"><div class="weekday-circle">三</div></div>
+                <div class="weekday" id="wd-4"><div class="weekday-circle">四</div></div>
+                <div class="weekday" id="wd-5"><div class="weekday-circle">五</div></div>
+                <div class="weekday" id="wd-6"><div class="weekday-circle">六</div></div>
+                <div class="weekday" id="wd-0"><div class="weekday-circle">日</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <h3 id="modal-title">新增行程</h3>
+            <div class="form-group">
+                <label>提醒內容 (標題)</label>
+                <input type="text" id="event-title" placeholder="請輸入行程名稱" required>
+            </div>
+            
+            <div class="form-group" id="edit-date-group" style="display: none;">
+                <label>日期</label>
+                <input type="date" id="event-date">
+            </div>
+
+            <div class="form-group">
+                <label>時間 (12小時制)</label>
+                <div class="form-row time-row">
+                    <select id="event-ampm"><option value="AM">上午</option><option value="PM">下午</option></select>
+                    <select id="event-hour"></select>
+                    <select id="event-minute"></select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>加入圖片</label>
+                <label class="custom-file-upload">
+                    <input type="file" id="event-image" accept="image/*">
+                    <span id="file-upload-text">📁 選擇圖片檔案</span>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label>加入連結</label>
+                <input type="url" id="event-link" placeholder="https:// (選填)">
+            </div>
+            
+            <div id="repeat-section">
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>重複設定</label>
+                    <div class="form-row" style="align-items: center;">
+                        <span>重複</span>
+                        <input type="number" id="event-repeat" value="1" min="1" style="width: 80px;">
+                        <span>次</span>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>勾選重複的星期 (若無勾選則僅新增當天)</label>
+                    <div class="week-selector">
+                        <div class="week-btn" data-day="1">一</div><div class="week-btn" data-day="2">二</div>
+                        <div class="week-btn" data-day="3">三</div><div class="week-btn" data-day="4">四</div>
+                        <div class="week-btn" data-day="5">五</div><div class="week-btn" data-day="6">六</div>
+                        <div class="week-btn" data-day="0">日</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="edit-bulk-option" style="display: none;">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="edit-bulk-checkbox">
+                    <span style="font-weight: bold; color: var(--edit-color);">修改相同內容 (<span id="edit-bulk-count"></span>筆)</span>
+                </label>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-neutral" id="cancel-btn">取消</button>
+                <button class="btn-primary-modal" id="save-btn">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal" style="max-width: 450px;">
+            <h3>🗑️ 刪除行程</h3>
+            <p style="margin-bottom: 5px;">請選擇您的刪除方式：</p>
+            
+            <div id="delete-bulk-option" style="display: none;">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="delete-bulk-checkbox">
+                    <span style="font-weight: bold; color: var(--danger-color);">刪除相同內容 (<span id="delete-bulk-count"></span>筆)</span>
+                </label>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-neutral" onclick="document.getElementById('delete-modal').classList.remove('show')">取消</button>
+                <button class="btn-danger-modal" id="modal-delete-btn">刪除</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="image-zoom-overlay" id="image-zoom-overlay">
+        <img id="zoomed-image" src="" alt="放大預覽">
+    </div>
+
+    <script>
+        const DB_NAME = 'CalendarAppDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'eventsStore';
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    }
+                };
+                request.onsuccess = (e) => resolve(e.target.result);
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        async function loadEventsFromDB() {
+            const db = await initDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function saveEventsToDB(eventsArray) {
+            const db = await initDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                store.clear(); 
+                eventsArray.forEach(evt => store.put(evt)); 
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = () => reject(transaction.error);
+            });
+        }
+
+        function saveData() { 
+            saveEventsToDB(events).catch(e => console.error("資料庫寫入失敗", e)); 
+        }
+
+        // ===========================================
+        // --- 狀態變數 ---
+        let currentDate = new Date();
+        let events = []; 
+        let uploadedImageBase64 = null;
+        
+        let selectedDates = new Set([formatDateString(new Date())]); 
+        let isDraggingDates = false;
+        let lastSelectedDateStr = null;
+        let isScrollingMonth = false; 
+
+        // 左側行程表多選變數
+        let selectedEventIds = new Set();
+        let isDraggingEvents = false;
+        let lastSelectedEventId = null;
+        
+        let editingEventId = null;  
+        let editingGroupId = null;  
+        let bulkEditMode = false;
+        
+        let deleteTargetIds = [];
+        let deleteSimilarTargetIds = [];
+        
+        let clipboardEvents = []; // 複製剪貼簿
+        let undoStack = [];       // Ctrl+Z 歷史紀錄堆疊
+
+        const calendarGrid = document.getElementById('calendar-grid');
+        const monthYearDisplay = document.getElementById('current-month-year');
+        const selectedDateTitle = document.getElementById('selected-date-title');
+        const eventListEl = document.getElementById('event-list');
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const rightPanel = document.querySelector('.right-panel');
+        
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modal-title');
+        const repeatSection = document.getElementById('repeat-section');
+        const hourSelect = document.getElementById('event-hour');
+        const minuteSelect = document.getElementById('event-minute');
+        const weekBtns = document.querySelectorAll('.week-btn');
+        const imageInput = document.getElementById('event-image');
+        const fileUploadText = document.getElementById('file-upload-text');
+
+        const imageZoomOverlay = document.getElementById('image-zoom-overlay');
+        const zoomedImage = document.getElementById('zoomed-image');
+
+        // --- 記錄目前狀態給 Ctrl+Z 使用 ---
+        function pushToUndoStack() {
+            undoStack.push(JSON.parse(JSON.stringify(events)));
+            if (undoStack.length > 20) undoStack.shift(); 
+        }
+
+        async function init() {
+            const savedTheme = localStorage.getItem('myCalendarTheme') || 'dark';
+            document.body.setAttribute('data-theme', savedTheme);
+            themeToggleBtn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+            const actualToday = new Date().getDay(); 
+            document.getElementById(`wd-${actualToday}`).classList.add('today');
+
+            const oldData = localStorage.getItem('myCalendarData');
+            if (oldData) {
+                try { 
+                    const parsed = JSON.parse(oldData);
+                    if (parsed && parsed.length > 0) {
+                        events = parsed;
+                        await saveEventsToDB(events); 
+                        localStorage.removeItem('myCalendarData'); 
+                    }
+                } catch (e) {}
+            } else {
+                try {
+                    events = await loadEventsFromDB();
+                } catch (e) {
+                    events = [];
+                }
+            }
+
+            for(let i=0; i<=12; i++) {
+                const option = document.createElement('option');
+                option.value = i.toString().padStart(2, '0');
+                option.textContent = i.toString().padStart(2, '0');
+                hourSelect.appendChild(option);
+            }
+            for(let i=0; i<=59; i++) {
+                const option = document.createElement('option');
+                option.value = i.toString().padStart(2, '0');
+                option.textContent = i.toString().padStart(2, '0');
+                minuteSelect.appendChild(option);
+            }
+
+            renderCalendar();
+            updateSelectedDateDisplay();
+            renderSchedule();
+        }
+
+        // --- 全域快捷鍵監聽 (Ctrl+C, Ctrl+V, Ctrl+Z) ---
+        document.addEventListener('keydown', (e) => {
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            const isCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+            // 避免在輸入框打字時觸發快捷鍵
+            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+
+            // Ctrl + C 複製
+            if (isCtrl && e.key.toLowerCase() === 'c') {
+                clipboardEvents = []; 
+                
+                if (selectedEventIds.size > 0) {
+                    // 優先複製左側選取的單一或多個行程
+                    selectedEventIds.forEach(id => {
+                        const evt = events.find(ev => ev.id === id);
+                        if (evt) {
+                            clipboardEvents.push({
+                                title: evt.title,
+                                time24: evt.time24,
+                                displayTime: evt.displayTime,
+                                image: evt.image,
+                                link: evt.link
+                            });
+                        }
+                    });
+                } else if (selectedDates.size > 0) {
+                    // 如果左側沒選，自動複製右側選取日期裡的所有行程
+                    const selectedArr = Array.from(selectedDates);
+                    const eventsToCopy = events.filter(ev => selectedArr.includes(ev.date));
+                    eventsToCopy.forEach(evt => {
+                        clipboardEvents.push({
+                            title: evt.title,
+                            time24: evt.time24,
+                            displayTime: evt.displayTime,
+                            image: evt.image,
+                            link: evt.link
+                        });
+                    });
+                }
+            }
+
+            // Ctrl + V 貼上
+            if (isCtrl && e.key.toLowerCase() === 'v') {
+                if (clipboardEvents.length > 0 && selectedDates.size > 0) {
+                    pushToUndoStack(); 
+                    const groupId = Date.now().toString() + Math.random().toString().slice(2,5); 
+
+                    selectedDates.forEach(dateStr => {
+                        clipboardEvents.forEach(clipEvt => {
+                            events.push({
+                                id: Date.now() + Math.random(),
+                                groupId: groupId,
+                                date: dateStr,
+                                title: clipEvt.title,
+                                time24: clipEvt.time24,
+                                displayTime: clipEvt.displayTime,
+                                image: clipEvt.image,
+                                link: clipEvt.link
+                            });
+                        });
+                    });
+                    saveData();
+                    renderCalendar();
+                    renderSchedule();
+                }
+            }
+
+            // Ctrl + Z 復原
+            if (isCtrl && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+                if (undoStack.length > 0) {
+                    events = undoStack.pop();
+                    saveData();
+                    renderCalendar();
+                    renderSchedule();
+                }
+            }
+        });
+
+        themeToggleBtn.addEventListener('click', () => {
+            const body = document.body;
+            const newTheme = body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            themeToggleBtn.textContent = newTheme === 'dark' ? '☀️' : '🌙'; 
+            localStorage.setItem('myCalendarTheme', newTheme); 
+        });
+
+        imageZoomOverlay.addEventListener('click', () => imageZoomOverlay.classList.remove('show'));
+
+        // --- 滾輪換月 ---
+        rightPanel.addEventListener('wheel', (e) => {
+            if (e.target.closest('.cal-events-container')) {
+                const container = e.target.closest('.cal-events-container');
+                if (container.scrollHeight > container.clientHeight) return; 
+            }
+            
+            if (isScrollingMonth) return;
+            isScrollingMonth = true;
+            setTimeout(() => { isScrollingMonth = false; }, 120); 
+
+            if (e.deltaY > 0) currentDate.setMonth(currentDate.getMonth() + 1);
+            else currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        }, { passive: true });
+
+        // --- 右側日曆：Shift / Ctrl 多選邏輯 ---
+        calendarGrid.addEventListener('mousedown', (e) => {
+            const cell = e.target.closest('.day-cell');
+            if (cell && !e.target.closest('.cal-mini-event img')) {
+                const clickedDate = cell.dataset.date;
+
+                if (e.shiftKey && lastSelectedDateStr) {
+                    const allCells = Array.from(calendarGrid.querySelectorAll('.day-cell'));
+                    const allDates = allCells.map(c => c.dataset.date);
+                    let idx1 = allDates.indexOf(lastSelectedDateStr);
+                    let idx2 = allDates.indexOf(clickedDate);
+                    
+                    if (idx1 !== -1 && idx2 !== -1) {
+                        if (idx1 > idx2) [idx1, idx2] = [idx2, idx1];
+                        for (let i = idx1; i <= idx2; i++) selectedDates.add(allDates[i]);
+                    } else {
+                        selectedDates.add(clickedDate);
+                    }
+                    window.getSelection().removeAllRanges(); 
+                } else if (e.ctrlKey || e.metaKey) {
+                    if (selectedDates.has(clickedDate)) selectedDates.delete(clickedDate);
+                    else { selectedDates.add(clickedDate); lastSelectedDateStr = clickedDate; }
+                } else {
+                    selectedDates.clear();
+                    selectedDates.add(clickedDate);
+                    lastSelectedDateStr = clickedDate;
+                    isDraggingDates = true; 
+                }
+                
+                updateCalendarSelectionVisuals();
+                updateSelectedDateDisplay();
+                renderSchedule();
+            }
+        });
+
+        calendarGrid.addEventListener('mouseover', (e) => {
+            if (isDraggingDates) {
+                const cell = e.target.closest('.day-cell');
+                if (cell && !selectedDates.has(cell.dataset.date)) {
+                    selectedDates.add(cell.dataset.date);
+                    updateCalendarSelectionVisuals();
+                    updateSelectedDateDisplay();
+                    renderSchedule();
+                }
+            }
+        });
+
+        // --- 左側行程：Shift / Ctrl 多選邏輯 ---
+        eventListEl.addEventListener('mousedown', (e) => {
+            const item = e.target.closest('.event-item');
+            if (!item || e.target.closest('.event-image img') || e.target.closest('a.event-title-link')) return; 
+
+            const clickedId = parseFloat(item.dataset.id);
+            const allItems = Array.from(eventListEl.querySelectorAll('.event-item'));
+            const allIds = allItems.map(el => parseFloat(el.dataset.id));
+
+            if (e.shiftKey && lastSelectedEventId) {
+                let idx1 = allIds.indexOf(lastSelectedEventId);
+                let idx2 = allIds.indexOf(clickedId);
+                
+                if (idx1 !== -1 && idx2 !== -1) {
+                    if (idx1 > idx2) [idx1, idx2] = [idx2, idx1];
+                    for (let i = idx1; i <= idx2; i++) selectedEventIds.add(allIds[i]);
+                } else {
+                    selectedEventIds.add(clickedId);
+                }
+                window.getSelection().removeAllRanges();
+            } else if (e.ctrlKey || e.metaKey) {
+                if (selectedEventIds.has(clickedId)) selectedEventIds.delete(clickedId);
+                else { selectedEventIds.add(clickedId); lastSelectedEventId = clickedId; }
+            } else {
+                selectedEventIds.clear();
+                selectedEventIds.add(clickedId);
+                lastSelectedEventId = clickedId;
+                isDraggingEvents = true; 
+            }
+            updateEventSelectionVisuals();
+        });
+
+        eventListEl.addEventListener('mouseover', (e) => {
+            if (isDraggingEvents) {
+                const item = e.target.closest('.event-item');
+                if (item) {
+                    const hoveredId = parseFloat(item.dataset.id);
+                    if (!selectedEventIds.has(hoveredId)) {
+                        selectedEventIds.add(hoveredId);
+                        updateEventSelectionVisuals();
+                    }
+                }
+            }
+        });
+
+        window.addEventListener('mouseup', () => { 
+            isDraggingDates = false; 
+            isDraggingEvents = false;
+        });
+
+        // --- 視覺與按鈕更新 ---
+        function updateCalendarSelectionVisuals() {
+            document.querySelectorAll('.day-cell').forEach(cell => {
+                if (selectedDates.has(cell.dataset.date)) cell.classList.add('active');
+                else cell.classList.remove('active');
+            });
+        }
+
+        function updateEventSelectionVisuals() {
+            document.querySelectorAll('.event-item').forEach(item => {
+                const id = parseFloat(item.dataset.id);
+                if (selectedEventIds.has(id)) item.classList.add('selected-item');
+                else item.classList.remove('selected-item');
+            });
+            updateActionButtonsState();
+        }
+
+        function updateActionButtonsState() {
+            const selectedItemsCount = selectedEventIds.size;
+            const selectedArr = Array.from(selectedDates);
+            const displayEventsCount = events.filter(e => selectedArr.includes(e.date)).length;
+            
+            const editBtn = document.getElementById('edit-btn');
+            
+            if (displayEventsCount > 1 && selectedItemsCount !== 1) {
+                editBtn.classList.add('disabled');
+            } else if (selectedItemsCount > 1) {
+                editBtn.classList.add('disabled');
+            } else {
+                editBtn.classList.remove('disabled');
+            }
+        }
+
+        // --- 日曆渲染 ---
+        function renderCalendar() {
+            const days = calendarGrid.querySelectorAll('.day-cell');
+            days.forEach(day => day.remove());
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            monthYearDisplay.textContent = `${year}年 ${month + 1}月`;
+
+            const jsFirstDay = new Date(year, month, 1).getDay(); 
+            const firstDayIndex = jsFirstDay === 0 ? 6 : jsFirstDay - 1; 
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+            for (let i = 0; i < firstDayIndex; i++) {
+                const dayNum = daysInPrevMonth - firstDayIndex + i + 1;
+                createDayCell(year, month - 1, dayNum, true);
+            }
+
+            for (let i = 1; i <= daysInMonth; i++) createDayCell(year, month, i, false);
+
+            const totalCells = firstDayIndex + daysInMonth;
+            const remainingCells = 42 - totalCells; 
+            for (let i = 1; i <= remainingCells; i++) createDayCell(year, month + 1, i, true);
+
+            updateCalendarSelectionVisuals();
+        }
+
+        function createDayCell(year, month, day, isOtherMonth) {
+            const cellDate = new Date(year, month, day);
+            const dateString = formatDateString(cellDate);
+            
+            const cell = document.createElement('div');
+            cell.className = 'day-cell';
+            if (isOtherMonth) cell.classList.add('other-month');
+            cell.dataset.date = dateString; 
+
+            const numberSpan = document.createElement('div');
+            numberSpan.className = 'day-number';
+            numberSpan.textContent = day;
+            cell.appendChild(numberSpan);
+
+            const dayEvents = events.filter(e => e.date === dateString).sort((a, b) => a.time24.localeCompare(b.time24));
+            
+            if (dayEvents.length > 0) {
+                const eventsContainer = document.createElement('div');
+                eventsContainer.className = 'cal-events-container';
+                
+                dayEvents.forEach(evt => {
+                    const miniEvt = document.createElement('div');
+                    miniEvt.className = 'cal-mini-event';
+                    const imgHtml = evt.image ? `<img src="${evt.image}" alt="img">` : `<div class="no-img"></div>`;
+                    
+                    miniEvt.innerHTML = `${imgHtml}<span class="cal-mini-title">${evt.title}</span>`;
+                    
+                    if (evt.image) {
+                        miniEvt.querySelector('img').addEventListener('click', (e) => {
+                            e.stopPropagation(); 
+                            zoomedImage.src = evt.image;
+                            imageZoomOverlay.classList.add('show');
+                        });
+                    }
+                    eventsContainer.appendChild(miniEvt);
+                });
+                cell.appendChild(eventsContainer);
+            }
+            calendarGrid.appendChild(cell);
+        }
+
+        function updateSelectedDateDisplay() {
+            const selectedArr = Array.from(selectedDates).sort();
+            if (selectedArr.length === 1) {
+                const parts = selectedArr[0].split('-');
+                const d = new Date(parts[0], parts[1]-1, parts[2]);
+                const days = ['日', '一', '二', '三', '四', '五', '六'];
+                selectedDateTitle.textContent = `${parts[0]}年${parseInt(parts[1])}月${parseInt(parts[2])}日 (星期${days[d.getDay()]})`;
+            } else {
+                selectedDateTitle.textContent = `已選擇 ${selectedArr.length} 天`;
+            }
+        }
+
+        // --- 左側行程表渲染 ---
+        function renderSchedule() {
+            eventListEl.innerHTML = '';
+            
+            const selectedArr = Array.from(selectedDates);
+            const displayEvents = events.filter(e => selectedArr.includes(e.date))
+                                        .sort((a, b) => {
+                                            if (a.date !== b.date) return a.date.localeCompare(b.date);
+                                            return a.time24.localeCompare(b.time24);
+                                        });
+
+            if (displayEvents.length === 0) {
+                eventListEl.innerHTML = '<div class="empty-state">此日無行程</div>';
+                updateActionButtonsState();
+                return;
+            }
+
+            displayEvents.forEach(evt => {
+                const item = document.createElement('div');
+                item.className = 'event-item';
+                item.dataset.id = evt.id; 
+                
+                if (selectedEventIds.has(evt.id)) item.classList.add('selected-item');
+
+                const hasImgClass = evt.image ? 'has-image' : '';
+                const imgContent = evt.image ? `<img src="${evt.image}" alt="img">` : `<span>無圖片</span>`;
+                const dateLabel = selectedArr.length > 1 ? `<div style="font-size:0.75rem; color:var(--accent-color); margin-bottom:4px;">${evt.date}</div>` : '';
+
+                const titleHtml = evt.link 
+                    ? `<a href="${evt.link}" target="_blank" class="event-title event-title-link" onclick="event.stopPropagation()">${evt.title}</a>`
+                    : `<span class="event-title">${evt.title}</span>`;
+
+                item.innerHTML = `
+                    <div class="event-left">
+                        <div class="event-image ${hasImgClass}">${imgContent}</div>
+                    </div>
+                    <div class="event-right">
+                        <div class="event-info">
+                            ${dateLabel}
+                            <div class="event-time-title-row">
+                                <span class="event-time">${evt.displayTime}</span>
+                                ${titleHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if (evt.image) {
+                    item.querySelector('.event-image').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        zoomedImage.src = evt.image;
+                        imageZoomOverlay.classList.add('show');
+                    });
+                }
+                eventListEl.appendChild(item);
+            });
+            updateActionButtonsState();
+        }
+
+        // --- 刪除操作 ---
+        document.getElementById('delete-btn').addEventListener('click', () => {
+            const selectedArr = Array.from(selectedDates);
+            const displayEvents = events.filter(e => selectedArr.includes(e.date));
+
+            if (displayEvents.length === 0) return alert('請先選取有行程的日期或項目！');
+            
+            if (selectedEventIds.size > 0) {
+                deleteTargetIds = Array.from(selectedEventIds);
+            } else {
+                deleteTargetIds = displayEvents.map(e => e.id);
+            }
+            
+            let allSimilarIds = new Set();
+            deleteTargetIds.forEach(id => {
+                const target = events.find(e => e.id === id);
+                if (target) {
+                    events.forEach(e => {
+                        if ((target.groupId && e.groupId === target.groupId) || 
+                            (!target.groupId && e.title === target.title && e.time24 === target.time24)) {
+                            allSimilarIds.add(e.id);
+                        }
+                    });
+                }
+            });
+            deleteSimilarTargetIds = Array.from(allSimilarIds);
+
+            if (deleteSimilarTargetIds.length > deleteTargetIds.length) {
+                document.getElementById('delete-bulk-option').style.display = 'block';
+                document.getElementById('delete-bulk-count').textContent = deleteSimilarTargetIds.length;
+                document.getElementById('delete-bulk-checkbox').checked = false; 
+            } else {
+                document.getElementById('delete-bulk-option').style.display = 'none';
+            }
+
+            document.getElementById('delete-modal').classList.add('show');
+        });
+
+        document.getElementById('modal-delete-btn').addEventListener('click', () => {
+            pushToUndoStack(); 
+            const isBulk = document.getElementById('delete-bulk-checkbox').checked;
+            const targetIds = isBulk ? deleteSimilarTargetIds : deleteTargetIds;
+            
+            events = events.filter(e => !targetIds.includes(e.id));
+            
+            targetIds.forEach(id => selectedEventIds.delete(id));
+            
+            saveData(); 
+            document.getElementById('delete-modal').classList.remove('show');
+            renderCalendar();
+            renderSchedule();
+        });
+
+        // --- 新增/修改操作 ---
+        document.getElementById('add-btn').addEventListener('click', () => {
+            bulkEditMode = false;
+            editingEventId = null;
+            editingGroupId = null;
+            modalTitle.textContent = '新增行程';
+            
+            document.getElementById('edit-date-group').style.display = 'none';
+            repeatSection.style.display = 'block';
+            document.getElementById('edit-bulk-option').style.display = 'none';
+
+            document.getElementById('event-title').value = '';
+            document.getElementById('event-link').value = '';
+            document.getElementById('event-repeat').value = 1;
+            imageInput.value = '';
+            fileUploadText.textContent = '📁 選擇圖片檔案';
+            uploadedImageBase64 = null;
+            weekBtns.forEach(btn => btn.classList.remove('selected'));
+            modal.classList.add('show');
+        });
+
+        document.getElementById('edit-btn').addEventListener('click', () => {
+            if (document.getElementById('edit-btn').classList.contains('disabled')) return;
+
+            if (selectedEventIds.size === 0) {
+                if (selectedDates.size === 0) return alert('請先選取要修改的行程或日期！');
+                
+                bulkEditMode = true;
+                editingEventId = null;
+                editingGroupId = null;
+
+                modalTitle.textContent = '修改選取日期的【所有】行程';
+                document.getElementById('edit-date-group').style.display = 'none'; 
+                repeatSection.style.display = 'none';
+                document.getElementById('edit-bulk-option').style.display = 'none';
+
+                document.getElementById('event-title').value = '';
+                document.getElementById('event-link').value = '';
+                imageInput.value = '';
+                fileUploadText.textContent = '📁 選擇圖片檔案';
+                uploadedImageBase64 = null;
+                
+                modal.classList.add('show');
+                return;
+            }
+
+            bulkEditMode = false;
+            const targetId = Array.from(selectedEventIds)[0];
+            const targetEvent = events.find(e => e.id === targetId);
+            if (!targetEvent) return;
+
+            editingEventId = targetEvent.id;
+            editingGroupId = targetEvent.groupId;
+
+            modalTitle.textContent = '修改行程';
+            repeatSection.style.display = 'none'; 
+            
+            document.getElementById('edit-date-group').style.display = 'flex';
+            document.getElementById('event-date').value = targetEvent.date;
+
+            document.getElementById('event-title').value = targetEvent.title;
+            document.getElementById('event-link').value = targetEvent.link || '';
+
+            const ampm = targetEvent.displayTime.includes('上午') ? 'AM' : 'PM';
+            const timeParts = targetEvent.time24.split(':');
+            let h = parseInt(timeParts[0]);
+            if (ampm === 'PM' && h > 12) h -= 12;
+            if (ampm === 'PM' && h === 12) h = 12;
+            if (ampm === 'AM' && h === 0) h = 12;
+
+            document.getElementById('event-ampm').value = ampm;
+            document.getElementById('event-hour').value = h.toString().padStart(2, '0');
+            document.getElementById('event-minute').value = timeParts[1];
+
+            if (targetEvent.image) {
+                uploadedImageBase64 = targetEvent.image;
+                fileUploadText.textContent = '✅ 已有圖片 (點擊可更換)';
+            } else {
+                uploadedImageBase64 = null;
+                fileUploadText.textContent = '📁 選擇圖片檔案';
+            }
+
+            const similarEvents = events.filter(e => 
+                (targetEvent.groupId && e.groupId === targetEvent.groupId) || 
+                (!targetEvent.groupId && e.title === targetEvent.title && e.time24 === targetEvent.time24)
+            );
+            
+            if (similarEvents.length > 1) {
+                document.getElementById('edit-bulk-option').style.display = 'block';
+                document.getElementById('edit-bulk-count').textContent = similarEvents.length;
+                document.getElementById('edit-bulk-checkbox').checked = false;
+            } else {
+                document.getElementById('edit-bulk-option').style.display = 'none';
+            }
+
+            modal.classList.add('show');
+        });
+
+        document.getElementById('cancel-btn').addEventListener('click', () => modal.classList.remove('show'));
+
+        imageInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                fileUploadText.textContent = `✅ 已選擇: ${file.name}`;
+                const reader = new FileReader();
+                reader.onload = function(e) { uploadedImageBase64 = e.target.result; };
+                reader.readAsDataURL(file);
+            } else {
+                fileUploadText.textContent = '📁 選擇圖片檔案';
+                uploadedImageBase64 = null;
+            }
+        });
+
+        weekBtns.forEach(btn => btn.addEventListener('click', () => btn.classList.toggle('selected')));
+
+        function getModalFormData() {
+            const title = document.getElementById('event-title').value.trim();
+            if (!title) { alert('請輸入標題！'); return null; }
+
+            const link = document.getElementById('event-link').value.trim();
+
+            const ampm = document.getElementById('event-ampm').value;
+            const hourStr = document.getElementById('event-hour').value;
+            const minuteStr = document.getElementById('event-minute').value;
+            
+            let h24 = parseInt(hourStr);
+            if (ampm === 'AM') { if (h24 === 12) h24 = 0; } 
+            else { if (h24 !== 12 && h24 !== 0) h24 += 12; if (h24 === 0) h24 = 12; }
+
+            const time24 = `${h24.toString().padStart(2, '0')}:${minuteStr}`;
+            const displayTime = `${ampm === 'AM' ? '上午' : '下午'} ${hourStr}:${minuteStr}`;
+
+            return { title, time24, displayTime, image: uploadedImageBase64, link };
+        }
+
+        document.getElementById('save-btn').addEventListener('click', () => {
+            const data = getModalFormData();
+            if (!data) return;
+
+            pushToUndoStack(); 
+
+            const isBulkEdit = document.getElementById('edit-bulk-checkbox') && document.getElementById('edit-bulk-checkbox').checked;
+
+            if (bulkEditMode) {
+                events.forEach(e => {
+                    if (selectedDates.has(e.date)) {
+                        e.title = data.title;
+                        e.time24 = data.time24;
+                        e.displayTime = data.displayTime;
+                        e.link = data.link;
+                        if (data.image) e.image = data.image; 
+                    }
+                });
+            } else if (editingEventId) {
+                const targetEvent = events.find(e => e.id === editingEventId);
+                
+                if (isBulkEdit && targetEvent) {
+                    events.forEach(e => {
+                        if ((targetEvent.groupId && e.groupId === targetEvent.groupId) || 
+                            (!targetEvent.groupId && e.title === targetEvent.title && e.time24 === targetEvent.time24)) {
+                            e.title = data.title;
+                            e.time24 = data.time24;
+                            e.displayTime = data.displayTime;
+                            e.link = data.link;
+                            if (data.image) e.image = data.image;
+                            
+                            if (e.id === editingEventId) {
+                                e.date = document.getElementById('event-date').value;
+                            }
+                        }
+                    });
+                    
+                    const newDate = document.getElementById('event-date').value;
+                    selectedDates.clear();
+                    selectedDates.add(newDate);
+                    lastSelectedDateStr = newDate;
+                } else {
+                    const idx = events.findIndex(e => e.id === editingEventId);
+                    if (idx > -1) {
+                        events[idx].title = data.title;
+                        const newDate = document.getElementById('event-date').value;
+                        events[idx].date = newDate; 
+                        events[idx].time24 = data.time24;
+                        events[idx].displayTime = data.displayTime;
+                        events[idx].image = data.image;
+                        events[idx].link = data.link;
+                        
+                        selectedDates.clear();
+                        selectedDates.add(newDate);
+                        lastSelectedDateStr = newDate;
+                    }
+                }
+            } else {
+                const groupId = Date.now().toString() + Math.random().toString().slice(2,5); 
+                const repeatCount = parseInt(document.getElementById('event-repeat').value) || 1;
+                const selectedDaysOfWeek = Array.from(document.querySelectorAll('.week-btn.selected')).map(btn => parseInt(btn.dataset.day));
+                
+                const baseDateStr = Array.from(selectedDates).sort()[0] || formatDateString(new Date());
+                const parts = baseDateStr.split('-');
+                let loopDate = new Date(parts[0], parts[1]-1, parts[2]);
+
+                let datesToApply = [];
+                if (selectedDaysOfWeek.length === 0) {
+                    datesToApply.push(new Date(loopDate));
+                } else {
+                    let addedCount = 0;
+                    let maxSafetyLoop = 365; 
+                    while(addedCount < repeatCount && maxSafetyLoop > 0) {
+                        if (selectedDaysOfWeek.includes(loopDate.getDay())) {
+                            datesToApply.push(new Date(loopDate));
+                            addedCount++;
+                        }
+                        loopDate.setDate(loopDate.getDate() + 1);
+                        maxSafetyLoop--;
+                    }
+                }
+
+                datesToApply.forEach(dateObj => {
+                    events.push({
+                        id: Date.now() + Math.random(),
+                        groupId: groupId, 
+                        date: formatDateString(dateObj),
+                        title: data.title,
+                        time24: data.time24,
+                        displayTime: data.displayTime,
+                        image: data.image,
+                        link: data.link
+                    });
+                });
+            }
+
+            saveData(); 
+            modal.classList.remove('show');
+            renderCalendar(); 
+            renderSchedule(); 
+        });
+
+        function formatDateString(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+            const d = dateObj.getDate().toString().padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        document.getElementById('prev-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
+        document.getElementById('next-month').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
+        document.getElementById('today-btn').addEventListener('click', () => { 
+            currentDate = new Date(); 
+            selectedDates = new Set([formatDateString(currentDate)]);
+            lastSelectedDateStr = formatDateString(currentDate);
+            renderCalendar(); updateSelectedDateDisplay(); renderSchedule(); updateActionButtonsState();
+        });
+
+        init();
+    </script>
+</body>
+</html>
