@@ -4,759 +4,1209 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>多功能倒數計時鬧鐘</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
     <style>
-        /* 基礎樣式 (亮色模式) */
+        /* ── 設計 Token ── */
         :root {
-            --bg-color: #f0f2f5; --card-bg: rgba(255, 255, 255, 0.85);
-            --text-color: #333; --input-bg: #fff; --input-border: #ccc;
-            --title-color: #1a73e8; --status-color: #666;
-            --btn-hover-bg: #1a73e8; --btn-hover-text: #fff;
+            --bg: #f0f2f7;
+            --card: rgba(255,255,255,0.88);
+            --card-border: rgba(255,255,255,0.6);
+            --text: #1e2028;
+            --muted: #6b7280;
+            --input-bg: #f8fafc;
+            --input-border: #d1d5db;
+            --accent: #4f6ef7;
+            --accent-dark: #3b55d4;
+            --accent-glow: rgba(79,110,247,0.25);
+            --danger: #ef4444;
+            --success: #22c55e;
+            --warn: #f59e0b;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+            --shadow-md: 0 8px 24px rgba(0,0,0,0.10);
+            --shadow-lg: 0 20px 48px rgba(0,0,0,0.14);
+            --radius: 18px;
+            --radius-sm: 10px;
+            --transition: 0.22s cubic-bezier(.4,0,.2,1);
+        }
+        body.dark {
+            --bg: #0d0f14;
+            --card: rgba(22,26,35,0.92);
+            --card-border: rgba(255,255,255,0.06);
+            --text: #e8eaf0;
+            --muted: #9ca3af;
+            --input-bg: #1a1f2e;
+            --input-border: #2d3348;
+            --accent: #6d88ff;
+            --accent-dark: #4f6ef7;
+            --accent-glow: rgba(109,136,255,0.20);
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+            --shadow-md: 0 8px 24px rgba(0,0,0,0.4);
+            --shadow-lg: 0 20px 48px rgba(0,0,0,0.6);
         }
 
-        /* 暗色模式變數 */
-        body.dark-mode {
-            --bg-color: #18191a; --card-bg: rgba(36, 37, 38, 0.85);
-            --text-color: #e4e6eb; --input-bg: #3a3b3c; --input-border: #555;
-            --title-color: #66b2ff; --status-color: #b0b3b8;
-            --btn-hover-bg: #66b2ff; --btn-hover-text: #18191a;
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: var(--bg);
+            background-attachment: fixed;
+            background-size: cover;
+            background-position: center;
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 28px 16px 60px;
+            transition: background-color var(--transition), color var(--transition);
         }
 
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: var(--bg-color); background-size: cover;
-            background-position: center; background-attachment: fixed;
-            color: var(--text-color); display: flex; flex-direction: column;
-            align-items: center; min-height: 100vh; margin: 0;
-            padding: 30px 20px; box-sizing: border-box; transition: background-color 0.3s;
+        /* ── 頂部工具列 ── */
+        .topbar {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 32px;
         }
-        .header {
-            width: 100%; max-width: 1050px; display: flex; justify-content: center;
-            flex-wrap: wrap; gap: 15px; margin-bottom: 30px;
+        .topbar-btn {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 18px;
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid var(--card-border);
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: blur(12px);
+            transition: all var(--transition);
         }
-        .header button {
-            background-color: var(--card-bg); color: var(--text-color);
-            border: 1px solid var(--input-border); padding: 10px 20px;
-            font-size: 15px; font-weight: 600; border-radius: 30px; cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); backdrop-filter: blur(10px);
-            transition: all 0.3s ease; display: flex; align-items: center; gap: 8px;
-        }
-        .header button:hover { 
-            background-color: var(--btn-hover-bg); color: var(--btn-hover-text);
-            border-color: var(--btn-hover-bg); transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        }
-        
-        /* 修改後的容器排版 */
-        .container { 
-            display: flex; flex-direction: column; align-items: center; gap: 30px; width: 100%; margin: 0 auto;
-        }
-        .timers-wrapper {
-            display: flex; gap: 25px; flex-wrap: wrap; justify-content: center; 
-            align-items: stretch; max-width: 1950px; /* 5個鬧鐘(365px) + 4個間隔(25px) = 1925px */
-        }
-        
-        /* 🔥 鬧鐘卡片主體 (寬度 365px) */
-        .timer-card { 
-            position: relative; background: var(--card-bg); padding: 35px 25px 25px 25px; 
-            border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
-            width: 365px; display: flex; flex-direction: column; gap: 15px; 
-            box-sizing: border-box; backdrop-filter: blur(15px);
-            border: 2px solid rgba(255,255,255,0.1); 
-        }
-        
-        /* 執行中的漸層邊框特效 */
-        .timer-card.is-running::after {
-            content: ""; position: absolute; inset: 0;
-            border-radius: 20px; padding: 3px; 
-            background: linear-gradient(135deg, #111, #aaa); 
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor; mask-composite: exclude;
-            pointer-events: none; z-index: 10;
-        }
-        body.dark-mode .timer-card.is-running::after {
-            background: linear-gradient(135deg, #fff, #555); 
+        .topbar-btn:hover {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--accent-glow);
         }
 
-        .delete-btn {
-            position: absolute; top: 10px; right: 15px; background: transparent;
-            border: none; color: var(--status-color); font-size: 16px;
-            cursor: pointer; transition: color 0.2s, transform 0.2s; z-index: 20;
+        /* ── 主容器 ── */
+        .timers-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 22px;
+            justify-content: center;
+            max-width: 2000px;
         }
-        .delete-btn:hover { color: #ea4335; transform: scale(1.2); }
-        
-        /* 🔥 新增：佔位用的虛線卡片樣式 */
-        .add-timer-card {
-            display: flex; justify-content: center; align-items: center;
-            width: 365px; min-height: 430px; border-radius: 20px; box-sizing: border-box;
-            background: rgba(0, 0, 0, 0.02); border: 3px dashed var(--input-border);
-            cursor: pointer; transition: all 0.3s ease;
-        }
-        body.dark-mode .add-timer-card { background: rgba(255, 255, 255, 0.03); }
-        .add-timer-card:hover {
-            border-color: var(--title-color); background: rgba(0, 0, 0, 0.05);
-        }
-        body.dark-mode .add-timer-card:hover { background: rgba(255, 255, 255, 0.08); }
 
-        /* 新增按鈕樣式 */
-        .add-timer-btn {
-            display: flex; justify-content: center; align-items: center;
-            width: 60px; height: 60px; border-radius: 50%;
-            background-color: var(--card-bg); color: var(--title-color);
-            font-size: 28px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
-            backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.3s ease; pointer-events: none; /* 事件交由外層卡片處理 */
+        /* ── 鬧鐘卡片 ── */
+        .alarm-card {
+            position: relative;
+            background: var(--card);
+            border: 1.5px solid var(--card-border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            backdrop-filter: blur(18px);
+            width: 370px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding: 32px 22px 22px;
+            transition: box-shadow var(--transition), transform var(--transition);
         }
-        .add-timer-card:hover .add-timer-btn { 
-            transform: scale(1.1); background-color: var(--title-color); color: white; 
+        .alarm-card:hover { box-shadow: var(--shadow-lg); }
+
+        /* 執行中邊框動畫 */
+        .alarm-card.running {
+            animation: card-pulse 2s ease-in-out infinite;
         }
-        
-        .alarm-label {
-            font-size: 12px; font-weight: bold; color: var(--status-color);
-            text-align: center; margin-bottom: -10px; letter-spacing: 1px;
+        @keyframes card-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow), var(--shadow-md); }
+            50%       { box-shadow: 0 0 0 8px var(--accent-glow), var(--shadow-lg); }
         }
+
+
+
+        /* 刪除按鈕 */
+        .del-btn {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            font-size: 15px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px;
+            border-radius: 6px;
+            transition: color var(--transition), background var(--transition);
+            z-index: 5;
+        }
+        .del-btn:hover { color: var(--danger); background: rgba(239,68,68,.1); }
+
+        /* 標籤 */
+        .card-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--muted);
+            text-align: center;
+            margin-bottom: -8px;
+        }
+
+        /* 鬧鐘名稱 */
         .alarm-name {
-            font-size: 24px; font-weight: bold; color: var(--title-color);
-            text-align: center; background: transparent; border: none;
-            border-bottom: 2px dashed transparent; padding: 5px; margin: 0;
-            width: 100%; box-sizing: border-box; transition: border-color 0.3s; font-family: inherit; z-index: 20; position: relative;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent);
+            text-align: center;
+            background: transparent;
+            border: none;
+            border-bottom: 2px dashed transparent;
+            padding: 4px 8px;
+            width: 100%;
+            font-family: inherit;
+            transition: border-color var(--transition), color var(--transition);
+            z-index: 5;
+            position: relative;
         }
-        .alarm-name:hover, .alarm-name:focus { border-bottom: 2px dashed var(--title-color); outline: none; }
-        
-        .time-inputs { display: flex; gap: 10px; position: relative; z-index: 20; }
-        .time-group { display: flex; flex-direction: column; align-items: center; width: 100%; font-size: 13px; color: var(--status-color); gap: 6px; }
-        input[type="text"], input[type="number"], select { 
-            padding: 10px; border: 1px solid var(--input-border); border-radius: 8px; 
-            font-size: 14px; background-color: var(--input-bg); color: var(--text-color);
-            transition: border-color 0.3s;
-        }
-        input[type="text"]:focus, input[type="number"]:focus { border-color: var(--title-color); outline: none; }
-        .time-group input { width: 100%; text-align: center; font-size: 18px; font-weight: bold; box-sizing: border-box; }
-        .msg-input { width: 100%; box-sizing: border-box; text-align: center; position: relative; z-index: 20; }
-        ::placeholder { color: #999; opacity: 1; font-weight: normal; }
-        
-        .options-row { 
-            display: flex; flex-direction: column; gap: 12px; font-size: 14px;
-            background: rgba(0,0,0,0.03); padding: 15px; border-radius: 12px; position: relative; z-index: 20;
-        }
-        body.dark-mode .options-row { background: rgba(255,255,255,0.05); }
-        .checkbox-group { display: flex; justify-content: space-between; align-items: center;}
-        .checkbox-group label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 500;}
-        .repeat-box { display: flex; justify-content: flex-end; align-items: center; gap: 8px; font-weight: 500;}
-        
-        .volume-control { display: flex; align-items: center; gap: 8px; width: 100%; }
-        .volume-control input[type="range"] { flex-grow: 1; cursor: pointer; accent-color: var(--title-color); }
-        .vol-num-input {
-            width: 28px; padding: 2px 0; text-align: center;
-            border: none; border-bottom: 2px solid var(--input-border); border-radius: 0;
-            background: transparent; color: var(--text-color); font-size: 13px;
-            font-weight: bold; outline: none; transition: border-color 0.3s;
-        }
-        .vol-num-input:focus { border-bottom-color: var(--title-color); }
-        .vol-num-input::-webkit-outer-spin-button, .vol-num-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .vol-num-input[type=number] { -moz-appearance: textfield; }
-
-        .action-buttons { display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 20; }
-        .action-btn { 
-            padding: 14px; border: none; border-radius: 10px; 
-            background-color: #1a73e8; color: white; cursor: pointer; 
-            font-size: 18px; font-weight: bold; transition: all 0.2s; letter-spacing: 2px;
-        }
-        .action-btn:hover { background-color: #1557b0; transform: scale(1.02); }
-        .action-btn.pause-state { background-color: #ea4335; } 
-        .action-btn.pause-state:hover { background-color: #ce3528; }
-        .action-btn.resume-state { background-color: #34a853; } 
-        .action-btn.resume-state:hover { background-color: #2d9047; }
-        .reset-timer-btn {
-            padding: 8px; border: 1px solid var(--input-border); border-radius: 8px; 
-            background-color: transparent; color: var(--status-color); cursor: pointer; 
-            font-size: 14px; font-weight: bold; transition: all 0.2s;
-        }
-        .reset-timer-btn:hover { background-color: rgba(0,0,0,0.05); color: var(--text-color); }
-        body.dark-mode .reset-timer-btn:hover { background-color: rgba(255,255,255,0.1); }
-        
-        .display { 
-            font-size: 46px; text-align: center; margin-top: 5px; 
-            font-family: monospace; font-weight: bold; color: var(--text-color); letter-spacing: 2px;
-        }
-        
-        .progress-bg {
-            width: 100%; height: 8px; background-color: rgba(0,0,0,0.1);
-            border-radius: 4px; overflow: hidden; margin-top: 2px; margin-bottom: 5px; position: relative; z-index: 20;
-        }
-        body.dark-mode .progress-bg { background-color: rgba(255,255,255,0.1); }
-        .progress-bar {
-            height: 100%; border-radius: 4px;
-            background-color: rgb(26, 115, 232); 
-            width: 100%; transition: width 0.1s linear; 
+        .alarm-name:hover, .alarm-name:focus {
+            border-bottom-color: var(--accent);
+            outline: none;
         }
 
-        .repeat-status { text-align: center; font-size: 13px; color: var(--status-color); min-height: 18px; font-weight: 500;}
-        
-        #settingsModal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px);
+        /* 時間輸入列 */
+        .time-row { display: flex; gap: 10px; }
+        .time-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            letter-spacing: .5px;
         }
-        .modal-content {
-            background: var(--card-bg); color: var(--text-color); padding: 35px; border-radius: 20px; width: 350px; 
-            display: flex; flex-direction: column; gap: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+        .time-col input {
+            width: 100%;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 10px 6px;
+            border: 1.5px solid var(--input-border);
+            border-radius: var(--radius-sm);
+            background: var(--input-bg);
+            color: var(--text);
+            transition: border-color var(--transition), box-shadow var(--transition);
         }
-        .modal-content h2 { margin: 0; text-align: center; color: var(--title-color); }
-        .reset-btn { background-color: #ea4335; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;}
-        .reset-btn:hover { background-color: #ce3528; }
-        .close-btn { background-color: #5f6368; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;}
+        .time-col input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            outline: none;
+        }
+
+        /* 訊息輸入 */
+        .msg-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid var(--input-border);
+            border-radius: var(--radius-sm);
+            background: var(--input-bg);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 14px;
+            text-align: center;
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+        .msg-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            outline: none;
+        }
+        ::placeholder { color: var(--muted); font-size: 13px; }
+
+        /* 選項區 */
+        .options-panel {
+            background: rgba(0,0,0,0.03);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            font-size: 13px;
+        }
+        body.dark .options-panel { background: rgba(255,255,255,0.03); }
+
+        .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .row label { display: flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
+
+        /* 音量控制 */
+        .vol-row { display: flex; align-items: center; gap: 8px; width: 100%; }
+        .vol-row span { font-size: 15px; }
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent);
+            cursor: pointer;
+            height: 5px;
+        }
+        .vol-num {
+            width: 36px;
+            padding: 3px 4px;
+            text-align: center;
+            border: none;
+            border-bottom: 2px solid var(--input-border);
+            background: transparent;
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 700;
+            outline: none;
+            transition: border-color var(--transition);
+        }
+        .vol-num:focus { border-bottom-color: var(--accent); }
+        .vol-num::-webkit-inner-spin-button,
+        .vol-num::-webkit-outer-spin-button { -webkit-appearance: none; }
+        .vol-num[type=number] { -moz-appearance: textfield; }
+
+
+
+        /* 重複次數 */
+        .repeat-input {
+            width: 52px;
+            padding: 5px 8px;
+            border: 1.5px solid var(--input-border);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 700;
+            text-align: center;
+            font-family: inherit;
+            transition: border-color var(--transition);
+        }
+        .repeat-input:focus { border-color: var(--accent); outline: none; }
+
+        /* 操作按鈕 */
+        .action-area { display: flex; flex-direction: column; gap: 8px; }
+        .main-btn {
+            padding: 14px;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: var(--accent);
+            color: #fff;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .main-btn:hover { background: var(--accent-dark); transform: scale(1.02); }
+        .main-btn.pausing { background: var(--danger); }
+        .main-btn.pausing:hover { background: #dc2626; }
+        .main-btn.resuming { background: var(--success); }
+        .main-btn.resuming:hover { background: #16a34a; }
+
+        .reset-btn-sm {
+            padding: 9px;
+            border: 1.5px solid var(--input-border);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .reset-btn-sm:hover { background: rgba(0,0,0,0.06); color: var(--text); }
+        body.dark .reset-btn-sm:hover { background: rgba(255,255,255,0.08); }
+
+        /* 大時間顯示 */
+        .time-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 48px;
+            font-weight: 700;
+            text-align: center;
+            color: var(--text);
+            letter-spacing: 3px;
+            margin-top: 4px;
+            transition: color var(--transition);
+        }
+        .time-display.near-end { color: var(--danger); }
+
+        /* 進度條 */
+        .progress-track {
+            width: 100%;
+            height: 7px;
+            background: rgba(0,0,0,0.08);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        body.dark .progress-track { background: rgba(255,255,255,0.08); }
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: var(--accent);
+            transition: width 0.25s linear;
+        }
+
+        .round-status {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            min-height: 18px;
+        }
+
+        /* ── 新增卡片 ── */
+        .add-card {
+            width: 370px;
+            min-height: 420px;
+            border-radius: var(--radius);
+            border: 2.5px dashed var(--input-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all var(--transition);
+            background: rgba(0,0,0,0.01);
+        }
+        body.dark .add-card { background: rgba(255,255,255,0.02); }
+        .add-card:hover { border-color: var(--accent); background: var(--accent-glow); }
+        .add-icon {
+            width: 58px; height: 58px;
+            border-radius: 50%;
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px;
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition);
+            pointer-events: none;
+        }
+        .add-card:hover .add-icon {
+            background: var(--accent);
+            transform: scale(1.12) rotate(90deg);
+        }
+        .add-card-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--muted);
+            pointer-events: none;
+            transition: color var(--transition);
+        }
+        .add-card:hover .add-card-label { color: var(--accent); }
+
+        /* ── 設定 Modal ── */
+        .modal-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(6px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-box {
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid var(--card-border);
+            border-radius: 22px;
+            padding: 36px 32px;
+            width: 400px;
+            max-width: 95vw;
+            max-height: 92vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: var(--shadow-lg);
+        }
+        .modal-box h2 { text-align: center; color: var(--accent); font-size: 20px; }
+
+        .setting-block { display: flex; flex-direction: column; gap: 8px; }
+        .setting-block label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--muted);
+            letter-spacing: .5px;
+        }
+        .setting-block select, .setting-block input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid var(--input-border);
+            border-radius: 10px;
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color var(--transition);
+        }
+        .setting-block select:focus, .setting-block input[type="text"]:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        /* 語音試聽按鈕 */
+        .preview-btn {
+            padding: 9px 16px;
+            border: 1.5px solid var(--accent);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .preview-btn:hover { background: var(--accent); color: #fff; }
+
+        /* 語音資訊標籤 */
+        .voice-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            background: var(--accent-glow);
+            color: var(--accent);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        /* 語音品質指示 */
+        .quality-bar {
+            display: flex;
+            gap: 3px;
+            align-items: center;
+        }
+        .q-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--input-border);
+            transition: background var(--transition);
+        }
+        .q-dot.active { background: var(--success); }
+        .q-dot.active.mid { background: var(--warn); }
+        .q-dot.active.low { background: var(--danger); }
+
+        .modal-danger-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: var(--danger);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background var(--transition);
+        }
+        .modal-danger-btn:hover { background: #dc2626; }
+        .modal-close-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: var(--success);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background var(--transition);
+        }
+        .modal-close-btn:hover { background: #16a34a; }
+
+        /* 語音模組 badge */
+        .tts-engine-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #4f6ef7, #7c3aed);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .5px;
+            width: fit-content;
+        }
+
+        /* 篩選輸入 */
+        .voice-filter {
+            padding: 8px 12px;
+            border: 1.5px solid var(--input-border);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 13px;
+            font-family: inherit;
+            width: 100%;
+            transition: border-color var(--transition);
+        }
+        .voice-filter:focus { border-color: var(--accent); outline: none; }
+
+        /* 分隔線 */
+        .divider { border: none; border-top: 1px solid var(--input-border); }
+
+        /* 選取框樣式統一 */
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px !important;
+        }
+
+        /* checkbox 美化 */
+        input[type="checkbox"] {
+            accent-color: var(--accent);
+            width: 15px;
+            height: 15px;
+        }
+
+        /* 滾動條 */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--input-border); border-radius: 10px; }
+
+        /* 響應式 */
+        @media (max-width: 420px) {
+            .alarm-card, .add-card { width: 100%; }
+        }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <input type="file" id="bgInput" accept="image/*" style="display: none;" onchange="handleBgUpload(event)">
-    <button onclick="document.getElementById('bgInput').click()"><span class="emoji" data-icon="img">🖼️</span> 自訂背景</button>
-    <button onclick="removeBg()"><span class="emoji" data-icon="trash">🗑️</span> 清除背景</button>
-    <button onclick="toggleTheme()" id="themeBtn"><span class="emoji" data-icon="theme">🌙</span> 深色模式</button>
-    <button onclick="openSettings()"><span class="emoji" data-icon="gear">⚙️</span> 系統設定</button>
+<!-- ── 頂部工具列 ── -->
+<div class="topbar">
+    <input type="file" id="bgInput" accept="image/*" style="display:none" onchange="handleBgUpload(event)">
+    <button class="topbar-btn" onclick="document.getElementById('bgInput').click()">🖼️ 自訂背景</button>
+    <button class="topbar-btn" onclick="removeBg()">🗑️ 清除背景</button>
+    <button class="topbar-btn" id="themeBtn" onclick="toggleTheme()">🌙 深色模式</button>
+    <button class="topbar-btn" onclick="openSettings()">⚙️ 系統設定</button>
 </div>
 
-<div class="container" id="app"></div>
+<!-- ── 鬧鐘區域 ── -->
+<div class="timers-grid" id="app"></div>
 
-<div id="settingsModal">
-    <div class="modal-content">
-        <h2>系統設定</h2>
-        <div>
-            <label for="osSelect" style="display:block; margin-bottom:10px; font-weight:bold;"><span class="emoji" data-icon="gear">⚙️</span> Emoji 圖示風格：</label>
-            <select id="osSelect" onchange="saveSettings()" style="width: 100%;">
-                <option value="win11">Windows 11 (現代立體)</option>
-                <option value="win10">Windows 10 (高相容性舊版)</option>
-            </select>
+<!-- ── 設定 Modal ── -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal-box">
+        <h2>🛠️ 系統設定</h2>
+
+        <!-- 語音選擇 -->
+        <div class="setting-block">
+            <label>🗣️ 語音選擇</label>
+            <input type="text" class="voice-filter" id="voiceFilter" placeholder="🔍 搜尋語音名稱或語言..." oninput="filterVoices()">
+            <select id="voiceSelect" onchange="saveVoiceSettings()" size="1"></select>
+            <div id="voiceInfoTag"></div>
         </div>
-        <div style="margin-top: 10px;">
-            <label for="voiceSelect" style="display:block; margin-bottom:10px; font-weight:bold;"><span class="emoji" data-icon="speak">🗣️</span> AI 語音模型：</label>
-            <select id="voiceSelect" onchange="saveSettings()" style="width: 100%;"></select>
+
+        <hr class="divider">
+
+        <!-- 試聽 -->
+        <div class="setting-block">
+            <label>📝 試聽文字</label>
+            <input type="text" id="previewText" value="時間到了，請注意！" placeholder="輸入要試聽的文字">
+            <button class="preview-btn" onclick="previewVoice()" style="align-self:flex-start;">▶ 試聽語音</button>
         </div>
-        <button class="reset-btn" onclick="resetAllData()"><span class="emoji" data-icon="trash">🗑️</span> 重置所有設定與記憶</button>
-        <button class="close-btn" onclick="closeSettings()"><span class="emoji" data-icon="cross">✖</span> 完成並關閉</button>
+
+        <hr class="divider">
+
+        <button class="modal-danger-btn" onclick="resetAllData()">🗑️ 重置所有設定與記憶</button>
+        <button class="modal-close-btn" onclick="closeSettings()">✕ 完成並關閉</button>
     </div>
 </div>
 
 <script>
-    const emojiDict = {
-        win11: { img: '🖼️', trash: '🗑️', moon: '🌙', sun: '☀️', gear: '⚙️', add: '➕', speak: '🗣️', vol: '🔊', reset: '🔄', cross: '✖' },
-        win10: { img: '📷', trash: '⌫', moon: '☾', sun: '☀', gear: '⚙', add: '＋', speak: '💬', vol: '♪', reset: '↺', cross: '✕' }
+// ═══════════════════════════════════════════════
+// Web Worker 計時器核心（精確不漂移）
+// ═══════════════════════════════════════════════
+const workerCode = `
+    let tid = null;
+    self.onmessage = e => {
+        if (e.data === 'start') { if (!tid) tid = setInterval(() => postMessage('tick'), 1000); }
+        else if (e.data === 'stop') { clearInterval(tid); tid = null; }
     };
+`;
+const ticker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: 'application/javascript' })));
+ticker.onmessage = () => { timers.forEach(t => { if (t.isRunning) tick(t.id); }); };
 
-    const workerBlob = new Blob([`
-        let timerId = null;
-        self.onmessage = function(e) {
-            if (e.data === 'start') {
-                if (!timerId) timerId = setInterval(() => postMessage('tick'), 1000);
-            } else if (e.data === 'stop') {
-                clearInterval(timerId);
-                timerId = null;
-            }
-        };
-    `], { type: 'application/javascript' });
-    const ticker = new Worker(URL.createObjectURL(workerBlob));
-    
-    ticker.onmessage = function() {
-        timers.forEach(t => {
-            if (t.isRunning) tick(t.id);
-        });
+// ═══════════════════════════════════════════════
+// 語音模組（瀏覽器 TTS）
+// ═══════════════════════════════════════════════
+let allVoices = [];
+
+function loadVoices() {
+    allVoices = window.speechSynthesis.getVoices();
+    populateVoiceSelect(allVoices);
+}
+if (speechSynthesis.onvoiceschanged !== undefined)
+    speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+function populateVoiceSelect(list) {
+    const sel = document.getElementById('voiceSelect');
+    if (!sel) return;
+    const sorted = [...list].sort((a, b) => {
+        const pa = a.lang.includes('TW') || a.lang.includes('HK') ? 0 : a.lang.startsWith('zh') ? 1 : 2;
+        const pb = b.lang.includes('TW') || b.lang.includes('HK') ? 0 : b.lang.startsWith('zh') ? 1 : 2;
+        if (pa !== pb) return pa - pb;
+        return (b.localService ? 1 : 0) - (a.localService ? 1 : 0);
+    });
+    sel.innerHTML = sorted.length === 0
+        ? '<option value="">載入中或無可用語音…</option>'
+        : sorted.map(v => {
+            const local = v.localService ? '🟢' : '☁️';
+            return `<option value="${v.voiceURI}">${local} ${v.name} (${v.lang})</option>`;
+          }).join('');
+    const saved = localStorage.getItem('voiceURI');
+    if (saved) sel.value = saved;
+    updateVoiceInfo();
+}
+function filterVoices() {
+    const q = document.getElementById('voiceFilter')?.value.toLowerCase() || '';
+    populateVoiceSelect(q ? allVoices.filter(v => v.name.toLowerCase().includes(q) || v.lang.toLowerCase().includes(q)) : allVoices);
+}
+function updateVoiceInfo() {
+    const sel = document.getElementById('voiceSelect');
+    const tag = document.getElementById('voiceInfoTag');
+    if (!sel || !tag || !sel.value) { if(tag) tag.innerHTML = ''; return; }
+    const v = allVoices.find(x => x.voiceURI === sel.value);
+    if (!v) { tag.innerHTML = ''; return; }
+    tag.innerHTML = `<span class="voice-tag">${v.localService ? '💻 本地' : '☁️ 線上'} &nbsp;|&nbsp; ${v.lang}</span>`;
+}
+
+/** 核心朗讀函式 */
+function speakText(text, volume = 0.8) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.volume = Math.min(1, Math.max(0, volume));
+    const savedURI = localStorage.getItem('voiceURI');
+    const voice = savedURI
+        ? allVoices.find(v => v.voiceURI === savedURI)
+        : allVoices.find(v => v.lang.includes('TW') || v.lang.includes('zh')) || null;
+    if (voice) utt.voice = voice;
+    else utt.lang = 'zh-TW';
+    window.speechSynthesis.speak(utt);
+}
+
+/** 鬧鐘觸發語音 */
+function alarmSpeak(id) {
+    const timer = timers.find(t => t.id === id);
+    if (!timer || !timer.voiceNotify) return;
+    const name = document.getElementById(`aname-${id}`)?.value || `鬧鐘 ${id}`;
+    const msg  = document.getElementById(`amsg-${id}`)?.value?.trim() || `${name} 時間到了`;
+    const vol  = parseFloat(document.getElementById(`avol-${id}`)?.value ?? 0.7);
+    speakText(msg, vol);
+}
+
+/** 試聽預覽 */
+function previewVoice() {
+    const text = document.getElementById('previewText').value.trim() || '您好，這是語音測試';
+    speakText(text, 0.85);
+}
+
+/** 音量測試（debounce） */
+let volTestTimer = null;
+function volTestDebounced(id) {
+    clearTimeout(volTestTimer);
+    volTestTimer = setTimeout(() => {
+        const vol = parseFloat(document.getElementById(`avol-${id}`)?.value ?? 0.7);
+        speakText('音量測試', vol);
+    }, 600);
+}
+
+/** 儲存語音設定 */
+function saveVoiceSettings() {
+    const sel = document.getElementById('voiceSelect');
+    if (sel?.value) localStorage.setItem('voiceURI', sel.value);
+    updateVoiceInfo();
+}
+
+// ═══════════════════════════════════════════════
+// 主題切換
+// ═══════════════════════════════════════════════
+function toggleTheme() {
+    const isDark = document.body.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    updateThemeBtn();
+}
+function updateThemeBtn() {
+    const isDark = document.body.classList.contains('dark');
+    document.getElementById('themeBtn').innerHTML = isDark ? '☀️ 淺色模式' : '🌙 深色模式';
+}
+if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
+updateThemeBtn();
+
+// ═══════════════════════════════════════════════
+// 背景圖片
+// ═══════════════════════════════════════════════
+function handleBgUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        try {
+            localStorage.setItem('bgImage', ev.target.result);
+            document.body.style.backgroundImage = `url(${ev.target.result})`;
+        } catch { alert('圖片太大，請選擇較小的圖片！'); }
     };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+}
+function removeBg() {
+    localStorage.removeItem('bgImage');
+    document.body.style.backgroundImage = 'none';
+    document.getElementById('bgInput').value = '';
+}
+const savedBg = localStorage.getItem('bgImage');
+if (savedBg) document.body.style.backgroundImage = `url(${savedBg})`;
 
-    function applyOSStyle() {
-        const os = localStorage.getItem('osStyle') || 'win11';
-        document.getElementById('osSelect').value = os;
-
-        const isDark = document.body.classList.contains('dark-mode');
-        document.querySelectorAll('.emoji').forEach(el => {
-            const icon = el.getAttribute('data-icon');
-            if (icon === 'theme') {
-                el.textContent = isDark ? emojiDict[os]['sun'] : emojiDict[os]['moon'];
-                document.getElementById('themeBtn').innerHTML = `<span class="emoji" data-icon="theme">${el.textContent}</span> ${isDark ? '淺色模式' : '深色模式'}`;
-            } else if (emojiDict[os][icon]) {
-                el.textContent = emojiDict[os][icon];
-            }
-        });
-    }
-
-    function toggleTheme() {
-        document.body.classList.toggle('dark-mode');
-        const isDark = document.body.classList.contains('dark-mode');
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        applyOSStyle(); 
-    }
-
-    if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
-
-    function handleBgUpload(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    localStorage.setItem('bgImage', e.target.result);
-                    document.body.style.backgroundImage = `url(${e.target.result})`;
-                } catch (err) { alert("圖片檔案太大！請選擇檔案較小的圖片。"); }
-            };
-            reader.readAsDataURL(file);
-        }
-        event.target.value = ''; 
-    }
-    function removeBg() {
-        localStorage.removeItem('bgImage');
-        document.body.style.backgroundImage = 'none';
-        document.getElementById('bgInput').value = '';
-    }
-    const savedBg = localStorage.getItem('bgImage');
-    if (savedBg) document.body.style.backgroundImage = `url(${savedBg})`;
-
-    let voices = [];
-    function loadVoices() {
-        voices = window.speechSynthesis.getVoices().filter(v => 
-            v.lang.includes('zh-TW') || v.lang.includes('cmn-TW') || v.lang.includes('HanT-TW')
-        );
-        const voiceSelect = document.getElementById('voiceSelect');
-        voiceSelect.innerHTML = '';
-        if (voices.length === 0) {
-            voiceSelect.innerHTML = '<option value="">載入中或無可用語音...</option>';
-            return;
-        }
-        voices.forEach((voice) => {
-            const option = document.createElement('option');
-            option.value = voice.voiceURI;
-            option.textContent = voice.name;
-            voiceSelect.appendChild(option);
-        });
-        const savedVoice = localStorage.getItem('selectedVoiceURI');
-        if (savedVoice) voiceSelect.value = savedVoice;
-    }
+// ═══════════════════════════════════════════════
+// 設定 Modal
+// ═══════════════════════════════════════════════
+function openSettings() {
+    document.getElementById('settingsModal').style.display = 'flex';
     loadVoices();
-    if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = loadVoices;
-    
-    function saveSettings() { 
-        localStorage.setItem('selectedVoiceURI', document.getElementById('voiceSelect').value); 
-        localStorage.setItem('osStyle', document.getElementById('osSelect').value);
-        applyOSStyle();
-    }
+    updateVoiceInfo();
+}
+function closeSettings() {
+    document.getElementById('settingsModal').style.display = 'none';
+}
+function saveSettings() {
+    localStorage.setItem('osStyle', document.getElementById('osSelect').value);
+}
 
-    let timers = [];
-    let nextTimerId = 1;
+// ═══════════════════════════════════════════════
+// 鬧鐘資料模型
+// ═══════════════════════════════════════════════
+let timers = [];
+let nextId  = 1;
 
-    function initApp() {
-        const saved = localStorage.getItem('timersDataV13');
-        if (saved) {
-            const data = JSON.parse(saved);
-            timers = data.map(t => ({ 
-                ...t, isRunning: false, isPaused: false, remainingSeconds: 0, 
-                currentRepeat: 0, totalRepeats: 0, totalSeconds: 0, endTime: 0 
+function initApp() {
+    const raw = localStorage.getItem('alarmsV14');
+    if (raw) {
+        try {
+            const saved = JSON.parse(raw);
+            timers = saved.map(t => ({
+                ...t,
+                isRunning: false, isPaused: false,
+                remainingSeconds: 0, totalSeconds: 0,
+                endTime: 0, currentRepeat: 0, totalRepeats: 0
             }));
-            nextTimerId = (timers.length > 0 ? Math.max(...timers.map(t => t.id)) : 0) + 1;
-        } else {
-            for (let i = 1; i <= 3; i++) {
-                timers.push({ 
-                    id: i, name: `鬧鐘 ${i}`, h: 0, m: 0, s: 0, msg: "", 
-                    voiceNotify: true, repeat: 1, volume: 0.5, 
-                    isRunning: false, isPaused: false, endTime: 0 
-                });
-            }
-            nextTimerId = 4;
+            nextId = Math.max(0, ...timers.map(t => t.id)) + 1;
+        } catch { timers = []; }
+    }
+    if (timers.length === 0) {
+        for (let i = 1; i <= 3; i++) {
+            timers.push(makeTimer(i, `鬧鐘 ${i}`));
         }
-        renderApp();
-        applyOSStyle(); 
+        nextId = 4;
     }
+    renderAll();
+}
 
-    function renderApp() {
-        const app = document.getElementById('app');
-        // 🔥 將鬧鐘與新增按鈕放入同一個 wrapper 區塊
-        let html = '<div class="timers-wrapper">';
-        html += timers.map(createTimerUI).join('');
-        
-        // 🔥 以卡片的形式呈現「新增鬧鐘」，佔用一個欄位空間
-        html += `
-            <div class="add-timer-card" onclick="addNewTimer()" title="新增鬧鐘">
-                <div class="add-timer-btn"><span class="emoji" data-icon="add">➕</span></div>
+function makeTimer(id, name) {
+    return {
+        id, name,
+        h: 0, m: 5, s: 0,
+        msg: '', voiceNotify: true,
+        repeat: 1, volume: 0.7,
+        isRunning: false, isPaused: false,
+        endTime: 0, remainingSeconds: 0,
+        totalSeconds: 0, currentRepeat: 0, totalRepeats: 0
+    };
+}
+
+function saveStorage() {
+    const data = timers.map(({ id, name, h, m, s, msg, voiceNotify, repeat, volume }) =>
+        ({ id, name, h, m, s, msg, voiceNotify, repeat, volume }));
+    localStorage.setItem('alarmsV14', JSON.stringify(data));
+}
+
+// ═══════════════════════════════════════════════
+// UI 渲染
+// ═══════════════════════════════════════════════
+function renderAll() {
+    const app = document.getElementById('app');
+    app.innerHTML = timers.map(renderCard).join('') + renderAddCard();
+}
+
+function renderCard(t) {
+    const active   = t.isRunning || t.isPaused;
+    const dis      = active ? 'disabled' : '';
+    const vol      = t.volume !== undefined ? t.volume : 0.7;
+    const volPct   = Math.round(vol * 100);
+    const btnText  = t.isRunning ? '暫停' : (t.isPaused ? '繼續' : '開始');
+    const btnCls   = t.isRunning ? 'pausing' : (t.isPaused ? 'resuming' : '');
+    const runCls   = t.isRunning ? 'running' : '';
+    const status   = (active && t.totalRepeats > 0)
+        ? `第 ${t.totalRepeats - t.currentRepeat + 1} / ${t.totalRepeats} 輪`
+        : '';
+    const delBtn   = timers.length > 1
+        ? `<button class="del-btn" onclick="deleteTimer(${t.id})" title="刪除">✕</button>`
+        : '';
+
+    return `
+    <div class="alarm-card ${runCls}" id="card-${t.id}">
+        ${delBtn}
+        <div class="card-label">⏰ 倒數鬧鐘</div>
+
+        <input type="text" class="alarm-name" id="aname-${t.id}"
+            value="${escHtml(t.name)}" placeholder="鬧鐘名稱"
+            onchange="onInput()" ${dis}>
+
+        <div class="time-row">
+            <div class="time-col">
+                <span>小時</span>
+                <input type="number" id="ah-${t.id}" min="0" value="${t.h||0}" onchange="onInput()" ${dis}>
             </div>
-        `;
-        
-        html += '</div>';
-        app.innerHTML = html;
-        loadDataToUI(); 
-        applyOSStyle(); 
-    }
-
-    function createTimerUI(timer) {
-        const isActive = timer.isRunning || timer.isPaused;
-        const disabledAttr = isActive ? "disabled" : "";
-        const btnText = timer.isRunning ? "暫停" : (timer.isPaused ? "繼續" : "開始");
-        const btnClass = timer.isRunning ? "pause-state" : (timer.isPaused ? "resume-state" : "");
-        const runningClass = timer.isRunning ? "is-running" : ""; 
-        const currentVol = timer.volume !== undefined ? timer.volume : 0.5;
-        
-        const statusText = (timer.isRunning || timer.isPaused) && timer.totalRepeats > 0 
-            ? `執行中: 第 ${timer.totalRepeats - timer.currentRepeat + 1} 輪 (共 ${timer.totalRepeats} 輪)` : "";
-
-        return `
-            <div class="timer-card ${runningClass}" id="card-${timer.id}">
-                ${timers.length > 1 ? `<button class="delete-btn" onclick="deleteTimer(${timer.id})" title="刪除此鬧鐘"><span class="emoji" data-icon="cross">✖</span></button>` : ''}
-                
-                <div class="alarm-label">鬧鐘名稱</div>
-                <input type="text" class="alarm-name" id="name-${timer.id}" value="${timer.name}" onchange="handleInputChange()" ${disabledAttr}>
-                
-                <div class="time-inputs">
-                    <div class="time-group">
-                        <label>小時</label>
-                        <input type="number" id="h-${timer.id}" min="0" onchange="handleInputChange()" ${disabledAttr}>
-                    </div>
-                    <div class="time-group">
-                        <label>分鐘</label>
-                        <input type="number" id="m-${timer.id}" min="0" max="59" onchange="handleInputChange()" ${disabledAttr}>
-                    </div>
-                    <div class="time-group">
-                        <label>秒數</label>
-                        <input type="number" id="s-${timer.id}" min="0" max="59" onchange="handleInputChange()" ${disabledAttr}>
-                    </div>
-                </div>
-                
-                <input type="text" class="msg-input" id="msg-${timer.id}" placeholder="請輸入要朗讀的內容" onchange="handleInputChange()" ${disabledAttr}>
-                
-                <div class="options-row">
-                    <div class="volume-control">
-                        <label><span class="emoji" data-icon="vol">🔊</span> 音量:</label>
-                        <input type="range" id="vol-${timer.id}" min="0" max="1" step="0.01" value="${currentVol}" 
-                            oninput="handleVolRangeSync(${timer.id})" onchange="handleInputChange(); testVolume(${timer.id})">
-                        <input type="number" id="vol-num-${timer.id}" class="vol-num-input" min="0" max="100" value="${Math.round(currentVol * 100)}" onchange="handleVolNumChange(${timer.id})">
-                        <span style="font-size:13px; font-weight:bold;">%</span>
-                    </div>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" id="notify-voice-${timer.id}" onchange="handleInputChange()" ${disabledAttr}> <span class="emoji" data-icon="speak">🗣️</span> 語音通知</label>
-                        <div class="repeat-box">
-                            <label>重複:</label>
-                            <input type="number" id="repeat-${timer.id}" min="1" style="width: 50px;" onchange="handleInputChange()" ${disabledAttr}> 次
-                        </div>
-                    </div>
-                </div>
-
-                <div class="action-buttons">
-                    <button class="action-btn ${btnClass}" id="btn-${timer.id}" onclick="toggleTimer(${timer.id})">${btnText}</button>
-                    <button class="reset-timer-btn" onclick="resetTimer(${timer.id})"><span class="emoji" data-icon="reset">🔄</span> 重置鬧鐘</button>
-                </div>
-                
-                <div class="display" id="display-${timer.id}">00:00:00</div>
-                <div class="progress-bg"><div class="progress-bar" id="progress-${timer.id}"></div></div>
-                <div class="repeat-status" id="status-${timer.id}">${statusText}</div>
+            <div class="time-col">
+                <span>分鐘</span>
+                <input type="number" id="am-${t.id}" min="0" max="59" value="${t.m||0}" onchange="onInput()" ${dis}>
             </div>
-        `;
-    }
+            <div class="time-col">
+                <span>秒數</span>
+                <input type="number" id="as-${t.id}" min="0" max="59" value="${t.s||0}" onchange="onInput()" ${dis}>
+            </div>
+        </div>
 
-    function addNewTimer() {
-        syncUItoState(); 
-        const newName = `鬧鐘 ${timers.length + 1}`;
-        timers.push({ 
-            id: nextTimerId++, name: newName, h: 0, m: 0, s: 0, msg: "", 
-            voiceNotify: true, repeat: 1, volume: 0.5, 
-            isRunning: false, isPaused: false, endTime: 0 
-        });
-        saveStateToStorage();
-        renderApp();
-    }
+        <input type="text" class="msg-input" id="amsg-${t.id}"
+            value="${escHtml(t.msg)}" placeholder="📢 朗讀內容 (留空則自動填入)"
+            onchange="onInput()" ${dis}>
 
-    function deleteTimer(id) {
-        if (confirm("確定要刪除這個鬧鐘嗎？")) {
-            syncUItoState();
-            const index = timers.findIndex(t => t.id === id);
-            if (index > -1) {
-                timers[index].isRunning = false;
-                timers.splice(index, 1);
-                checkTickerStatus();
-                saveStateToStorage();
-                renderApp();
-            }
-        }
-    }
+        <div class="options-panel">
+            <!-- 音量 -->
+            <div class="vol-row">
+                <span>🔊</span>
+                <span style="font-size:12px;font-weight:600;color:var(--muted);">音量</span>
+                <input type="range" id="avol-${t.id}" min="0" max="1" step="0.01" value="${vol}"
+                    oninput="syncVolNum(${t.id})"
+                    onchange="onInput(); volTestDebounced(${t.id})">
+                <input type="number" class="vol-num" id="avol-num-${t.id}" min="0" max="100"
+                    value="${volPct}" onchange="onVolNumChange(${t.id})">
+                <span style="font-size:12px;font-weight:600;">%</span>
+            </div>
 
-    function handleVolRangeSync(id) {
-        const range = document.getElementById(`vol-${id}`);
-        const num = document.getElementById(`vol-num-${id}`);
-        num.value = Math.round(range.value * 100);
-    }
 
-    function handleVolNumChange(id) {
-        const num = document.getElementById(`vol-num-${id}`);
-        let val = parseInt(num.value);
-        if (isNaN(val)) val = 50;
-        if (val < 0) val = 0;
-        if (val > 100) val = 100;
-        num.value = val;
-        
-        const range = document.getElementById(`vol-${id}`);
-        range.value = val / 100;
-        
-        handleInputChange();
-        testVolume(id);
-    }
+            <!-- 語音通知 + 重複 -->
+            <div class="row">
+                <label>
+                    <input type="checkbox" id="avoice-${t.id}"
+                        ${t.voiceNotify !== false ? 'checked' : ''} onchange="onInput()" ${dis}>
+                    🗣️ 語音通知
+                </label>
+                <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;">
+                    重複
+                    <input type="number" class="repeat-input" id="arep-${t.id}"
+                        min="1" value="${t.repeat||1}" onchange="onInput()" ${dis}>
+                    次
+                </div>
+            </div>
+        </div>
 
-    function syncUItoState() {
-        timers.forEach(t => {
-            const nameEl = document.getElementById(`name-${t.id}`);
-            if (nameEl) {
-                t.name = nameEl.value;
-                t.h = document.getElementById(`h-${t.id}`).value;
-                t.m = document.getElementById(`m-${t.id}`).value;
-                t.s = document.getElementById(`s-${t.id}`).value;
-                t.msg = document.getElementById(`msg-${t.id}`).value;
-                t.voiceNotify = document.getElementById(`notify-voice-${t.id}`).checked;
-                t.repeat = document.getElementById(`repeat-${t.id}`).value;
-                t.volume = document.getElementById(`vol-${t.id}`).value;
-            }
-        });
-    }
+        <div class="action-area">
+            <button class="main-btn ${btnCls}" id="abtn-${t.id}" onclick="toggleTimer(${t.id})">${btnText}</button>
+            <button class="reset-btn-sm" onclick="resetTimer(${t.id})">🔄 重置鬧鐘</button>
+        </div>
 
-    function saveStateToStorage() {
-        const dataToSave = timers.map(t => ({
-            id: t.id, name: t.name, h: t.h, m: t.m, s: t.s, msg: t.msg, 
-            voiceNotify: t.voiceNotify, repeat: t.repeat, volume: t.volume
-        }));
-        localStorage.setItem('timersDataV13', JSON.stringify(dataToSave));
-    }
+        <div class="time-display" id="adisp-${t.id}">00:00:00</div>
+        <div class="progress-track">
+            <div class="progress-fill" id="aprog-${t.id}"></div>
+        </div>
+        <div class="round-status" id="astatus-${t.id}">${status}</div>
+    </div>`;
+}
 
-    function handleInputChange() {
+function renderAddCard() {
+    return `
+    <div class="add-card" onclick="addTimer()" title="新增鬧鐘">
+        <div class="add-icon">➕</div>
+        <div class="add-card-label">新增鬧鐘</div>
+    </div>`;
+}
+
+function escHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ═══════════════════════════════════════════════
+// 資料同步
+// ═══════════════════════════════════════════════
+function syncUItoState() {
+    timers.forEach(t => {
+        const nameEl = document.getElementById(`aname-${t.id}`);
+        if (!nameEl) return;
+        t.name = nameEl.value;
+        t.h = parseInt(document.getElementById(`ah-${t.id}`).value) || 0;
+        t.m = parseInt(document.getElementById(`am-${t.id}`).value) || 0;
+        t.s = parseInt(document.getElementById(`as-${t.id}`).value) || 0;
+        t.msg = document.getElementById(`amsg-${t.id}`).value;
+        t.voiceNotify = document.getElementById(`avoice-${t.id}`).checked;
+        t.repeat = parseInt(document.getElementById(`arep-${t.id}`).value) || 1;
+        t.volume = parseFloat(document.getElementById(`avol-${t.id}`).value) || 0.7;
+    });
+}
+
+function onInput() {
+    syncUItoState();
+    saveStorage();
+    timers.forEach(t => { if (!t.isRunning && !t.isPaused) showInitialTime(t.id); });
+}
+
+function showInitialTime(id) {
+    const h = parseInt(document.getElementById(`ah-${id}`)?.value) || 0;
+    const m = parseInt(document.getElementById(`am-${id}`)?.value) || 0;
+    const s = parseInt(document.getElementById(`as-${id}`)?.value) || 0;
+    setDisplay(id, h * 3600 + m * 60 + s);
+    const bar = document.getElementById(`aprog-${id}`);
+    if (bar) { bar.style.width = '100%'; bar.style.background = 'var(--accent)'; }
+}
+
+function setDisplay(id, totalSecs) {
+    const el = document.getElementById(`adisp-${id}`);
+    if (!el) return;
+    const H = Math.floor(totalSecs / 3600).toString().padStart(2,'0');
+    const M = Math.floor((totalSecs % 3600) / 60).toString().padStart(2,'0');
+    const S = (totalSecs % 60).toString().padStart(2,'0');
+    el.textContent = `${H}:${M}:${S}`;
+    // 最後 10 秒顯示紅色
+    el.classList.toggle('near-end', totalSecs <= 10 && totalSecs > 0);
+}
+
+// ═══════════════════════════════════════════════
+// 音量同步
+// ═══════════════════════════════════════════════
+function syncVolNum(id) {
+    const r = document.getElementById(`avol-${id}`);
+    const n = document.getElementById(`avol-num-${id}`);
+    if (r && n) n.value = Math.round(r.value * 100);
+}
+function onVolNumChange(id) {
+    let v = parseInt(document.getElementById(`avol-num-${id}`)?.value ?? 70);
+    v = Math.min(100, Math.max(0, isNaN(v) ? 70 : v));
+    document.getElementById(`avol-num-${id}`).value = v;
+    document.getElementById(`avol-${id}`).value = v / 100;
+    onInput();
+    volTestDebounced(id);
+}
+
+// ═══════════════════════════════════════════════
+// 鬧鐘操作
+// ═══════════════════════════════════════════════
+function addTimer() {
+    syncUItoState();
+    const t = makeTimer(nextId++, `鬧鐘 ${timers.length + 1}`);
+    timers.push(t);
+    saveStorage();
+    renderAll();
+    loadInitialDisplays();
+}
+
+function deleteTimer(id) {
+    if (!confirm('確定要刪除這個鬧鐘嗎？')) return;
+    syncUItoState();
+    const idx = timers.findIndex(t => t.id === id);
+    if (idx > -1) {
+        timers[idx].isRunning = false;
+        timers.splice(idx, 1);
+        checkTicker();
+        saveStorage();
+        renderAll();
+        loadInitialDisplays();
+    }
+}
+
+function resetAllData() {
+    if (confirm('警告：這將清除所有鬧鐘設定與背景！確定要重置嗎？')) {
+        localStorage.clear();
+        location.reload();
+    }
+}
+
+function toggleTimer(id) {
+    const t   = timers.find(x => x.id === id);
+    const btn  = document.getElementById(`abtn-${id}`);
+    const card = document.getElementById(`card-${id}`);
+
+    if (t.isRunning) {
+        // 暫停
+        t.isRunning = false;
+        t.isPaused  = true;
+        t.remainingSeconds = Math.max(0, Math.round((t.endTime - Date.now()) / 1000));
+        btn.textContent = '繼續';
+        btn.className   = 'main-btn resuming';
+        card.classList.remove('running');
+    } else if (t.isPaused) {
+        // 繼續
+        t.isRunning = true;
+        t.isPaused  = false;
+        t.endTime   = Date.now() + t.remainingSeconds * 1000;
+        btn.textContent = '暫停';
+        btn.className   = 'main-btn pausing';
+        card.classList.add('running');
+    } else {
+        // 開始
+        const h = parseInt(document.getElementById(`ah-${id}`)?.value) || 0;
+        const m = parseInt(document.getElementById(`am-${id}`)?.value) || 0;
+        const s = parseInt(document.getElementById(`as-${id}`)?.value) || 0;
+        t.totalSeconds = h * 3600 + m * 60 + s;
+        if (t.totalSeconds <= 0) { alert('請設定大於 0 的時間！'); return; }
+
+        t.isRunning    = true;
+        t.isPaused     = false;
+        t.endTime      = Date.now() + t.totalSeconds * 1000;
+        t.totalRepeats = parseInt(document.getElementById(`arep-${id}`)?.value) || 1;
+        t.currentRepeat = t.totalRepeats;
+
+        setInputsDisabled(id, true);
+        btn.textContent = '暫停';
+        btn.className   = 'main-btn pausing';
+        card.classList.add('running');
+        updateStatus(id);
         syncUItoState();
-        saveStateToStorage();
-        timers.forEach(t => {
-            if (!t.isRunning && !t.isPaused) updateInitialDisplay(t.id);
-        });
+        saveStorage();
     }
+    checkTicker();
+    tick(id);
+}
 
-    function loadDataToUI() {
-        timers.forEach(t => {
-            const nameEl = document.getElementById(`name-${t.id}`);
-            if (nameEl) {
-                nameEl.value = t.name;
-                document.getElementById(`h-${t.id}`).value = t.h || 0;
-                document.getElementById(`m-${t.id}`).value = t.m || 0;
-                document.getElementById(`s-${t.id}`).value = t.s || 0;
-                document.getElementById(`msg-${t.id}`).value = t.msg || "";
-                document.getElementById(`notify-voice-${t.id}`).checked = t.voiceNotify !== undefined ? t.voiceNotify : true;
-                document.getElementById(`repeat-${t.id}`).value = t.repeat || 1;
-                
-                const vol = t.volume !== undefined ? t.volume : 0.5;
-                document.getElementById(`vol-${t.id}`).value = vol;
-                document.getElementById(`vol-num-${t.id}`).value = Math.round(vol * 100);
-                
-                updateInitialDisplay(t.id);
-            }
-        });
-    }
+function resetTimer(id) {
+    const t    = timers.find(x => x.id === id);
+    const btn  = document.getElementById(`abtn-${id}`);
+    const card = document.getElementById(`card-${id}`);
+    t.isRunning = false;
+    t.isPaused  = false;
+    checkTicker();
+    btn.textContent = '開始';
+    btn.className   = 'main-btn';
+    card.classList.remove('running');
+    document.getElementById(`astatus-${id}`).textContent = '';
+    setInputsDisabled(id, false);
+    showInitialTime(id);
+}
 
-    function updateInitialDisplay(id) {
-        const h = parseInt(document.getElementById(`h-${id}`).value) || 0;
-        const m = parseInt(document.getElementById(`m-${id}`).value) || 0;
-        const s = parseInt(document.getElementById(`s-${id}`).value) || 0;
-        const total = h * 3600 + m * 60 + s;
-        formatAndShowTime(id, total);
-        
-        const bar = document.getElementById(`progress-${id}`);
-        if(bar) {
-            bar.style.width = `100%`;
-            bar.style.backgroundColor = `rgb(26, 115, 232)`; 
-        }
-    }
+function setInputsDisabled(id, dis) {
+    ['aname', 'ah', 'am', 'as', 'amsg', 'avoice', 'arep'].forEach(k => {
+        const el = document.getElementById(`${k}-${id}`);
+        if (el) el.disabled = dis;
+    });
+}
 
-    function formatAndShowTime(id, totalSeconds) {
-        const displayH = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
-        const displayM = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
-        const displayS = (totalSeconds % 60).toString().padStart(2, '0');
-        document.getElementById(`display-${id}`).textContent = `${displayH}:${displayM}:${displayS}`;
-    }
+// ═══════════════════════════════════════════════
+// 計時 Tick
+// ═══════════════════════════════════════════════
+function tick(id) {
+    const t = timers.find(x => x.id === id);
+    if (!t?.isRunning) return;
 
-    function resetAllData() {
-        if (confirm("警告：這將會清除所有鬧鐘、時間設定與背景！確定要重置嗎？")) {
-            localStorage.clear();
-            location.reload(); 
-        }
-    }
+    const timeLeft = Math.max(0, Math.round((t.endTime - Date.now()) / 1000));
 
-    function testVolume(id) {
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            const volumeLvl = parseFloat(document.getElementById(`vol-${id}`).value);
-            const utterance = new SpeechSynthesisUtterance("音量測試");
-            utterance.volume = volumeLvl;
-            const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
-            if (savedVoiceURI && voices.length > 0) {
-                const selectedVoice = voices.find(v => v.voiceURI === savedVoiceURI);
-                if (selectedVoice) utterance.voice = selectedVoice;
-            } else if (voices.length > 0) utterance.voice = voices[0];
-            else utterance.lang = 'zh-TW';
-            window.speechSynthesis.speak(utterance);
-        }
-    }
+    if (timeLeft <= 0) {
+        // 觸發鬧鐘
+        alarmSpeak(id);
+        t.currentRepeat--;
 
-    function openSettings() { document.getElementById('settingsModal').style.display = 'flex'; loadVoices(); }
-    function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
-
-    function checkTickerStatus() {
-        if (timers.some(t => t.isRunning)) {
-            ticker.postMessage('start');
+        if (t.currentRepeat > 0) {
+            t.endTime = t.endTime + t.totalSeconds * 1000;
+            const next = Math.max(0, Math.round((t.endTime - Date.now()) / 1000));
+            updateStatus(id);
+            setDisplay(id, next);
         } else {
-            ticker.postMessage('stop');
+            resetTimer(id);
+            document.getElementById(`astatus-${id}`).textContent = '✅ 計時完成！';
         }
+    } else {
+        setDisplay(id, timeLeft);
     }
+}
 
-    function updateVisuals() {
-        requestAnimationFrame(updateVisuals);
-        const now = Date.now();
-        timers.forEach(timer => {
-            const bar = document.getElementById(`progress-${timer.id}`);
-            if (!bar) return;
+function updateStatus(id) {
+    const t = timers.find(x => x.id === id);
+    document.getElementById(`astatus-${id}`).textContent =
+        `⏱ 第 ${t.totalRepeats - t.currentRepeat + 1} / ${t.totalRepeats} 輪`;
+}
 
-            let percent = 100;
-            if (timer.isRunning && timer.totalSeconds > 0) {
-                let timeLeft = timer.endTime - now;
-                if (timeLeft < 0) timeLeft = 0;
-                percent = (timeLeft / (timer.totalSeconds * 1000)) * 100;
-            } else if (timer.isPaused && timer.totalSeconds > 0) {
-                percent = (timer.remainingSeconds / timer.totalSeconds) * 100;
-            }
 
-            const r = Math.round(234 - (percent / 100) * (234 - 26));
-            const g = Math.round(67 - (percent / 100) * (67 - 115));
-            const b = Math.round(53 - (percent / 100) * (53 - 232));
 
-            bar.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-            bar.style.width = `${percent}%`;
-        });
-    }
-    updateVisuals(); 
+// ═══════════════════════════════════════════════
+// 進度條視覺更新（RAF – 細膩平滑）
+// ═══════════════════════════════════════════════
+function updateVisuals() {
+    requestAnimationFrame(updateVisuals);
+    const now = Date.now();
+    timers.forEach(t => {
+        const bar = document.getElementById(`aprog-${t.id}`);
+        if (!bar) return;
 
-    function toggleTimer(id) {
-        const timer = timers.find(t => t.id === id);
-        const btn = document.getElementById(`btn-${id}`);
-        const card = document.getElementById(`card-${id}`);
+        let pct = 100;
+        if (t.isRunning && t.totalSeconds > 0) {
+            pct = Math.max(0, Math.min(100, ((t.endTime - now) / (t.totalSeconds * 1000)) * 100));
+        } else if (t.isPaused && t.totalSeconds > 0) {
+            pct = Math.max(0, Math.min(100, (t.remainingSeconds / t.totalSeconds) * 100));
+        }
 
-        if (timer.isRunning) {
-            timer.isRunning = false;
-            timer.isPaused = true;
-            timer.remainingSeconds = Math.max(0, Math.round((timer.endTime - Date.now()) / 1000));
-            
-            btn.textContent = "繼續";
-            btn.classList.remove("pause-state");
-            btn.classList.add("resume-state");
-            card.classList.remove("is-running"); 
+        // 顏色：藍（100%）→ 橙（50%）→ 紅（0%）
+        const p = pct / 100;
+        let r, g, b;
+        if (p > 0.5) {
+            // 藍→橙
+            const t2 = (p - 0.5) * 2;
+            r = Math.round(245 - t2 * (245 - 79));
+            g = Math.round(158 - t2 * (158 - 110));
+            b = Math.round(11  + t2 * (247 - 11));
         } else {
-            if (timer.isPaused) {
-                timer.isRunning = true;
-                timer.isPaused = false;
-                timer.endTime = Date.now() + (timer.remainingSeconds * 1000);
-                
-                btn.textContent = "暫停";
-                btn.classList.remove("resume-state");
-                btn.classList.add("pause-state");
-                card.classList.add("is-running"); 
-            } else {
-                const h = parseInt(document.getElementById(`h-${id}`).value) || 0;
-                const m = parseInt(document.getElementById(`m-${id}`).value) || 0;
-                const s = parseInt(document.getElementById(`s-${id}`).value) || 0;
-                timer.totalSeconds = h * 3600 + m * 60 + s;
-                
-                if (timer.totalSeconds <= 0) { alert("請設定大於 0 的時間！"); return; }
-
-                timer.isRunning = true;
-                timer.isPaused = false;
-                timer.endTime = Date.now() + (timer.totalSeconds * 1000);
-                timer.totalRepeats = parseInt(document.getElementById(`repeat-${id}`).value) || 1;
-                timer.currentRepeat = timer.totalRepeats;
-                
-                setInputsDisabled(id, true);
-                btn.textContent = "暫停";
-                btn.classList.add("pause-state");
-                btn.classList.remove("resume-state");
-                card.classList.add("is-running"); 
-                
-                updateStatus(id);
-                handleInputChange(); 
-            }
+            // 橙→紅
+            const t2 = p * 2;
+            r = Math.round(239 - t2 * (239 - 245));
+            g = Math.round(68  + t2 * (158 - 68));
+            b = Math.round(68  - t2 * (68 - 11));
         }
-        checkTickerStatus();
-        tick(id); 
-    }
+        bar.style.backgroundColor = `rgb(${r},${g},${b})`;
+        bar.style.width = `${pct}%`;
+    });
+}
+updateVisuals();
 
-    function resetTimer(id) {
-        const timer = timers.find(t => t.id === id);
-        const btn = document.getElementById(`btn-${id}`);
-        const card = document.getElementById(`card-${id}`);
-        
-        timer.isRunning = false;
-        timer.isPaused = false;
-        checkTickerStatus();
-        
-        btn.textContent = "開始";
-        btn.classList.remove("pause-state", "resume-state");
-        card.classList.remove("is-running"); 
-        document.getElementById(`status-${id}`).textContent = "";
-        
-        setInputsDisabled(id, false);
-        updateInitialDisplay(id);
-    }
+// ═══════════════════════════════════════════════
+// Ticker 控制
+// ═══════════════════════════════════════════════
+function checkTicker() {
+    ticker.postMessage(timers.some(t => t.isRunning) ? 'start' : 'stop');
+}
 
-    function tick(id) {
-        const timer = timers.find(t => t.id === id);
-        if (!timer.isRunning) return; 
+// ═══════════════════════════════════════════════
+// 載入初始顯示
+// ═══════════════════════════════════════════════
+function loadInitialDisplays() {
+    timers.forEach(t => {
+        if (!t.isRunning && !t.isPaused) showInitialTime(t.id);
+    });
+}
 
-        let timeLeft = Math.round((timer.endTime - Date.now()) / 1000);
-
-        if (timeLeft <= 0) {
-            triggerAlarm(id);
-            timer.currentRepeat--;
-
-            if (timer.currentRepeat > 0) {
-                timer.endTime = timer.endTime + (timer.totalSeconds * 1000);
-                let newTimeLeft = Math.round((timer.endTime - Date.now()) / 1000);
-                updateStatus(id);
-                formatAndShowTime(id, newTimeLeft);
-            } else {
-                resetTimer(id); 
-                document.getElementById(`status-${id}`).textContent = "計時完成！";
-            }
-        } else {
-            formatAndShowTime(id, timeLeft);
-        }
-    }
-
-    function updateStatus(id) {
-        const timer = timers.find(t => t.id === id);
-        document.getElementById(`status-${id}`).textContent = `執行中: 第 ${timer.totalRepeats - timer.currentRepeat + 1} 輪 (共 ${timer.totalRepeats} 輪)`;
-    }
-
-    function triggerAlarm(id) {
-        const titleName = document.getElementById(`name-${id}`).value || `鬧鐘 ${id}`;
-        let msg = document.getElementById(`msg-${id}`).value;
-        const useVoice = document.getElementById(`notify-voice-${id}`).checked;
-        const volumeLvl = parseFloat(document.getElementById(`vol-${id}`).value);
-
-        if (!msg.trim()) msg = `${titleName} 時間到了`;
-
-        if (useVoice && 'speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(msg);
-            utterance.volume = volumeLvl; 
-
-            const savedVoiceURI = localStorage.getItem('selectedVoiceURI');
-            if (savedVoiceURI && voices.length > 0) {
-                const selectedVoice = voices.find(v => v.voiceURI === savedVoiceURI);
-                if (selectedVoice) utterance.voice = selectedVoice;
-            } else if (voices.length > 0) utterance.voice = voices[0];
-            else utterance.lang = 'zh-TW';
-            
-            window.speechSynthesis.speak(utterance);
-        }
-    }
-
-    function setInputsDisabled(id, disabled) {
-        ['name', 'h', 'm', 's', 'msg', 'notify-voice', 'repeat'].forEach(prefix => {
-            document.getElementById(`${prefix}-${id}`).disabled = disabled;
-        });
-    }
-
-    initApp();
+// ═══════════════════════════════════════════════
+// 啟動
+// ═══════════════════════════════════════════════
+initApp();
+loadInitialDisplays();
 </script>
 </body>
 </html>
