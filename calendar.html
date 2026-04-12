@@ -201,6 +201,7 @@
             flex: 1; background-color: var(--panel-bg); border-radius: var(--border-radius-panel);
             padding: var(--spacing-main); display: flex; flex-direction: column;
             border: var(--border-width) solid var(--border-color);
+            overflow-y: auto;
         }
 
         .calendar-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: var(--spacing-main); }
@@ -225,10 +226,8 @@
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            grid-template-rows: repeat(6, 1fr);
+            /* 行高由 aspect-ratio 自動决定，不手動指定 */
             gap: 10px;
-            flex: 1;
-            min-height: 0;
         }
 
         .weekday { display: flex; justify-content: center; align-items: center; padding-bottom: 10px; }
@@ -241,7 +240,7 @@
         .day-cell {
             background-color: var(--item-bg); border-radius: var(--border-radius-item);
             padding: 8px; cursor: pointer; display: flex; flex-direction: column; align-items: stretch;
-            min-height: 0;
+            aspect-ratio: 1 / 1;
             border: 2px solid transparent; overflow: hidden;
             user-select: none;
             transition: background-color 0.2s, border-color 0.2s;
@@ -930,6 +929,15 @@
             const daysInMonth   = new Date(year, month + 1, 0).getDate();
             const daysInPrevMonth = new Date(year, month, 0).getDate();
 
+            // 動態計算需要幾行：若當月日期溢出 35 格才選欢6 行，否則只顯 5 行
+            const totalOwn     = firstDayIndex + daysInMonth;
+            const dateRows     = totalOwn > 35 ? 6 : 5;
+            const totalCells   = dateRows * 7;         // 35 或 42
+            const trailing     = totalCells - totalOwn; // 補空的下月格數
+
+            // aspect-ratio 模式：不需要設定行高—清除舊內聯樣式
+            calendarGrid.style.gridTemplateRows = '';
+
             const fragment = document.createDocumentFragment();
 
             for (let i = 0; i < firstDayIndex; i++) {
@@ -939,8 +947,7 @@
             for (let i = 1; i <= daysInMonth; i++) {
                 fragment.appendChild(createDayCell(year, month, i, false));
             }
-            const totalCells = firstDayIndex + daysInMonth;
-            for (let i = 1; i <= 42 - totalCells; i++) {
+            for (let i = 1; i <= trailing; i++) {
                 fragment.appendChild(createDayCell(year, month + 1, i, true));
             }
 
