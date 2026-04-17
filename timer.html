@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>多功能倒數計時鬧鐘</title>
+    <title>倒數計時鬧鐘</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
     <style>
@@ -283,7 +283,7 @@
 
         /* 重複次數 */
         .repeat-input {
-            width: 52px;
+            width: 72px;
             padding: 5px 8px;
             border: 1.5px solid var(--input-border);
             border-radius: 8px;
@@ -296,6 +296,9 @@
             transition: border-color var(--transition);
         }
         .repeat-input:focus { border-color: var(--accent); outline: none; }
+        .repeat-input::-webkit-inner-spin-button,
+        .repeat-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+        .repeat-input[type=number] { -moz-appearance: textfield; }
 
         /* 操作按鈕 */
         .action-area { display: flex; flex-direction: column; gap: 8px; }
