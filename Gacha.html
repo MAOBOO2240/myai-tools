@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>轉蛋模擬器 - Win11 Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *,
         *::before,
@@ -13,32 +16,44 @@
         }
 
         :root {
-            --bg-color: #f3f3f3;
-            --text-color: #202020;
-            --panel-bg: rgba(255, 255, 255, 0.7);
-            --panel-border: rgba(255, 255, 255, 0.5);
-            --border-color: #d1d1d1;
-            --primary: #0067c0;
-            --primary-hover: #005a9e;
-            --danger: #c42b1c;
-            --success: #0f7b0f;
-            --radius-main: 12px;
-            --radius-btn: 8px;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --bg-color: #f0f2f5;
+            --bg-gradient: linear-gradient(135deg, #e8ecf3 0%, #f0f2f5 40%, #e6e9f0 100%);
+            --text-color: #1a1a2e;
+            --text-secondary: #555;
+            --panel-bg: rgba(255, 255, 255, 0.72);
+            --panel-border: rgba(255, 255, 255, 0.6);
+            --border-color: #ddd;
+            --primary: #4f6ef7;
+            --primary-hover: #3b5de7;
+            --primary-glow: rgba(79, 110, 247, 0.25);
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.2);
+            --success: #22c55e;
+            --success-glow: rgba(34, 197, 94, 0.2);
+            --radius-main: 16px;
+            --radius-btn: 10px;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+            --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
             --font-scale: 16px;
         }
 
         [data-theme="dark"] {
-            --bg-color: #202020;
-            --text-color: #ffffff;
-            --panel-bg: rgba(40, 40, 40, 0.7);
-            --panel-border: rgba(80, 80, 80, 0.5);
-            --border-color: #444444;
-            --primary: #4cc2ff;
-            --primary-hover: #47b1e8;
-            --danger: #ff99a4;
-            --success: #6ccb5f;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --bg-color: #0f0f1a;
+            --bg-gradient: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 40%, #16213e 100%);
+            --text-color: #e8e8f0;
+            --text-secondary: #999;
+            --panel-bg: rgba(30, 30, 50, 0.75);
+            --panel-border: rgba(80, 80, 120, 0.35);
+            --border-color: #333355;
+            --primary: #6c8cff;
+            --primary-hover: #8ba3ff;
+            --primary-glow: rgba(108, 140, 255, 0.3);
+            --danger: #ff6b6b;
+            --danger-glow: rgba(255, 107, 107, 0.25);
+            --success: #4ade80;
+            --success-glow: rgba(74, 222, 128, 0.25);
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2);
+            --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
 
         html {
@@ -46,12 +61,14 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', 'Noto Sans TC', 'Segoe UI', sans-serif;
+            background: var(--bg-gradient);
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 20px;
-            transition: background-color 0.3s, color 0.3s;
+            padding: 24px;
+            min-height: 100vh;
+            transition: background 0.4s, color 0.4s;
         }
 
         .container {
@@ -63,24 +80,33 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .header h2 {
             margin: 0;
             font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .panel {
             background: var(--panel-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
             padding: 25px;
             border-radius: var(--radius-main);
             border: 1px solid var(--panel-border);
             box-shadow: var(--shadow);
             margin-bottom: 25px;
-            transition: background 0.3s, border-color 0.3s;
+            transition: all 0.35s ease;
+        }
+
+        .panel:hover {
+            box-shadow: var(--shadow-hover);
         }
 
         .grid-2 {
@@ -127,28 +153,45 @@
         }
 
         button {
-            padding: 10px 16px;
+            padding: 10px 18px;
             border: none;
             border-radius: var(--radius-btn);
             background-color: var(--primary);
             color: white;
             cursor: pointer;
-            transition: background-color 0.2s, transform 0.15s, filter 0.2s;
+            transition: all 0.25s ease;
             font-weight: 600;
             font-size: 0.95rem;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+            opacity: 0;
+            transition: opacity 0.25s;
         }
 
         button:hover {
             background-color: var(--primary-hover);
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px var(--primary-glow);
+        }
+
+        button:hover::after {
+            opacity: 1;
         }
 
         button:active {
             transform: translateY(0);
+            box-shadow: none;
         }
 
         button.danger {
@@ -156,7 +199,8 @@
         }
 
         button.danger:hover {
-            filter: brightness(0.9);
+            box-shadow: 0 4px 16px var(--danger-glow);
+            filter: brightness(1.05);
         }
 
         button.success {
@@ -164,7 +208,8 @@
         }
 
         button.success:hover {
-            filter: brightness(0.9);
+            box-shadow: 0 4px 16px var(--success-glow);
+            filter: brightness(1.05);
         }
 
         button.secondary {
@@ -190,14 +235,27 @@
 
         th {
             text-align: left;
-            padding: 10px;
-            border-bottom: 2px solid var(--border-color);
+            padding: 10px 12px;
+            border-bottom: 2px solid var(--primary);
             font-weight: 600;
+            font-size: 0.88rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            opacity: 0.7;
         }
 
         td {
-            padding: 8px 10px;
+            padding: 8px 12px;
             border-bottom: 1px solid var(--border-color);
+            transition: background 0.15s;
+        }
+
+        tr:hover td {
+            background: rgba(79, 110, 247, 0.04);
+        }
+
+        [data-theme="dark"] tr:hover td {
+            background: rgba(108, 140, 255, 0.06);
         }
 
         td input {
@@ -285,23 +343,61 @@
         .stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px 20px;
-            background: rgba(0, 0, 0, 0.03);
-            padding: 20px;
-            border-radius: var(--radius-main);
+            gap: 12px;
+            padding: 0;
             margin-top: 20px;
-            font-size: 1.15rem;
-            font-weight: bold;
         }
 
-        [data-theme="dark"] .stats-grid {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .stats-grid>div {
+        .stat-card {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border-color);
+            font-size: 1.05rem;
+            font-weight: 600;
+            transition: all 0.25s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+
+        [data-theme="dark"] .stat-card {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255,255,255,0.08);
+        }
+
+        .stat-card .stat-label {
+            opacity: 0.7;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .stat-card .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .avg-draws-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary), #a855f7);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-left: 6px;
+            animation: fadeInUp 0.4s ease;
+            vertical-align: middle;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
         .profit {
@@ -334,6 +430,20 @@
             box-shadow: var(--shadow);
             border: 1px solid var(--panel-border);
         }
+
+        /* 正方形刪除按鈕 */
+        .del-btn {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
     </style>
 </head>
 
@@ -426,10 +536,10 @@
                 </div>
 
                 <div class="stats-grid">
-                    <div>💸 花費: <span id="statCost">0</span></div>
-                    <div>💎 價值: <span id="statValue">0</span></div>
-                    <div>⚖️ 損益: <span id="statProfit">0</span></div>
-                    <div>🎯 總抽數: <span id="statDraws">0</span></div>
+                    <div class="stat-card">💸 <span class="stat-label">花費</span> <span class="stat-value" id="statCost">0</span></div>
+                    <div class="stat-card">💎 <span class="stat-label">價值</span> <span class="stat-value" id="statValue">0</span></div>
+                    <div class="stat-card">⚖️ <span class="stat-label">損益</span> <span class="stat-value" id="statProfit">0</span></div>
+                    <div class="stat-card">🎯 <span class="stat-label">總抽數</span> <span class="stat-value" id="statDraws">0</span><span id="avgDrawsBadge"></span></div>
                 </div>
 
                 <h4>📦 獲得道具清單</h4>
@@ -537,7 +647,7 @@
             if (!appData.themes || !Object.keys(appData.themes).length) {
                 const id = Date.now().toString();
                 appData.themes = {};
-                appData.themes[id] = { id, name: '預設轉蛋池', cost: 100, items: [], inventory: {}, totalDraws: 0 };
+                appData.themes[id] = { id, name: '預設轉蛋池', cost: 100, items: [], inventory: {}, totalDraws: 0, dugCount: 0, dugTotalDraws: 0 };
                 appData.currentThemeId = id;
             }
             if (!appData.themes[appData.currentThemeId]) {
@@ -642,7 +752,22 @@
                 .replace(/，/g, ',')               // 全形逗號
                 .replace(/\t/g, '\t');             // tab 保留
 
-            // --- 策略 1：冒號分隔（名稱:機率 或 名稱:機率:價值）---
+            // === 策略 0：Tab 分隔（Excel / 試算表貼上）===
+            // 格式：名稱\t機率(%)\t價值  或  名稱\t機率(%)
+            if (normalized.includes('\t')) {
+                const parts = normalized.split('\t').map(s => s.trim()).filter(Boolean);
+                if (parts.length >= 2) {
+                    const name = parts[0];
+                    const probStr = parts[1].replace(/%/g, '').trim();
+                    const probVal = parseFloat(probStr);
+                    if (name && !isNaN(probVal)) {
+                        const value = parts.length >= 3 ? (parseFloat(parts[2].replace(/%/g, '').trim()) || 0) : 0;
+                        return { name, prob: probVal, value };
+                    }
+                }
+            }
+
+            // === 策略 1：冒號分隔（名稱:機率 或 名稱:機率:價值）===
             const colonParts = normalized.split(':').map(s => s.trim()).filter(Boolean);
             if (colonParts.length >= 2) {
                 const probCandidate = parseFloat(colonParts[1]);
@@ -652,67 +777,85 @@
                 }
             }
 
-            // --- 收集所有數字（含是否帶%符號）---
-            // 格式：(數字)(%) 或 純數字
-            const numRe = /([0-9]+(?:\.[0-9]+)?)(\s*%)?/g;
-            const numbers = [];
-            let match;
-            while ((match = numRe.exec(normalized)) !== null) {
-                numbers.push({
-                    val: parseFloat(match[1]),
-                    hasPercent: !!match[2],
-                    index: match.index,
-                    end: match.index + match[0].length
-                });
+            // === 策略 2：從右側掃描尾端數字 token，保留名稱完整性 ===
+            // 核心思路：名稱中可能嵌有數字（如 "星力16星強化券"），
+            // 所以不能移除所有數字。改為從右往左尋找以空格/tab 分隔的
+            // 獨立數字 token（如 "0.50%" "5000"），並把剩餘的左側部分作為名稱。
+            //
+            // 「獨立數字 token」定義：
+            //   - 前面是行首 or 空白/tab
+            //   - 內容純數字（可帶小數點、%）
+            //   - 後面是行尾 or 空白/tab
+            // 這樣 "星力16星強化券" 中的 "16" 因為前後緊鄰中文字，不算獨立 token。
+
+            // 將文字拆成 token（以空白/tab 分隔）
+            const tokens = normalized.split(/[\s\t]+/);
+
+            // 判斷一個 token 是否為獨立的數字 token
+            const isNumToken = (t) => /^[0-9]+(?:\.[0-9]+)?\s*%?$/.test(t);
+
+            // 從右往左掃描，收集尾端連續的數字 token
+            const trailingNums = [];
+            for (let i = tokens.length - 1; i >= 0; i--) {
+                if (isNumToken(tokens[i])) {
+                    trailingNums.unshift({
+                        raw: tokens[i],
+                        val: parseFloat(tokens[i]),
+                        hasPercent: tokens[i].includes('%'),
+                        tokenIndex: i
+                    });
+                } else {
+                    break;  // 遇到非數字 token 就停止
+                }
             }
 
-            if (numbers.length === 0) return null;
+            if (trailingNums.length === 0) return null;  // 沒有尾端數字
 
-            // --- 策略 2：有明確 % 符號的數字 → 機率 ---
-            const percentNums = numbers.filter(n => n.hasPercent);
+            // 名稱 = 尾端數字之前的所有 token
+            const nameEndIndex = trailingNums[0].tokenIndex;
+            const nameParts = tokens.slice(0, nameEndIndex);
+            let name = nameParts.join(' ')
+                .replace(/[\s,\-\|\/\\]+$/, '')    // 去掉尾端分隔符
+                .replace(/^[\s,\-\|\/\\]+/, '')    // 去掉頭部分隔符
+                .replace(/\s{2,}/g, ' ')           // 多空格合一
+                .trim();
+
+            if (!name) return null;
+
+            // 從尾端數字中識別 prob 和 value
             let prob = null, value = 0;
+            const percentNums = trailingNums.filter(n => n.hasPercent);
+            const plainNums = trailingNums.filter(n => !n.hasPercent);
 
-            if (percentNums.length >= 1) {
-                // 取最後一個帶 % 的數字作為機率（通常機率排後面）
+            if (trailingNums.length === 1) {
+                // 只有一個尾端數字 → 視為機率
+                prob = trailingNums[0].val;
+            } else if (percentNums.length >= 1) {
+                // 有帶 % 的 → 那就是機率
                 prob = percentNums[percentNums.length - 1].val;
-                // 第一個不帶 % 的數字作為價值
-                const valueCandidate = numbers.find(n => !n.hasPercent);
-                if (valueCandidate) value = valueCandidate.val;
-            } else if (numbers.length === 1) {
-                // 只有一個數字 → 視為機率
-                prob = numbers[0].val;
+                // 其他不帶 % 的 → 價值（取最大的）
+                if (plainNums.length >= 1) {
+                    value = Math.max(...plainNums.map(n => n.val));
+                }
             } else {
-                // 多個數字，無 % 符號
-                // 策略：0~100 之間最小的數字通常是機率（%) 最大的通常是價值
-                const small = numbers.filter(n => n.val >= 0 && n.val <= 100);
-                const big = numbers.filter(n => n.val > 100);
-
-                if (small.length >= 1 && big.length >= 1) {
-                    // 取最小的 small 作機率，最大的 big 作價值
-                    prob = Math.min(...small.map(n => n.val));
-                    value = Math.max(...big.map(n => n.val));
-                } else if (small.length >= 2) {
-                    // 都是小數：最後一個為機率（通常%排最後），其餘中最大的為價值
-                    prob = small[small.length - 1].val;
-                    value = Math.max(...small.slice(0, -1).map(n => n.val));
+                // 多個數字都不帶 %
+                // 格式可能是：名稱 機率 價值
+                // 規則：機率通常 <= 100 且較小；價值通常較大
+                if (trailingNums.length === 2) {
+                    const first = trailingNums[0].val;
+                    const second = trailingNums[1].val;
+                    // 第一個當機率，第二個當價值
+                    prob = first;
+                    value = second;
                 } else {
-                    // 全部都是大數：最後一個當機率，其他最大的當價值
-                    prob = numbers[numbers.length - 1].val;
-                    value = numbers.length >= 2 ? Math.max(...numbers.slice(0, -1).map(n => n.val)) : 0;
+                    // 3 個以上：最小的當機率，最大的當價值
+                    const vals = trailingNums.map(n => n.val);
+                    prob = Math.min(...vals);
+                    value = Math.max(...vals);
                 }
             }
 
             if (prob === null || isNaN(prob)) return null;
-
-            // 擷取名稱：移除所有數字（含%）後剩下的文字
-            let name = normalized
-                .replace(/[0-9]+(?:\.[0-9]+)?\s*%?/g, '')     // 移除所有數字
-                .replace(/[\s,\-\|\/\\]+$/, '')                  // 去掉尾端分隔符
-                .replace(/^[\s,\-\|\/\\]+/, '')                  // 去掉頭部分隔符
-                .replace(/\s{2,}/g, ' ')                         // 多空格合一
-                .trim();
-
-            if (!name) return null;
 
             return { name, prob, value };
         }
@@ -836,18 +979,23 @@
             const tbody = document.getElementById('itemPoolList');
             const fragment = document.createDocumentFragment();
 
-            theme.items.forEach((item, index) => {
+            // 按機率從低到高排序顯示（不改變原始陣列順序）
+            const sorted = theme.items
+                .map((item, index) => ({ item, index }))
+                .sort((a, b) => a.item.prob - b.item.prob);
+
+            sorted.forEach(({ item }) => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                 <td>
                     <div style="display: flex; align-items: center; gap: 5px;">
                         <button class="primary" title="抽到有為止" onclick="drawUntilGot('${esc(item.id)}')" style="padding: 0; width: 32px; height: 32px; flex-shrink: 0; font-size: 0.9rem; border-radius: 6px;">抽</button>
-                        <input type="text" value="${esc(item.name)}" onchange="updateItem(${index}, 'name', this.value)">
+                        <input type="text" value="${esc(item.name)}" onchange="updateItemById('${esc(item.id)}', 'name', this.value)">
                     </div>
                 </td>
-                <td><input type="number" step="0.1" value="${esc(item.prob)}" onchange="updateItem(${index}, 'prob', this.value)"></td>
-                <td><input type="number" step="100" class="value-input" value="${esc(item.value)}" onchange="updateItem(${index}, 'value', this.value)" oninput="autoWidth(this)"></td>
-                <td><button class="danger" onclick="deleteItem(${index})" style="padding: 6px; font-size: 0.8rem;">❌</button></td>
+                <td><input type="number" step="0.1" value="${esc(item.prob)}" onchange="updateItemById('${esc(item.id)}', 'prob', this.value)"></td>
+                <td><input type="number" step="100" class="value-input" value="${esc(item.value)}" onchange="updateItemById('${esc(item.id)}', 'value', this.value)" oninput="autoWidth(this)"></td>
+                <td><button class="danger del-btn" onclick="deleteItemById('${esc(item.id)}')">╳</button></td>
             `;
                 fragment.appendChild(tr);
             });
@@ -859,12 +1007,15 @@
             renderInventory();
         }
 
-        function updateItem(index, field, newValue) {
+        function updateItemById(id, field, newValue) {
             const theme = appData.themes[appData.currentThemeId];
+            const item = theme.items.find(i => i.id === id);
+            if (!item) return;
             if (field === 'prob' || field === 'value') newValue = parseFloat(newValue) || 0;
-            theme.items[index][field] = newValue;
+            item[field] = newValue;
             saveData();
-            renderInventory();
+            if (field === 'prob') renderThemeData(); // 機率改變時重新排序
+            else renderInventory();
         }
 
         function renderInventory() {
@@ -874,7 +1025,10 @@
 
             const fragment = document.createDocumentFragment();
 
-            theme.items.forEach(item => {
+            // 按機率從低到高排序（與左側獎池一致）
+            const sorted = [...theme.items].sort((a, b) => a.prob - b.prob);
+
+            sorted.forEach(item => {
                 const count = theme.inventory[item.id] || 0;
                 if (count <= 0) return;
 
@@ -919,14 +1073,25 @@
             tbody.innerHTML = '';
             tbody.appendChild(fragment);
 
-            document.getElementById('statCost').textContent = totalCost;
-            document.getElementById('statValue').textContent = totalValue;
-            document.getElementById('statDraws').textContent = theme.totalDraws;
+            document.getElementById('statCost').textContent = totalCost.toLocaleString();
+            document.getElementById('statValue').textContent = totalValue.toLocaleString();
+            document.getElementById('statDraws').textContent = theme.totalDraws.toLocaleString();
+
+            // 顯示平均已抽（僅在使用過「抽到有為止」時顯示）
+            const avgBadge = document.getElementById('avgDrawsBadge');
+            if (theme.dugCount > 0) {
+                const avg = Math.round(theme.dugTotalDraws / theme.dugCount);
+                avgBadge.textContent = `平均 ${avg.toLocaleString()} 抽獲得`;
+                avgBadge.classList.add('avg-draws-badge');
+            } else {
+                avgBadge.textContent = '';
+                avgBadge.className = '';
+            }
 
             const profit = totalValue - totalCost;
             const profitEl = document.getElementById('statProfit');
-            profitEl.textContent = profit;
-            profitEl.className = profit >= 0 ? 'profit' : 'loss';
+            profitEl.textContent = profit.toLocaleString();
+            profitEl.className = 'stat-value ' + (profit >= 0 ? 'profit' : 'loss');
         }
 
         // =============================================
@@ -942,7 +1107,7 @@
             const name = prompt('請輸入新活動名稱：', '新轉蛋活動');
             if (name) {
                 const id = Date.now().toString();
-                appData.themes[id] = { id, name, cost: 0, items: [], inventory: {}, totalDraws: 0 };
+                appData.themes[id] = { id, name, cost: 0, items: [], inventory: {}, totalDraws: 0, dugCount: 0, dugTotalDraws: 0 };
                 appData.currentThemeId = id;
                 renderThemeSelect();
                 renderThemeData();
@@ -990,11 +1155,12 @@
             }
         }
 
-        function deleteItem(index) {
+        function deleteItemById(id) {
             const theme = appData.themes[appData.currentThemeId];
-            const itemId = theme.items[index].id;
+            const index = theme.items.findIndex(i => i.id === id);
+            if (index === -1) return;
             theme.items.splice(index, 1);
-            delete theme.inventory[itemId];
+            delete theme.inventory[id];
             renderThemeData();
             saveData();
         }
@@ -1054,6 +1220,7 @@
 
             renderInventory();
             saveData();
+
         }
 
         function drawUntilGot(targetId) {
@@ -1080,18 +1247,28 @@
 
             theme.totalDraws += draws;
 
+            // 追蹤「抽到有為止」的統計
+            if (!theme.dugCount) theme.dugCount = 0;
+            if (!theme.dugTotalDraws) theme.dugTotalDraws = 0;
+            theme.dugCount++;
+            theme.dugTotalDraws += draws;
+
             if (!gotIt) {
                 alert(`已連抽 ${maxDraws.toLocaleString()} 次都沒抽到，強制停止！這機率太可怕了...`);
             }
 
             renderInventory();
             saveData();
+
         }
 
         function resetStats() {
             if (confirm('確定要清空抽獎紀錄？(獎池會保留)')) {
-                appData.themes[appData.currentThemeId].inventory = {};
-                appData.themes[appData.currentThemeId].totalDraws = 0;
+                const theme = appData.themes[appData.currentThemeId];
+                theme.inventory = {};
+                theme.totalDraws = 0;
+                theme.dugCount = 0;
+                theme.dugTotalDraws = 0;
                 renderInventory();
                 saveData(true);
             }
@@ -1138,6 +1315,7 @@
         // =============================================
         // 啟動
         // =============================================
+
         window.addEventListener('load', init);
     </script>
 
