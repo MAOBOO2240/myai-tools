@@ -6,70 +6,75 @@
     <title>MapleStory EXP Pro</title>
     <style>
         /* =========================================================
-           統一設定區：所有的大小、長度、位子、字體大小都在這裡調整
+           統一設定區：全面導入 Windows 11 圓角與現代流線感微調
            ========================================================= */
         :root {
-            /* --- 1. 排版與框架大小 --- */
-            --layout-max-width: 1500px;      /* 網頁最大寬度 */
-            --layout-gap: 15px;              /* 左右兩大區塊的間距 */
-            --layout-left-col: 1fr;          /* 左側區塊寬度 (1fr代表填滿剩餘空間) */
-            --layout-right-col: 550px;       /* 右側區塊寬度 */
+            /* --- 圓角設定 (以圓角為主) --- */
+            --radius-panel: 20px;
+            --radius-input: 12px;
+            --radius-button: 24px;
 
-            /* --- 2. 內外邊距 (位子與距離) --- */
-            --body-padding: 30px 20px 30px 90px; /* 網頁整體邊距 (上 右 下 左) */
-            --panel-padding: 24px;               /* 面板內部的邊距 */
-            --h2-margin-bottom: 15px;            /* 標題下方的外邊距 */
-            --h2-padding-bottom: 8px;            /* 標題底線與文字的距離 */
-            --form-row-gap: 15px;                /* 表單左右欄位的間距 */
-            --form-row-margin-bottom: 12px;      /* 表單上下的間距 */
-            --input-padding: 10px;               /* 輸入框內部的文字邊距 */
-            
-            /* --- 3. 寬度與高度 --- */
-            --input-width: 100%;             /* 輸入框預設寬度 */
-            --short-input-width: 80%;        /* 短輸入框的寬度 */
-            --theme-btn-size: 52px;          /* 太陽/月亮按鈕的尺寸 (長寬) */
-            --checkbox-size: 16px;           /* 勾選框的尺寸 (長寬) */
-            
-            /* --- 4. 字體大小 --- */
-            --font-size-base: 1rem;          /* 網頁基礎字體大小 */
-            --font-size-h2: 1.1rem;          /* 標題字體大小 */
-            --font-size-label: 0.85rem;      /* 標籤(如: 當前等級)字體大小 */
-            --font-size-check: 0.8rem;       /* 勾選框旁的文字大小 */
-            --font-size-forecast: 0.85rem;   /* 預測列表的文字大小 */
-            --font-size-theme-btn: 1.6rem;   /* 太陽/月亮圖示大小 */
-            --font-size-lock-btn: 0.9rem;    /* 鎖定按鈕字體大小 */
+            /* --- 排版與框架大小 --- */
+            --layout-max-width: 1500px;
+            --layout-gap: 20px;
+            --layout-left-col: 1fr;
+            --layout-right-col: 560px;
 
-            /* --- 5. 顏色設定 (亮色主題) --- */
+            /* --- 內外邊距 --- */
+            --body-padding: 30px 20px 30px 90px;
+            --panel-padding: 26px;
+            --h2-margin-bottom: 18px;
+            --h2-padding-bottom: 8px;
+            --form-row-gap: 15px;
+            --form-row-margin-bottom: 14px;
+            --input-padding: 11px;
+            
+            /* --- 寬度與高度 --- */
+            --input-width: 100%;
+            --short-input-width: 100%;
+            --theme-btn-size: 52px;
+            --checkbox-size: 18px;
+            
+            /* --- 字體大小 --- */
+            --font-size-base: 1rem;
+            --font-size-h2: 1.15rem;
+            --font-size-label: 0.85rem;
+            --font-size-check: 0.85rem;
+            --font-size-forecast: 0.88rem;
+            --font-size-theme-btn: 1.6rem;
+            --font-size-lock-btn: 0.9rem;
+
+            /* --- 顏色設定 (亮色主題) --- */
             --bg: linear-gradient(135deg, #f3f9ff 0%, #e2eafc 100%);
-            --glass: rgba(255, 255, 255, 0.75);
-            --glass-border: rgba(255, 255, 255, 0.5);
+            --glass: rgba(255, 255, 255, 0.78);
+            --glass-border: rgba(0, 0, 0, 0.08);
             --text: #1c1c1c;
             --accent: #0078d4;
             --input: rgba(255, 255, 255, 0.9);
-            --shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+            --shadow: 0 8px 32px rgba(31, 38, 135, 0.06);
             --item-bg: rgba(0,0,0,0.03);
-            --btn-hover: rgba(255, 255, 255, 0.9);
+            --btn-hover: rgba(255, 255, 255, 1);
         }
 
-        /* --- 顏色設定 (暗色主題) --- */
         [data-theme="dark"] {
-            --bg: linear-gradient(135deg, #1a1a1e 0%, #111114 100%);
-            --glass: rgba(40, 40, 45, 0.8);
+            --bg: linear-gradient(135deg, #1e1e24 0%, #121215 100%);
+            --glass: rgba(35, 35, 40, 0.85);
             --glass-border: rgba(255, 255, 255, 0.08);
             --text: #f5f5f5;
             --accent: #60cdff;
-            --input: rgba(20, 20, 25, 0.6);
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --input: rgba(25, 25, 30, 0.6);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
             --item-bg: rgba(255,255,255,0.05);
-            --btn-hover: rgba(70, 70, 75, 0.9);
+            --btn-hover: rgba(55, 55, 60, 0.9);
         }
 
         * {
-            transition: background 0.8s ease, color 0.8s ease, border-color 0.8s ease, box-shadow 0.8s ease, transform 0.2s ease;
+            transition: background 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, transform 0.2s ease;
+            border-radius: inherit;
         }
 
         body {
-            font-family: "Segoe UI", sans-serif;
+            font-family: "Segoe UI", -apple-system, sans-serif;
             margin: 0; 
             padding: var(--body-padding); 
             font-size: var(--font-size-base);
@@ -86,15 +91,15 @@
             max-width: var(--layout-max-width);
         }
 
-        .input-panel { position: relative; }
-
         .panel {
             background: var(--glass); backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
-            border-radius: 16px; 
+            border-radius: var(--radius-panel); 
             padding: var(--panel-padding); 
             box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
         }
 
         .theme-toggle-container {
@@ -106,7 +111,6 @@
             border-radius: 50%;
             background: var(--glass);
             backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             box-shadow: var(--shadow);
             display: flex; align-items: center; justify-content: center;
@@ -119,7 +123,7 @@
 
         .header-flex {
             display: flex;
-            justify-content: flex-start;
+            justify-content: space-between;
             align-items: center;
             gap: 15px;
             margin-bottom: var(--h2-margin-bottom);
@@ -131,11 +135,12 @@
             border-bottom: 2px solid var(--accent); 
             padding-bottom: var(--h2-padding-bottom); 
             width: fit-content; 
+            border-radius: 0;
         }
 
         .lock-btn {
             background: var(--accent); color: #fff;
-            border: none; padding: 6px 18px; border-radius: 20px;
+            border: none; padding: 8px 20px; border-radius: var(--radius-button);
             cursor: pointer; font-size: var(--font-size-lock-btn);
             font-weight: bold; box-shadow: var(--shadow);
         }
@@ -145,58 +150,57 @@
             display: grid; grid-template-columns: 1fr 1fr; 
             gap: var(--form-row-gap); margin-bottom: var(--form-row-margin-bottom); 
         }
-        .short-input { width: var(--short-input-width); }
 
-        label { display: block; font-size: var(--font-size-label); margin-bottom: 5px; font-weight: 600; }
+        label { display: block; font-size: var(--font-size-label); margin-bottom: 6px; font-weight: 600; }
         
         input, select {
             width: var(--input-width); padding: var(--input-padding); 
-            border-radius: 8px; border: 1px solid var(--glass-border);
+            border-radius: var(--radius-input); border: 1px solid var(--glass-border);
             background: var(--input); color: var(--text); outline: none; box-sizing: border-box;
         }
 
         input:focus, select:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.2);
+            box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.15);
         }
 
-        /* 移除數字輸入框預設的上下箭頭 */
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
-        input[type="number"] {
-            -moz-appearance: textfield; /* Firefox */
-        }
+        input[type="number"] { -moz-appearance: textfield; }
 
         .check-group { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0; }
-        .check-item { display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-size-check); }
+        .check-item { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--font-size-check); }
         
         input[type="radio"], input[type="checkbox"] {
             appearance: none; width: var(--checkbox-size); height: var(--checkbox-size); 
             border: 2px solid var(--accent);
-            border-radius: 50%; cursor: pointer; position: relative; background: var(--input);
+            border-radius: 4px; cursor: pointer; position: relative; background: var(--input);
+            margin: 0;
         }
+        input[type="radio"] { border-radius: 50%; }
         input:checked::before {
             content: ""; position: absolute; width: calc(var(--checkbox-size) / 2); height: calc(var(--checkbox-size) / 2);
-            background: var(--accent); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--accent); border-radius: 2px; top: 50%; left: 50%; transform: translate(-50%, -50%);
         }
+        input[type="radio"]:checked::before { border-radius: 50%; }
 
         .forecast-list {
             display: grid; grid-template-columns: 1fr 1fr;
-            gap: 8px; margin-top: 15px; max-height: 75vh; overflow-y: auto;
-            padding-right: 10px;
+            gap: 10px; margin-top: 15px; max-height: 70vh; overflow-y: auto;
+            padding-right: 8px;
         }
         .forecast-item {
-            display: flex; justify-content: space-between; padding: 10px;
-            background: var(--item-bg); border-radius: 8px; font-size: var(--font-size-forecast);
-            border-left: 3px solid var(--accent);
+            display: flex; justify-content: space-between; padding: 12px;
+            background: var(--item-bg); border-radius: var(--radius-input); font-size: var(--font-size-forecast);
+            border-left: 4px solid var(--accent);
         }
         .lvl-tag { font-weight: bold; }
         .date-val { opacity: 0.8; }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1100px) {
             body { padding: 20px; }
             .layout { grid-template-columns: 1fr; }
             .theme-toggle-container { left: auto; right: 20px; top: 20px; }
@@ -210,51 +214,64 @@
 </div>
 
 <div class="layout">
+    <!-- 左側參數面板 -->
     <div class="panel input-panel">
         <div class="header-flex">
             <h2>⚙️ 練功參數</h2>
         </div>
+
         <div class="form-row">
             <div>
                 <label>👤 當前等級</label>
-                <input type="number" id="level" value="260" class="short-input">
+                <input type="number" id="level" value="260">
             </div>
             <div>
                 <label>🎯 目標等級</label>
-                <input type="number" id="targetLevel" value="300" class="short-input">
+                <input type="number" id="targetLevel" value="300">
             </div>
         </div>
         
         <div class="form-row">
             <div>
                 <label>📊 當前經驗 %</label>
-                <input type="number" id="curExpP" step="0.0001" value="0" class="short-input">
+                <input type="number" id="curExpP" step="0.0001" value="0">
             </div>
             <div>
-                <label>⚔️ 打怪每秒經驗</label>
-                <input type="text" id="expPerSec" placeholder="11E" class="short-input">
+                <label>⚔️ 打怪基礎每秒經驗 (未計算等差)</label>
+                <input type="text" id="expPerSec" placeholder="11E">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <label>👾 獵殺怪物等級 (用以計算等差懲罰)</label>
+                <input type="number" id="mobLevel" value="260" placeholder="請輸入怪物等級">
+            </div>
+            <div>
+                <label>⏱️ 等差經驗修正狀態</label>
+                <input type="text" id="penaltyStatus" value="100% (無等差)" readonly style="opacity: 0.7; background: transparent; border-style: dashed;">
             </div>
         </div>
 
         <div class="form-row">
             <div>
                 <label>每日時數 (hr)</label>
-                <input type="number" id="huntH" value="1" min="0" max="23" oninput="if(this.value > 23) this.value = 23; if(this.value < 0) this.value = 0;" class="short-input">
+                <input type="number" id="huntH" value="1" min="0" max="23" oninput="if(this.value > 23) this.value = 23; if(this.value < 0) this.value = 0;">
             </div>
             <div>
                 <label>每日分鐘 (min)</label>
-                <input type="number" id="huntM" value="0" min="0" max="60" oninput="if(this.value > 60) this.value = 60; if(this.value < 0) this.value = 0;" class="short-input">
+                <input type="number" id="huntM" value="0" min="0" max="60" oninput="if(this.value > 60) this.value = 60; if(this.value < 0) this.value = 0;">
             </div>
         </div>
         
         <div class="form-row">
             <div>
                 <label>🎢 怪物公園 (每日 0-7次)</label>
-                <input type="number" id="mpDaily" value="0" min="0" max="7" oninput="if(this.value > 7) this.value = 7; if(this.value < 0) this.value = 0;" class="short-input">
+                <input type="number" id="mpDaily" value="0" min="0" max="7" oninput="if(this.value > 7) this.value = 7; if(this.value < 0) this.value = 0;">
             </div>
             <div>
                 <label>選擇區域 (需符合等級)</label>
-                <select id="mpRegion" class="short-input">
+                <select id="mpRegion">
                     <option value="none">不打</option>
                     <option value="morass">魔菈斯 (Lv.235+)</option>
                     <option value="esfera">艾斯佩拉 (Lv.240+)</option>
@@ -284,39 +301,40 @@
         <div class="form-row">
             <div>
                 <label>掛機經驗 (每5秒)</label>
-                <input type="text" id="afkExp" placeholder="1E2000W" class="short-input">
+                <input type="text" id="afkExp" placeholder="1E2000W">
             </div>
             <div>
                 <label>每日掛機時數 (hr)</label>
-                <input type="number" id="afkH" placeholder="0" min="0" max="24" oninput="if(this.value > 24) this.value = 24; if(this.value < 0) this.value = 0;" class="short-input">
+                <input type="number" id="afkH" placeholder="0" min="0" max="24" oninput="if(this.value > 24) this.value = 24; if(this.value < 0) this.value = 0;">
             </div>
         </div>
 
-        <h2 style="margin-top: 25px;">🏔️ 週常活動 (Lv. 260+)</h2>
+        <h2 style="margin-top: 25px;">🏔️ 週常活動</h2>
         <div class="form-group">
-            <label>紅月之森</label>
+            <label>紅月之森 (Lv. 260+)</label>
             <div class="check-group">
                 <label class="check-item"><input type="checkbox" id="rmPart" checked> 參與</label>
                 <label class="check-item"><input type="checkbox" id="rmCert"> 托圖伊保證書 (x2)</label>
             </div>
         </div>
         <div class="form-group">
-            <label>終極怪物公園</label>
+            <label>終極怪物公園 (Lv. 260+)</label>
             <div class="check-group">
                 <label class="check-item"><input type="checkbox" id="exPart" checked> 參與</label>
             </div>
         </div>
         
         <div class="form-group">
-            <label>史詩副本</label>
+            <label>史詩副本 (進度互斥)</label>
             <div class="check-group" style="margin-bottom: 10px;">
                 <label class="check-item"><input type="checkbox" id="epiHigh"> 高山 (260+)</label>
                 <label class="check-item"><input type="checkbox" id="epiAng"> 安格洛 (270+)</label>
+                <label class="check-item"><input type="checkbox" id="epiNight"> 惡夢仙境 (280+)</label>
             </div>
             <div class="form-row" style="margin-bottom: 0;">
                 <div>
-                    <label>額外購買次數</label>
-                    <select id="epiBuy" class="short-input">
+                    <label>額外購買次數 (最高10次)</label>
+                    <select id="epiBuy">
                         <option value="0">0 次 (不購買)</option>
                         <option value="1">1 次</option>
                         <option value="2">2 次</option>
@@ -334,37 +352,21 @@
         </div>
     </div>
 
+    <!-- 右側升等時程預測面板 -->
     <div class="panel">
         <div class="header-flex">
             <h2>📅 升等時程預測</h2>
-            <button id="lockBtn" class="lock-btn" onclick="toggleLock()">鎖定</button>
+            <button id="lockBtn" class="lock-btn" onclick="toggleLock()">🔒 鎖定計畫基準</button>
         </div>
-        <div id="summary" style="margin-bottom:10px; font-weight:bold; color:var(--accent);"></div>
+        <div id="summary" style="margin-bottom:15px; font-weight:bold; color:var(--accent);"></div>
         <div class="forecast-list" id="forecastList"></div>
     </div>
 </div>
 
 <script>
-    // --- 鎖定狀態與切換邏輯 ---
     let isLocked = false;
 
-    function toggleLock(isInit = false) {
-        if (!isInit) {
-            isLocked = !isLocked; 
-            localStorage.setItem('maple_isLocked', isLocked); 
-        }
-        
-        const btn = document.getElementById('lockBtn');
-        if (isLocked) {
-            btn.innerText = '🔒 已鎖定';
-            btn.classList.add('locked');
-        } else {
-            btn.innerText = '鎖定';
-            btn.classList.remove('locked');
-            if (!isInit) calculate(); 
-        }
-    }
-
+    // 經驗值要求表
     const EXP_REQ = {
         1:15, 2:34, 3:57, 4:92, 5:135, 200:2207026470, 250:442457484960, 
         260:1731919984062, 261:1749239183902, 262:1766731575741, 263:1784398891498, 264:1802242880412,
@@ -377,11 +379,11 @@
         295:870403132500696, 296:957443445750765, 297:1053187790325840, 298:1158506569358420, 299:1737759854037630
     };
     
-    // 紅月與終極怪公
+    // 週常活動基礎數據
     const RM_BASE = { 260: 2652e8, 270: 5670e8, 280: 10614.2e8, 290: 10993.3e8 };
     const EX_BASE = { 260: 530.4e8, 270: 1134e8, 280: 1632.9e8, 290: 1691.2e8 };
 
-    // 高山
+    // 史詩副本 1：高山 (HM)
     const HM_DATA = {
         260: 2609e8, 261: 2647e8, 262: 2685e8, 263: 2722e8, 264: 2765e8,
         265: 3110e8, 266: 3153e8, 267: 3196e8, 268: 3245e8, 269: 3288e8,
@@ -393,7 +395,7 @@
         295: 7596e8, 296: 7596e8, 297: 7596e8, 298: 7596e8, 299: 7596e8
     };
 
-    // 安格洛
+    // 史詩副本 2：安格洛 (AC)
     const AC_DATA = {
         270: 5547e8, 271: 5628e8, 272: 5701.5e8, 273: 5775e8, 274: 5859e8,
         275: 6585e8, 276: 6667.5e8, 277: 6762e8, 278: 6846e8, 279: 6940.5e8,
@@ -403,7 +405,14 @@
         295: 11394e8, 296: 11394e8, 297: 11394e8, 298: 11394e8, 299: 11394e8
     };
 
-    // 普通怪物公園數據字典
+    // 史詩副本 3：惡夢仙境 (NW)
+    const NW_DATA = {
+        280: 10911e8, 281: 11060e8, 282: 11193e8, 283: 11342e8, 284: 11476e8,
+        285: 12902e8, 286: 13051e8, 287: 13221e8, 288: 13391e8, 289: 13545e8,
+        290: 15220e8, 291: 15390e8, 292: 15584e8, 293: 15779e8, 294: 15951e8,
+        295: 15951e8, 296: 15951e8, 297: 15951e8, 298: 15951e8, 299: 15951e8
+    };
+
     const MP_DATA = {
         'morass': { req: 235, exp: 2996755520 },
         'esfera': { req: 240, exp: 3459833685 },
@@ -416,6 +425,26 @@
         'odium': { req: 270, exp: 61798037184 }
     };
 
+    // 核心等差打怪經驗補正乘數計算
+    function getLevelPenaltyRatio(charLvl, mobLvl) {
+        if (!mobLvl) return 1.0;
+        const diff = charLvl - mobLvl;
+        
+        if (diff === 0) return 1.20; 
+        if (diff === 1 || diff === -1) return 1.10;
+        if (diff === 2 || diff === -2) return 1.05;
+        if (diff === 3 || diff === -3) return 1.00;
+        if (diff >= 4 && diff <= 9) return 0.95;
+        if (diff <= -4 && diff >= -9) return 0.70;
+        if (diff >= 10 && diff <= 15) return 0.90;
+        if (diff <= -10 && diff >= -15) return 0.30;
+        if (diff >= 16 && diff <= 20) return 0.70;
+        if (diff <= -16 && diff >= -20) return 0.10;
+        if (diff > 20) return 0.10;
+        if (diff < -20) return 0.00; 
+        return 1.0;
+    }
+
     function parseExp(str) {
         if(!str) return 0;
         str = str.toString();
@@ -425,6 +454,221 @@
         if(eMatch) val += parseInt(eMatch[1]) * 1e8;
         if(wMatch) val += parseInt(wMatch[1]) * 1e4;
         return val || parseInt(str.replace(/,/g, '')) || 0;
+    }
+
+    function formatSimulationDate(dateObj) {
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const d = String(dateObj.getDate()).padStart(2, '0');
+        return `${y}/${m}/${d}`;
+    }
+
+    // 模擬計算引擎 (引入動態等差變化)
+    function runSimulation(startLvl, startPct, targetLvl) {
+        const eps = parseExp(document.getElementById('expPerSec').value) || parseExp("11E"); 
+        const mobLvl = parseInt(document.getElementById('mobLevel').value) || startLvl;
+        const hH = parseInt(document.getElementById('huntH').value) || 0;
+        const hM = parseInt(document.getElementById('huntM').value) || 0;
+        const huntSec = (hH * 3600) + (hM * 60);
+        
+        const mpDaily = parseInt(document.getElementById('mpDaily').value) || 0;
+        const mpRegion = document.getElementById('mpRegion').value;
+        const huntDays = Array.from(document.querySelectorAll('.day-check:checked')).map(el => parseInt(el.value));
+        const afkBase = parseExp(document.getElementById('afkExp').value) || 0;
+        const afkSec = (parseFloat(document.getElementById('afkH').value) || 0) * 3600;
+
+        let dayCount = 0;
+        let tempLvl = startLvl;
+        let today = new Date();
+        let currentExpOwned = (EXP_REQ[tempLvl] || 0) * (startPct / 100);
+        let schedule = {};
+
+        // 更新 UI 面板上的即時起始等差狀態提示
+        const initRatio = getLevelPenaltyRatio(startLvl, mobLvl);
+        document.getElementById('penaltyStatus').value = `${Math.round(initRatio * 100)}% (${startLvl - mobLvl >= 0 ? '超前' : '落後'} ${Math.abs(startLvl - mobLvl)} 等差)`;
+
+        while(tempLvl < targetLvl && dayCount < 7300) { 
+            dayCount++;
+            today.setDate(today.getDate() + 1);
+            let dayOfWeek = today.getDay();
+            let dailyGain = 0;
+
+            if(huntDays.includes(dayOfWeek)) {
+                let dynamicPenaltyRatio = getLevelPenaltyRatio(tempLvl, mobLvl);
+                dailyGain += (eps * dynamicPenaltyRatio) * huntSec;
+            }
+            
+            if(tempLvl >= 100) dailyGain += (afkBase / 5) * afkSec;
+
+            if(mpDaily > 0 && mpRegion !== 'none' && MP_DATA[mpRegion]) {
+                if (tempLvl >= MP_DATA[mpRegion].req) {
+                    dailyGain += mpDaily * MP_DATA[mpRegion].exp;
+                }
+            }
+            
+            if(dayOfWeek === 0 && tempLvl >= 260) {
+                if(document.getElementById('rmPart').checked) {
+                    let rm = RM_BASE[Math.floor(tempLvl/10)*10] || RM_BASE[290];
+                    dailyGain += document.getElementById('rmCert').checked ? rm*2 : rm;
+                }
+                if(document.getElementById('exPart').checked) {
+                    dailyGain += (EX_BASE[Math.floor(tempLvl/10)*10] || EX_BASE[290]);
+                }
+
+                let isEpiHigh = document.getElementById('epiHigh').checked;
+                let isEpiAng = document.getElementById('epiAng').checked;
+                let isEpiNight = document.getElementById('epiNight').checked;
+
+                if (isEpiHigh || isEpiAng || isEpiNight) {
+                    let buyCount = parseInt(document.getElementById('epiBuy').value) || 0;
+                    let baseEpiExp = 0;
+
+                    if (isEpiHigh && tempLvl >= 260) {
+                        baseEpiExp = HM_DATA[tempLvl] || HM_DATA[299];
+                    } else if (isEpiAng && tempLvl >= 270) {
+                        baseEpiExp = AC_DATA[tempLvl] || AC_DATA[299];
+                    } else if (isEpiNight && tempLvl >= 280) {
+                        baseEpiExp = NW_DATA[tempLvl] || NW_DATA[299];
+                    }
+                    
+                    if (baseEpiExp > 0) {
+                        dailyGain += baseEpiExp * (1 + (buyCount * 1.074));
+                    }
+                }
+            }
+
+            currentExpOwned += dailyGain;
+            while(EXP_REQ[tempLvl] && currentExpOwned >= EXP_REQ[tempLvl]) {
+                currentExpOwned -= EXP_REQ[tempLvl];
+                tempLvl++;
+                schedule[tempLvl] = {
+                    dateStr: formatSimulationDate(today),
+                    timestamp: new Date(today).setHours(0,0,0,0)
+                };
+                if(tempLvl >= targetLvl) break;
+            }
+        }
+        return { totalDays: dayCount, schedule: schedule };
+    }
+
+    function calculate() {
+        const curLvl = parseInt(document.getElementById('level').value) || 260;
+        const tarLvl = parseInt(document.getElementById('targetLevel').value) || 300;
+        const curPct = parseFloat(document.getElementById('curExpP').value) || 0;
+
+        let currentSim = runSimulation(curLvl, curPct, tarLvl);
+
+        if (isLocked) {
+            let savedBaseline = localStorage.getItem('maple_baseline_data');
+            if (savedBaseline) {
+                let baselineData = JSON.parse(savedBaseline);
+                let listHtml = "";
+
+                for (let lvl in baselineData.schedule) {
+                    let bItem = baselineData.schedule[lvl];
+                    let cItem = currentSim.schedule[lvl];
+                    let statusHtml = "";
+
+                    if (cItem) {
+                        let diffTime = cItem.timestamp - bItem.timestamp;
+                        let diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        if (diffDays < 0) {
+                            statusHtml = `<span style="color:#52c41a; font-weight:bold;">🟢 超前 ${Math.abs(diffDays)} 天</span>`;
+                        } else if (diffDays > 0) {
+                            statusHtml = `<span style="color:#ff4d4f; font-weight:bold;">🔴 落後 ${diffDays} 天</span>`;
+                        } else {
+                            statusHtml = `<span style="color:var(--text); opacity:0.6;">⚪ 符合進度</span>`;
+                        }
+
+                        listHtml += `
+                            <div class="forecast-item" style="flex-direction: column; gap: 4px;">
+                                <div style="display:flex; justify-content:space-between; width:100%;">
+                                    <span class="lvl-tag">Lv.${lvl}</span>
+                                    ${statusHtml}
+                                </div>
+                                <div style="display:flex; justify-content:space-between; width:100%; font-size:0.75rem; opacity:0.7;">
+                                    <span>基準: ${bItem.dateStr}</span>
+                                    <span>目前預計: ${cItem.dateStr}</span>
+                                </div>
+                            </div>`;
+                    } else {
+                        statusHtml = `<span style="color:#ff4d4f; font-weight:bold;">⚠️ 無法估算</span>`;
+                        listHtml += `
+                            <div class="forecast-item" style="flex-direction: column; gap: 4px;">
+                                <div style="display:flex; justify-content:space-between; width:100%;">
+                                    <span class="lvl-tag">Lv.${lvl}</span>
+                                    ${statusHtml}
+                                </div>
+                                <div style="display:flex; justify-content:space-between; width:100%; font-size:0.75rem; opacity:0.7;">
+                                    <span>基準: ${bItem.dateStr}</span>
+                                    <span>目前預計: --</span>
+                                </div>
+                            </div>`;
+                    }
+                }
+                document.getElementById('forecastList').innerHTML = listHtml;
+
+                let totalDiff = currentSim.totalDays - baselineData.totalDays;
+                let diffStr = totalDiff < 0 ? `總時程縮短 ${Math.abs(totalDiff)} 天` : totalDiff > 0 ? `總時程延後 ${totalDiff} 天` : "完全符合計畫";
+                let diffColor = totalDiff < 0 ? "#52c41a" : totalDiff > 0 ? "#ff4d4f" : "var(--accent)";
+                
+                document.getElementById('summary').innerHTML = `
+                    <div style="font-size:0.9rem; line-height:1.5; background:var(--item-bg); padding:12px; border-radius:var(--radius-input); border-left:4px solid var(--accent);">
+                        📌 永久基準：Lv.${baselineData.inputs.level} (${baselineData.inputs.curExpP}%) 預估需 ${baselineData.totalDays} 天<br>
+                        ⏱️ 即時追蹤：當前修正預估需 ${currentSim.totalDays} 天 (<span style="color:${diffColor}; font-weight:bold;">${diffStr}</span>)
+                    </div>`;
+            }
+        } else {
+            let listHtml = "";
+            for (let lvl in currentSim.schedule) {
+                let item = currentSim.schedule[lvl];
+                listHtml += `
+                    <div class="forecast-item">
+                        <span class="lvl-tag">Lv.${lvl}</span>
+                        <span class="date-val">${item.dateStr}</span>
+                    </div>`;
+            }
+            document.getElementById('forecastList').innerHTML = listHtml || "無法升等，請檢查收益設定";
+            document.getElementById('summary').innerText = `預計花費：${currentSim.totalDays} 天`;
+        }
+        
+        saveData();
+    }
+
+    function toggleLock() {
+        isLocked = !isLocked;
+        localStorage.setItem('maple_isLocked', isLocked);
+
+        if (isLocked) {
+            const curLvl = parseInt(document.getElementById('level').value) || 260;
+            const tarLvl = parseInt(document.getElementById('targetLevel').value) || 300;
+            const curPct = parseFloat(document.getElementById('curExpP').value) || 0;
+            
+            let snapshotSim = runSimulation(curLvl, curPct, tarLvl);
+            let baselineObj = {
+                totalDays: snapshotSim.totalDays,
+                schedule: snapshotSim.schedule,
+                inputs: { level: curLvl, curExpP: curPct, targetLevel: tarLvl }
+            };
+            localStorage.setItem('maple_baseline_data', JSON.stringify(baselineObj));
+        } else {
+            localStorage.removeItem('maple_baseline_data');
+        }
+
+        updateLockUI();
+        calculate();
+    }
+
+    function updateLockUI() {
+        const btn = document.getElementById('lockBtn');
+        if (isLocked) {
+            btn.innerText = '🔓 解除鎖定計畫';
+            btn.classList.add('locked');
+        } else {
+            btn.innerText = '🔒 鎖定計畫基準';
+            btn.classList.remove('locked');
+        }
     }
 
     function saveData() {
@@ -437,11 +681,11 @@
                 data[key] = el.value;
             }
         });
-        localStorage.setItem('mapleCalcData_v14', JSON.stringify(data));
+        localStorage.setItem('mapleCalcData_v15', JSON.stringify(data));
     }
 
     function loadData() {
-        const saved = localStorage.getItem('mapleCalcData_v14');
+        const saved = localStorage.getItem('mapleCalcData_v15');
         if (saved) {
             const data = JSON.parse(saved);
             document.querySelectorAll('input, select').forEach(el => {
@@ -470,102 +714,32 @@
     }
 
     document.getElementById('epiHigh').addEventListener('change', function() {
-        if(this.checked) document.getElementById('epiAng').checked = false;
+        if(this.checked) {
+            document.getElementById('epiAng').checked = false;
+            document.getElementById('epiNight').checked = false;
+        }
         calculate();
     });
     document.getElementById('epiAng').addEventListener('change', function() {
-        if(this.checked) document.getElementById('epiHigh').checked = false;
+        if(this.checked) {
+            document.getElementById('epiHigh').checked = false;
+            document.getElementById('epiNight').checked = false;
+        }
+        calculate();
+    });
+    document.getElementById('epiNight').addEventListener('change', function() {
+        if(this.checked) {
+            document.getElementById('epiHigh').checked = false;
+            document.getElementById('epiAng').checked = false;
+        }
         calculate();
     });
 
-    function calculate() {
-        const curLvl = parseInt(document.getElementById('level').value) || 260;
-        const tarLvl = parseInt(document.getElementById('targetLevel').value) || 300;
-        const curPct = parseFloat(document.getElementById('curExpP').value) || 0;
-        
-        const eps = parseExp(document.getElementById('expPerSec').value) || parseExp("11E"); 
-        const hH = parseInt(document.getElementById('huntH').value) || 0;
-        const hM = parseInt(document.getElementById('huntM').value) || 0;
-        const huntSec = (hH * 3600) + (hM * 60);
-        
-        const mpDaily = parseInt(document.getElementById('mpDaily').value) || 0;
-        const mpRegion = document.getElementById('mpRegion').value;
-
-        const huntDays = Array.from(document.querySelectorAll('.day-check:checked')).map(el => parseInt(el.value));
-        const afkBase = parseExp(document.getElementById('afkExp').value) || 0;
-        const afkSec = (parseFloat(document.getElementById('afkH').value) || 0) * 3600;
-
-        let listHtml = "";
-        let dayCount = 0;
-        let tempLvl = curLvl;
-        let today = new Date();
-        let currentExpOwned = (EXP_REQ[tempLvl] || 0) * (curPct / 100);
-
-        while(tempLvl < tarLvl && dayCount < 7300) { 
-            dayCount++;
-            today.setDate(today.getDate() + 1);
-            let dayOfWeek = today.getDay();
-            let dailyGain = 0;
-
-            if(huntDays.includes(dayOfWeek)) dailyGain += eps * huntSec;
-            if(tempLvl >= 100) dailyGain += (afkBase / 5) * afkSec;
-
-            if(mpDaily > 0 && mpRegion !== 'none' && MP_DATA[mpRegion]) {
-                if (tempLvl >= MP_DATA[mpRegion].req) {
-                    dailyGain += mpDaily * MP_DATA[mpRegion].exp;
-                }
-            }
-            
-            if(dayOfWeek === 0 && tempLvl >= 260) {
-                if(document.getElementById('rmPart').checked) {
-                    let rm = RM_BASE[Math.floor(tempLvl/10)*10] || RM_BASE[290];
-                    dailyGain += document.getElementById('rmCert').checked ? rm*2 : rm;
-                }
-                
-                if(document.getElementById('exPart').checked) {
-                    dailyGain += (EX_BASE[Math.floor(tempLvl/10)*10] || EX_BASE[290]);
-                }
-
-                let isEpiHigh = document.getElementById('epiHigh').checked;
-                let isEpiAng = document.getElementById('epiAng').checked;
-
-                if (isEpiHigh || isEpiAng) {
-                    let buyCount = parseInt(document.getElementById('epiBuy').value) || 0;
-                    let baseEpiExp = 0;
-
-                    if (isEpiHigh && tempLvl >= 260) {
-                        baseEpiExp = HM_DATA[tempLvl] || HM_DATA[299];
-                    } else if (isEpiAng && tempLvl >= 270) {
-                        baseEpiExp = AC_DATA[tempLvl] || AC_DATA[299];
-                    }
-                    
-                    if (baseEpiExp > 0) {
-                        let totalEpiExp = baseEpiExp * (1 + (buyCount * 1.074));
-                        dailyGain += totalEpiExp;
-                    }
-                }
-            }
-            currentExpOwned += dailyGain;
-            while(EXP_REQ[tempLvl] && currentExpOwned >= EXP_REQ[tempLvl]) {
-                currentExpOwned -= EXP_REQ[tempLvl];
-                tempLvl++;
-                let dateStr = `${today.getFullYear()}/${today.getMonth()+1}/${today.getDate()}`;
-                listHtml += `<div class="forecast-item"><span class="lvl-tag">Lv.${tempLvl}</span><span class="date-val">${dateStr}</span></div>`;
-                if(tempLvl >= tarLvl) break;
-            }
-        }
-
-        if (!isLocked) {
-            document.getElementById('forecastList').innerHTML = listHtml || "無法升等，請檢查收益設定";
-            document.getElementById('summary').innerText = `預計花費：${dayCount} 天`;
-        }
-        
-        saveData();
-    }
-
     document.querySelectorAll('input, select').forEach(i => {
-        i.addEventListener('input', calculate);
-        i.addEventListener('change', calculate);
+        if(i.id !== 'penaltyStatus') {
+            i.addEventListener('input', calculate);
+            i.addEventListener('change', calculate);
+        }
     });
 
     window.onload = () => {
@@ -577,13 +751,13 @@
         if(!document.getElementById('expPerSec').value) {
             document.getElementById('expPerSec').value = "11E";
         }
-        calculate();
 
         const savedLock = localStorage.getItem('maple_isLocked');
         if (savedLock === 'true') {
             isLocked = true;
-            toggleLock(true); 
         }
+        updateLockUI();
+        calculate();
     };
 </script>
 
