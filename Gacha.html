@@ -1,1324 +1,1054 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>轉蛋模擬器 - Win11 Edition</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>🎰 轉蛋模擬器</title>
     <style>
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-        }
-
+        /* === 數值與顏色全域變數 === */
+        /* 用於更改背景、面板顏色、文字顏色以及按鈕的預設顏色 */
         :root {
-            --bg-color: #f0f2f5;
-            --bg-gradient: linear-gradient(135deg, #e8ecf3 0%, #f0f2f5 40%, #e6e9f0 100%);
-            --text-color: #1a1a2e;
-            --text-secondary: #555;
-            --panel-bg: rgba(255, 255, 255, 0.72);
-            --panel-border: rgba(255, 255, 255, 0.6);
-            --border-color: #ddd;
-            --primary: #4f6ef7;
-            --primary-hover: #3b5de7;
-            --primary-glow: rgba(79, 110, 247, 0.25);
-            --danger: #ef4444;
-            --danger-glow: rgba(239, 68, 68, 0.2);
-            --success: #22c55e;
-            --success-glow: rgba(34, 197, 94, 0.2);
-            --radius-main: 16px;
-            --radius-btn: 10px;
-            --shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
-            --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
-            --font-scale: 16px;
+            --bg-start: #1A1C31;
+            --bg-end: #10101B;
+            --panel-bg: #23253A;
+            --input-bg: #151625;
+            --text-main: #F0F0F0;
+            --text-muted: #888B9E;
+            --border-color: #31334A;
+            --btn-blue: #738ADB;
+            --btn-red: #FF6B6B;
+            --btn-green: #66BB6A;
         }
 
-        [data-theme="dark"] {
-            --bg-color: #0f0f1a;
-            --bg-gradient: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 40%, #16213e 100%);
-            --text-color: #e8e8f0;
-            --text-secondary: #999;
-            --panel-bg: rgba(30, 30, 50, 0.75);
-            --panel-border: rgba(80, 80, 120, 0.35);
-            --border-color: #333355;
-            --primary: #6c8cff;
-            --primary-hover: #8ba3ff;
-            --primary-glow: rgba(108, 140, 255, 0.3);
-            --danger: #ff6b6b;
-            --danger-glow: rgba(255, 107, 107, 0.25);
-            --success: #4ade80;
-            --success-glow: rgba(74, 222, 128, 0.25);
-            --shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2);
-            --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.4);
-        }
-
-        html {
-            font-size: var(--font-scale);
+        body.light-mode {
+            --bg-start: #F5F5F5;
+            --bg-end: #E0E0E0;
+            --panel-bg: #FFFFFF;
+            --input-bg: #F0F0F0;
+            --text-main: #111111;
+            --text-muted: #666666;
+            --border-color: #CCCCCC;
         }
 
         body {
-            font-family: 'Inter', 'Noto Sans TC', 'Segoe UI', sans-serif;
-            background: var(--bg-gradient);
-            background-color: var(--bg-color);
-            color: var(--text-color);
             margin: 0;
-            padding: 24px;
             min-height: 100vh;
-            transition: background 0.4s, color 0.4s;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-main);
+            font-size: var(--font-size, 16px);
+            background: linear-gradient(to bottom left, var(--bg-start), var(--bg-end)) fixed;
+            overflow-y: auto; 
+            transition: all 0.3s ease;
         }
 
-        .container {
-            max-width: 1500px;
-            margin: 0 auto;
-        }
+        body.text-small { --font-size: 14px; }
+        body.text-medium { --font-size: 16px; }
+        body.text-large { --font-size: 20px; }
 
-        .header {
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg-start); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555577; }
+
+        button {
+            border: none;
+            border-radius: 15px; /* G2連續曲率風格 */
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: inherit;
+            color: #FFFFFF;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            user-select: none;
+        }
+        button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        button:active { transform: translateY(1px); }
+
+        input, textarea {
+            border-radius: 12px;
+            padding: 10px 12px;
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            font-size: inherit;
+            outline: none;
+        }
+        input:focus, textarea:focus { border-color: var(--btn-blue); }
+        
+        .list-input {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 6px 10px;
+            color: var(--text-main);
+            width: 100%;
+            box-sizing: border-box;
+            transition: 0.2s;
+            outline: none;
+        }
+        .list-input:focus {
+            border-color: var(--btn-blue);
+            background-color: rgba(115, 138, 219, 0.1);
+            box-shadow: 0 0 5px rgba(115, 138, 219, 0.3);
+        }
+        body.light-mode .list-input:focus { background-color: #FFF; }
+        
+        .top-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
+            padding: 15px 25px;
+            background-color: transparent;
+            z-index: 10;
         }
 
-        .header h2 {
-            margin: 0;
-            font-size: 1.8rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--primary), #a855f7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 0 25px 25px 25px;
+            flex: 1;
         }
 
         .panel {
-            background: var(--panel-bg);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            padding: 25px;
-            border-radius: var(--radius-main);
-            border: 1px solid var(--panel-border);
-            box-shadow: var(--shadow);
-            margin-bottom: 25px;
-            transition: all 0.35s ease;
+            background-color: var(--panel-bg);
+            border-radius: 20px; /* G2連續曲率風格 */
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            height: max-content; 
         }
 
-        .panel:hover {
-            box-shadow: var(--shadow-hover);
+        /* 儲存活動區塊 */
+        .activity-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 0 25px 20px 25px;
+        }
+        .activity-actions {
+            display: flex;
+            gap: 20px;
+            justify-content: center; /* 置中放置 */
+        }
+        .activity-actions button {
+            min-width: 180px; /* 按鈕寬度+1/3 (原本約130px) */
+            padding: 10px 25px;
+        }
+        .activity-selectors {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+        .btn-activity {
+            background-color: var(--input-bg);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            white-space: nowrap;
+        }
+        /* 選擇性按鈕顏色區分 */
+        .btn-activity.selected {
+            background-color: var(--btn-blue);
+            color: #FFFFFF;
+            border-color: var(--btn-blue);
+            box-shadow: 0 0 10px rgba(115, 138, 219, 0.5);
         }
 
-        .grid-2 {
+        /* 解析區塊 */
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--text-muted);
+            padding: 10px 0;
+            user-select: none;
+        }
+        .collapsible-header:hover { color: var(--text-main); }
+        .collapsible-body {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        /* 道具排版 */
+        .setup-labels, .setup-inputs {
+            display: grid;
+            grid-template-columns: 4fr 1fr 1fr;
+            gap: 10px;
+        }
+        .setup-labels { color: var(--text-muted); font-size: 0.9em; margin-bottom: 5px; font-weight: bold; }
+        .setup-inputs { margin-bottom: 15px; }
+        .setup-actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 25px;
+            gap: 15px;
+            margin-bottom: 20px;
         }
-
-        input,
-        select,
-        textarea {
-            padding: 10px 12px;
-            margin: 5px 0;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-btn);
-            background-color: transparent;
-            color: var(--text-color);
-            font-family: inherit;
-            font-size: 1rem;
-            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
-            width: 100%;
-            max-width: 100%;
+        .setup-list-header {
+            display: grid;
+            grid-template-columns: 4fr 1fr 1fr 45px;
+            gap: 10px;
+            color: var(--text-muted);
+            font-size: 0.9em;
+            font-weight: bold;
+            border-bottom: 2px solid var(--btn-blue);
+            padding-bottom: 10px;
+            margin-bottom: 10px;
         }
-
-        input:focus,
-        select:focus,
-        textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(0, 103, 192, 0.2);
-            background-color: var(--bg-color);
+        .setup-item {
+            display: grid;
+            grid-template-columns: 4fr 1fr 1fr 45px;
+            gap: 10px;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border-color);
         }
-
-        /* 移除 number input 的上下箆頭 */
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
+        
+        .inv-grid {
+            display: grid;
+            grid-template-columns: 2.5fr 1fr 1fr 1.5fr;
+            gap: 10px;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
         }
+        .inv-header { color: var(--text-muted); font-size: 0.9em; font-weight: bold; }
 
-        input[type="number"] {
-            -moz-appearance: textfield;
-            appearance: textfield;
+        .btn-add { background-color: var(--btn-blue); }
+        .btn-reset { background-color: var(--btn-red); }
+        .btn-green { background-color: var(--btn-green); }
+        .btn-option { background-color: var(--border-color); flex: 1; }
+        .btn-option.selected {
+            background-color: var(--btn-blue);
+            box-shadow: 0 0 10px rgba(115, 138, 219, 0.5);
         }
+        
+        /* 自動帶入按鈕的樣式 */
+        .btn-autofill-on { background-color: var(--btn-green) !important; color: #FFF; }
+        .btn-autofill-off { background-color: var(--btn-red) !important; color: #FFF; }
 
-        button {
-            padding: 10px 18px;
-            border: none;
-            border-radius: var(--radius-btn);
-            background-color: var(--primary);
-            color: white;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            font-weight: 600;
-            font-size: 0.95rem;
-            display: inline-flex;
+        .action-btn {
+            background-color: var(--btn-red);
+            border-radius: 10px;
+            width: 32px;
+            height: 32px;
+            display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            position: relative;
-            overflow: hidden;
+            padding: 0;
         }
 
-        button::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
-            opacity: 0;
-            transition: opacity 0.25s;
-        }
-
-        button:hover {
-            background-color: var(--primary-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px var(--primary-glow);
-        }
-
-        button:hover::after {
-            opacity: 1;
-        }
-
-        button:active {
-            transform: translateY(0);
-            box-shadow: none;
-        }
-
-        button.danger {
-            background-color: var(--danger);
-        }
-
-        button.danger:hover {
-            box-shadow: 0 4px 16px var(--danger-glow);
-            filter: brightness(1.05);
-        }
-
-        button.success {
-            background-color: var(--success);
-        }
-
-        button.success:hover {
-            box-shadow: 0 4px 16px var(--success-glow);
-            filter: brightness(1.05);
-        }
-
-        button.secondary {
-            background-color: transparent;
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-        }
-
-        button.secondary:hover {
-            background-color: var(--border-color);
-        }
-
-        button.icon-only {
-            padding: 10px;
-            font-size: 1.2rem;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-
-        th {
-            text-align: left;
-            padding: 10px 12px;
-            border-bottom: 2px solid var(--primary);
-            font-weight: 600;
-            font-size: 0.88rem;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            opacity: 0.7;
-        }
-
-        td {
-            padding: 8px 12px;
-            border-bottom: 1px solid var(--border-color);
-            transition: background 0.15s;
-        }
-
-        tr:hover td {
-            background: rgba(79, 110, 247, 0.04);
-        }
-
-        [data-theme="dark"] tr:hover td {
-            background: rgba(108, 140, 255, 0.06);
-        }
-
-        td input {
-            width: 100%;
-            margin: 0;
-            padding: 6px;
-        }
-
-        /* 價值欄：最小顯示 5 位數，輸入時自動加寬 */
-        .value-input {
-            min-width: 7ch;
-            width: 7ch;
-            transition: width 0.15s ease;
-        }
-
-        .flex-row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .flex-col {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .form-group {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group label {
-            font-size: 0.9rem;
-            margin-bottom: 4px;
-            opacity: 0.8;
-            white-space: nowrap;
-        }
-
-        textarea#smartInput {
-            width: 100%;
-            height: 100px;
-            resize: vertical;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-        }
-
-        /* 解析預覽標籤 */
-        #parsePreview {
-            display: none;
-            flex-wrap: wrap;
-            gap: 5px;
-            margin: 8px 0;
-            max-height: 120px;
-            overflow-y: auto;
-        }
-
-        #parsePreview.visible {
-            display: flex;
-        }
-
-        .preview-tag {
-            background: rgba(76, 175, 80, 0.15);
-            border: 1px solid var(--success);
-            color: var(--success);
-            border-radius: 20px;
-            padding: 3px 10px;
-            font-size: 0.8rem;
-            white-space: nowrap;
-        }
-
-        .preview-tag.warning {
-            background: rgba(255, 153, 0, 0.1);
-            border-color: #f90;
-            color: #c80;
-        }
-
-        [data-theme="dark"] .preview-tag.warning {
-            color: #ffa733;
-        }
-
-        /* 2x2 網格損益看板 */
         .stats-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            padding: 0;
-            margin-top: 20px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 15px 0;
         }
-
         .stat-card {
+            background-color: var(--input-bg);
+            border-radius: 15px;
+            padding: 12px;
             display: flex;
+            flex-direction: column;
+            gap: 5px;
+            text-align: center;
             align-items: center;
-            gap: 8px;
-            padding: 14px 16px;
-            border-radius: 12px;
-            background: rgba(0, 0, 0, 0.03);
-            border: 1px solid var(--border-color);
-            font-size: 1.05rem;
-            font-weight: 600;
-            transition: all 0.25s ease;
         }
+        .stat-label { font-size: 0.85em; color: var(--text-muted); display: flex; align-items: center; gap: 5px; width: 100%; justify-content: center;}
+        .stat-value { font-size: 1.2em; font-weight: bold; }
+        .text-green { color: #4CAF50; }
+        .text-red { color: #EF5350; }
+        .text-blue { color: #4DA8DA; }
 
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        .ai-comment {
+            background-color: rgba(115, 138, 219, 0.15);
+            padding: 15px;
+            border-radius: 15px;
+            margin-top: 15px;
+            border: 1px solid rgba(115, 138, 219, 0.3);
         }
-
-        [data-theme="dark"] .stat-card {
-            background: rgba(255, 255, 255, 0.04);
-            border-color: rgba(255,255,255,0.08);
+        .ai-expected {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 8px;
+            border-bottom: 1px dashed rgba(255,215,0,0.3);
+            padding-bottom: 8px;
         }
-
-        .stat-card .stat-label {
-            opacity: 0.7;
-            font-size: 0.85rem;
-            font-weight: 500;
+        .ai-review-text {
+            color: #A8C7FA;
+            font-weight: bold;
+            font-size: 0.95em;
         }
+        body.light-mode .ai-expected { color: #D97706; border-color: rgba(217, 119, 6, 0.3); }
+        body.light-mode .ai-review-text { color: #1967D2; }
 
-        .stat-card .stat-value {
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-
-        .avg-draws-badge {
-            display: inline-block;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, var(--primary), #a855f7);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 20px;
-            margin-left: 6px;
-            animation: fadeInUp 0.4s ease;
-            vertical-align: middle;
-        }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(6px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .profit {
-            color: var(--success);
-        }
-
-        .loss {
-            color: var(--danger);
-        }
-
-        #settingsModal {
+        /* 通用彈窗與對話框樣式 */
+        .modal-overlay {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            align-items: center;
+            justify-content: center;
             z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(5px);
         }
-
         .modal-content {
-            background: var(--bg-color);
-            width: 400px;
-            padding: 30px;
-            border-radius: var(--radius-main);
-            box-shadow: var(--shadow);
-            border: 1px solid var(--panel-border);
+            background-color: var(--panel-bg);
+            padding: 25px;
+            border-radius: 20px;
+            min-width: 320px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
+        .modal-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; }
 
-        /* 正方形刪除按鈕 */
-        .del-btn {
-            width: 30px;
-            height: 30px;
-            padding: 0;
-            border-radius: 6px;
-            font-size: 1.1rem;
-            line-height: 1;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
+        /* 是/否 按鈕規則: 是(左) #A8C7FA, 否(右) #FF0033 */
+        .btn-yes { background-color: #A8C7FA !important; color: #000000 !important; flex: 1; }
+        .btn-no { background-color: #FF0033 !important; color: #FFFFFF !important; flex: 1; }
     </style>
 </head>
+<body class="text-medium">
 
-<body>
-
-    <div class="container">
-        <div class="header">
-            <h2>🎮 轉蛋模擬器</h2>
-            <div style="display: flex; gap: 10px;">
-                <button class="secondary icon-only" id="themeToggleBtn" onclick="toggleTheme()">🌙</button>
-                <button class="secondary icon-only" onclick="openSettings()">⚙️</button>
-            </div>
+    <div class="top-bar">
+        <div>
+            <h2 style="margin:0; display: flex; align-items: center; gap: 10px;">
+                <span style="color: #738ADB;">🎮</span> 轉蛋模擬器
+            </h2>
         </div>
+        <button style="background:none; font-size:24px; padding:0; color: var(--text-muted);" onclick="toggleSettings()">⚙️</button>
+    </div>
 
-        <div class="panel flex-col">
-            <div class="flex-row" style="margin-bottom: 10px;">
-                <button onclick="createNewTheme()">➕ 新增活動</button>
-                <button class="danger" onclick="deleteCurrentTheme()">🗑️ 刪除活動</button>
-            </div>
-            <div class="flex-row">
-                <div class="form-group" style="flex: none; width: 250px;">
-                    <label>📁 當前抽獎活動</label>
-                    <select id="themeSelect" onchange="switchTheme()"></select>
-                </div>
-                <div class="form-group" style="flex: none; width: 120px; margin-left: 10px;">
-                    <label>💰 每一抽成本 (元)</label>
-                    <input type="number" id="costPerDraw" value="0" min="0" step="1" onchange="updateThemeConfig()">
-                </div>
-            </div>
+    <!-- 儲存活動功能區塊 -->
+    <div class="panel activity-bar">
+        <div class="activity-actions">
+            <button class="btn-add" onclick="promptAddActivity()">➕ 新增活動</button>
+            <button class="btn-reset" onclick="promptDeleteActivity()">🗑️ 刪除活動</button>
         </div>
-
-        <div class="grid-2">
-            <div class="panel">
-                <h3>📝 獎池道具</h3>
-
-                <details
-                    style="margin-bottom: 20px; background: rgba(0,0,0,0.03); padding: 10px; border-radius: var(--radius-btn);">
-                    <summary style="cursor: pointer; font-weight: bold;">🪄 智慧文字解析</summary>
-                    <div style="margin-top: 10px;">
-                        <p style="font-size:0.82rem;opacity:0.6;margin:0 0 8px;">支援同行「名稱 機率%」</p>
-                        <textarea id="smartInput" placeholder="在此貼上文字..."></textarea>
-                        <div id="parsePreview"></div>
-                        <div class="flex-row">
-                            <button class="success" onclick="smartParse()" style="flex:1">⚡ 解析並加入</button>
-                            <button class="secondary" onclick="clearSmartInput()" style="flex:0 0 auto">✕ 清空</button>
-                        </div>
-                    </div>
-                </details>
-
-                <div
-                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px 10px; margin-bottom: 15px; align-items: end;">
-                    <div class="form-group" style="grid-column: 1 / 2;">
-                        <label>道具名稱</label>
-                        <input type="text" id="itemName" placeholder="名稱">
-                    </div>
-
-                    <div style="grid-column: 2 / 3; display: flex; gap: 10px;">
-                        <div class="form-group" style="flex: 1;"><label>機率(%)</label><input type="number" id="itemProb"
-                                placeholder="0.0" step="0.1"></div>
-                        <div class="form-group" style="flex: 1;"><label>價值</label><input type="number" id="itemValue"
-                                placeholder="0" step="100"></div>
-                    </div>
-
-                    <button onclick="addItem()" style="grid-column: 1 / 2; margin: 0; width: 100%;">➕ 新增</button>
-                    <button class="danger" onclick="clearPrizePool()"
-                        style="grid-column: 2 / 3; margin: 0; width: 100%;">🗑️ 重製</button>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between;">
+            <div style="flex: 1; min-width: 200px;">
+                <div style="color:var(--text-muted); font-size:0.9em; margin-bottom:8px; font-weight:bold;">📁 當前抽獎活動</div>
+                <div id="activityButtons" class="activity-selectors">
+                    <!-- 活動按鈕動態產生於此 -->
                 </div>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th width="60%">道具名稱</th>
-                            <th width="15%">機率(%)</th>
-                            <th>價值</th>
-                            <th width="10%">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="itemPoolList"></tbody>
-                </table>
             </div>
-
-            <div class="panel">
-                <h3>🎯 抽獎模擬</h3>
-                <div class="flex-row">
-                    <button class="success" style="flex: 1;" onclick="drawGacha(10)">🎲 10 抽</button>
-                    <button class="success" style="flex: 1;" onclick="drawGacha(100)">🎲 100 抽</button>
-                    <button class="success" style="flex: 1;" onclick="drawGacha(1000)">🎲 1000 抽</button>
-                    <button class="danger" style="flex: 0.5; font-size: 0.85rem; padding: 10px 4px;"
-                        onclick="resetStats()">🔄 重置</button>
+            
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <div style="color:var(--text-muted); font-size:0.9em; font-weight:bold;">💰 每一抽成本 (元)</div>
+                <div style="display:flex; align-items:center; gap: 15px; background: rgba(35, 37, 58, 0.4); padding: 5px 15px; border-radius: 15px; border: 1px solid var(--border-color);">
+                    <input type="number" id="costPerDraw" min="0" style="width: 80px; text-align: center;" onchange="handleCostChange()">
+                    <!-- 自動帶入按鈕 -->
+                    <button id="btnAutoFill" class="btn-autofill-off" onclick="toggleAutoFill()" style="padding: 6px 15px; font-size: 0.9em;">自動帶入價格 ❌</button>
                 </div>
-
-                <div class="stats-grid">
-                    <div class="stat-card">💸 <span class="stat-label">花費</span> <span class="stat-value" id="statCost">0</span></div>
-                    <div class="stat-card">💎 <span class="stat-label">價值</span> <span class="stat-value" id="statValue">0</span></div>
-                    <div class="stat-card">⚖️ <span class="stat-label">損益</span> <span class="stat-value" id="statProfit">0</span></div>
-                    <div class="stat-card">🎯 <span class="stat-label">總抽數</span> <span class="stat-value" id="statDraws">0</span><span id="avgDrawsBadge"></span></div>
-                </div>
-
-                <h4>📦 獲得道具清單</h4>
-                <table>
-                    <thead>
-                        <tr>
-                            <th width="70%">名稱</th>
-                            <th width="10%">數量</th>
-                            <th width="10%">總價值</th>
-                            <th width="10%">機率(%)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventoryList"></tbody>
-                </table>
             </div>
         </div>
     </div>
 
-    <div id="settingsModal">
-        <div class="modal-content flex-col">
-            <h3>系統設定</h3>
-            <div class="form-group">
-                <label>🔍 UI 介面大小</label>
-                <select id="uiScale" onchange="changeUiScale()">
-                    <option value="14px">小 (Small)</option>
-                    <option value="16px" selected>中 (Medium - 預設)</option>
-                    <option value="19px">大 (Large)</option>
-                </select>
+    <div class="main-content">
+        <!-- 左半部：獎池設定 -->
+        <div class="panel">
+            <h3 style="margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px;">
+                📄 獎池道具
+            </h3>
+            
+            <div>
+                <div class="collapsible-header" onclick="toggleParseSection()" id="parseHeader">
+                    ▼ 智慧文字解析
+                </div>
+                <div class="collapsible-body" id="parseBody" style="max-height: 200px;">
+                    <textarea id="inputText" style="height: 60px; resize: none;" placeholder="請貼上網頁機率文字..."></textarea>
+                    <button class="btn-add" style="width: 100%;" onclick="parseItems()">🔍 解析內容</button>
+                </div>
             </div>
-            <hr style="width: 100%; border: 0; border-top: 1px solid var(--border-color); margin: 10px 0;">
-            <div class="form-group">
-                <label>💾 資料備份</label>
-                <button class="success" onclick="exportData()" style="justify-content: center;">📤 匯出資料 (JSON)</button>
-                <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
-                <button onclick="document.getElementById('importFile').click()"
-                    style="justify-content: center; margin-top: 5px;">📥 匯入資料 (JSON)</button>
+
+            <div style="height: 1px; background-color: var(--border-color); margin: 15px 0;"></div>
+
+            <div class="setup-labels">
+                <span>道具名稱</span>
+                <span>機率(%)</span>
+                <span>價值</span>
             </div>
-            <button class="danger" onclick="closeSettings()" style="margin-top: 15px; justify-content: center;">❌
-                關閉</button>
+            <div class="setup-inputs">
+                <input type="text" id="manualName" placeholder="名稱">
+                <input type="number" id="manualProb" placeholder="0.0" step="0.1">
+                <input type="number" id="manualValue" placeholder="0">
+            </div>
+            <div class="setup-actions">
+                <button class="btn-add" onclick="addManualItem()">➕ 新增</button>
+                <button class="btn-reset" onclick="promptClearItems()">🗑️ 重製</button>
+            </div>
+
+            <div class="setup-list-header">
+                <span>道具名稱</span>
+                <span>機率(%)</span>
+                <span>價值</span>
+                <span style="text-align: center;">操作</span>
+            </div>
+            
+            <div id="setupList"></div>
+        </div>
+
+        <!-- 右半部：抽獎模擬 -->
+        <div class="panel">
+            <h3 style="margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                🎯 抽獎模擬 (按住按鈕可連續抽取)
+            </h3>
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-green" style="flex: 1;" 
+                        onmousedown="startDraw(1)" onmouseup="stopDraw()" onmouseleave="stopDraw()" 
+                        ontouchstart="startDraw(1)" ontouchend="stopDraw()">單抽</button>
+                <button class="btn-green" style="flex: 1;" 
+                        onmousedown="startDraw(10)" onmouseup="stopDraw()" onmouseleave="stopDraw()" 
+                        ontouchstart="startDraw(10)" ontouchend="stopDraw()">💎 10抽</button>
+                <button class="btn-green" style="flex: 1;" 
+                        onmousedown="startDraw(100)" onmouseup="stopDraw()" onmouseleave="stopDraw()" 
+                        ontouchstart="startDraw(100)" ontouchend="stopDraw()">💎 100抽</button>
+                <button class="btn-green" style="flex: 1;" 
+                        onmousedown="startDraw(1000)" onmouseup="stopDraw()" onmouseleave="stopDraw()" 
+                        ontouchstart="startDraw(1000)" ontouchend="stopDraw()">💎 1000抽</button>
+                <button class="btn-reset" onclick="resetSim()" style="padding: 10px;">🔄 重置</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">💸 花費</span>
+                    <span class="stat-value text-green" id="statCost">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">💎 價值</span>
+                    <span class="stat-value text-blue" id="statValue">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">⚖️ 損益</span>
+                    <span class="stat-value" id="statProfit">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">🎲 總抽數</span>
+                    <span class="stat-value" id="statDraws">0</span>
+                </div>
+            </div>
+
+            <h4 style="margin: 5px 0; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+                🎒 獲得道具清單
+            </h4>
+            <div class="inv-grid inv-header">
+                <span>名稱</span>
+                <span>數量</span>
+                <span>總價值</span>
+                <span>實際機率(%)</span>
+            </div>
+            <div id="inventoryList"></div>
+
+            <div class="ai-comment">
+                <div class="ai-expected" id="aiExpected">🤖 期望回報：等待數據</div>
+                <div class="ai-review-text" id="aiReviewText">AI評論：等待分析中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 系統設定視窗 -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top: 0;">⚙️ 系統設定</h3>
+            
+            <div style="margin-bottom:8px; color: var(--text-muted); text-align: left;">🎨 面板顏色設定</div>
+            <div class="modal-row">
+                <input type="color" id="panelColor" value="#23253A" onchange="changePanelColor(this.value)" style="flex: 1; height: 40px; cursor: pointer; padding: 0; border: none; border-radius: 12px;">
+                <button class="btn-add" onclick="resetPanelColor()" style="flex: 1;">🔄 恢復預設</button>
+            </div>
+
+            <div style="margin-bottom:8px; color: var(--text-muted); text-align: left;">🌓 顯示模式</div>
+            <div class="modal-row">
+                <button id="btn-dark" class="btn-option selected" onclick="setTheme('dark')">🌙 深色</button>
+                <button id="btn-light" class="btn-option" onclick="setTheme('light')">☀️ 淺色</button>
+            </div>
+
+            <div style="margin-bottom:8px; color: var(--text-muted); text-align: left;">🔠 文字大小</div>
+            <div class="modal-row">
+                <button id="btn-size-small" class="btn-option" onclick="setTextSize('small')">小</button>
+                <button id="btn-size-medium" class="btn-option selected" onclick="setTextSize('medium')">中</button>
+                <button id="btn-size-large" class="btn-option" onclick="setTextSize('large')">大</button>
+            </div>
+
+            <button class="btn-add" style="width: 100%; margin-top: 10px; font-size: 1.1em;" onclick="toggleSettings()">✅ 儲存並關閉</button>
+        </div>
+    </div>
+
+    <!-- 通用對話視窗 (用於 是/否 判斷與輸入) -->
+    <div id="dialogModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="dialogTitle" style="margin-top: 0;">提示</h3>
+            <div id="dialogBody" style="margin-bottom: 20px; color: var(--text-main);"></div>
+            <input type="text" id="dialogInput" style="display:none; width:100%; margin-bottom: 20px; box-sizing:border-box;" placeholder="請輸入...">
+            <div style="display:flex; gap:15px; justify-content:center;">
+                <!-- 是 在左 #A8C7FA， 否 在右 #FF0033 -->
+                <button class="btn-yes" onclick="submitDialog()">是</button>
+                <button class="btn-no" onclick="closeDialog()">否</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // =============================================
-        // 應用狀態
-        // =============================================
-        let appData = { themes: {}, currentThemeId: null };
-        let _saveTimer = null;
+        // === 系統與活動數據初始數值設定 ===
+        const DEFAULT_COST = 36;
+        const DEFAULT_AUTO_FILL = false;
+        const DEFAULT_THEME = 'dark';
+        const DEFAULT_FONT_SIZE = 'medium';
+        const DEFAULT_PANEL_COLOR = '#23253A';
+        const DEFAULT_ACTIVITY_NAME = '預設轉蛋池';
 
-        // =============================================
-        // 工具：XSS-safe 文字轉義
-        // =============================================
-        function esc(str) {
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
+        let appData = {
+            settings: { panelColor: DEFAULT_PANEL_COLOR, theme: DEFAULT_THEME, fontSize: DEFAULT_FONT_SIZE },
+            currentActivity: DEFAULT_ACTIVITY_NAME,
+            activities: {}
+        };
+
+        let parsedItems = [];
+        let drawStats = { totalDraws: 0, cost: 0, value: 0 };
+        let inventory = {};
+        
+        let isAutoFill = false; // 全域自動帶入價格狀態
+
+        let drawTimer = null;
+        let drawIntervalObj = null;
+        let dialogCallback = null;
+
+        /* === 初始化與存取機制 === */
+        window.onload = function() {
+            loadData();
+        };
+
+        // 監聽鍵盤 Enter 觸發「是」
+        document.addEventListener('keydown', function(e) {
+            const modal = document.getElementById('dialogModal');
+            if (modal.style.display === 'flex' && e.key === 'Enter') {
+                e.preventDefault();
+                submitDialog();
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (document.body.classList.contains('light-mode')) return;
+            const x = e.clientX;
+            const y = e.clientY;
+            document.body.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(255,255,255,0.03), transparent 400px) fixed, linear-gradient(to bottom left, var(--bg-start), var(--bg-end)) fixed`;
+        });
+
+        function saveData() {
+            if (!appData.activities[appData.currentActivity]) return;
+            
+            appData.activities[appData.currentActivity].cost = parseFloat(document.getElementById('costPerDraw').value) || 0;
+            appData.activities[appData.currentActivity].autoFill = isAutoFill;
+            appData.activities[appData.currentActivity].items = parsedItems;
+            appData.activities[appData.currentActivity].stats = drawStats;
+            appData.activities[appData.currentActivity].inventory = inventory;
+            
+            localStorage.setItem('gachaSimulatorData', JSON.stringify(appData));
+            renderActivityButtons();
         }
 
-        // =============================================
-        // 工具：唯一 ID
-        // =============================================
-        function genId() {
-            return typeof crypto !== 'undefined' && crypto.randomUUID
-                ? 'item_' + crypto.randomUUID()
-                : 'item_' + Date.now().toString(36) + Math.random().toString(36).slice(2);
-        }
-
-        // =============================================
-        // 工具：debounce 儲存，避免頻繁寫入 localStorage
-        // =============================================
-        function saveData(immediate = false) {
-            if (immediate) {
-                clearTimeout(_saveTimer);
-                localStorage.setItem('gachaAppData', JSON.stringify(appData));
-                return;
-            }
-            clearTimeout(_saveTimer);
-            _saveTimer = setTimeout(() => {
-                localStorage.setItem('gachaAppData', JSON.stringify(appData));
-            }, 400);
-        }
-
-        // =============================================
-        // 初始化
-        // =============================================
-        function init() {
-            const btn = document.getElementById('themeToggleBtn');
-            if (localStorage.getItem('gachaTheme') === 'dark') {
-                document.body.setAttribute('data-theme', 'dark');
-                btn.textContent = '☀️';
-            } else {
-                btn.textContent = '🌙';
-            }
-
-            const scale = localStorage.getItem('gachaScale') || '16px';
-            document.documentElement.style.setProperty('--font-scale', scale);
-            document.getElementById('uiScale').value = scale;
-
-            const savedData = localStorage.getItem('gachaAppData');
-            if (savedData) {
-                try { appData = JSON.parse(savedData); } catch (e) { }
-            }
-            if (!appData.themes || !Object.keys(appData.themes).length) {
-                const id = Date.now().toString();
-                appData.themes = {};
-                appData.themes[id] = { id, name: '預設轉蛋池', cost: 100, items: [], inventory: {}, totalDraws: 0, dugCount: 0, dugTotalDraws: 0 };
-                appData.currentThemeId = id;
-            }
-            if (!appData.themes[appData.currentThemeId]) {
-                appData.currentThemeId = Object.keys(appData.themes)[0];
-            }
-
-            renderThemeSelect();
-            renderThemeData();
-
-            // 即時預覽解析
-            document.getElementById('smartInput').addEventListener('input', debouncePreview);
-        }
-
-        // =============================================
-        // 主題切換
-        // =============================================
-        function toggleTheme() {
-            const body = document.body;
-            const btn = document.getElementById('themeToggleBtn');
-            if (body.getAttribute('data-theme') === 'dark') {
-                body.removeAttribute('data-theme');
-                localStorage.setItem('gachaTheme', 'light');
-                btn.textContent = '🌙';
-            } else {
-                body.setAttribute('data-theme', 'dark');
-                localStorage.setItem('gachaTheme', 'dark');
-                btn.textContent = '☀️';
-            }
-        }
-
-        function openSettings() { document.getElementById('settingsModal').style.display = 'flex'; }
-        function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
-        function changeUiScale() {
-            const scale = document.getElementById('uiScale').value;
-            document.documentElement.style.setProperty('--font-scale', scale);
-            localStorage.setItem('gachaScale', scale);
-        }
-
-        // =============================================
-        // 🪄 智慧文字解析（大幅升級版）
-        // =============================================
-
-        /**
-         * 前處理：將「隔行排版」合併成單行，再交給 parseLine 處理。
-         * 偵測規則：若某行「完全沒有數字（純文字名稱）」，
-         * 而緊接著的下一個非空行「只有數字/百分比」，
-         * 則視為「名稱行 + 機率行」的隔行格式，自動合併。
-         * @param {string[]} rawLines
-         * @returns {string[]}
-         */
-        function normalizeLines(rawLines) {
-            // 判斷某行是否「純機率行」：只含數字、小數點、%、空白
-            const isProbOnlyLine = (s) => /^[\s0-9.%]+$/.test(s) && /[0-9]/.test(s);
-            // 判斷某行是否「純名稱行」：不含任何數字
-            const isNameOnlyLine = (s) => s.length > 0 && !/[0-9]/.test(s);
-
-            const result = [];
-            let i = 0;
-            while (i < rawLines.length) {
-                const line = rawLines[i].trim();
-                if (!line) { i++; continue; }
-
-                // 找下一個非空行
-                let nextIdx = i + 1;
-                while (nextIdx < rawLines.length && !rawLines[nextIdx].trim()) nextIdx++;
-
-                if (isNameOnlyLine(line) && nextIdx < rawLines.length) {
-                    const nextLine = rawLines[nextIdx].trim();
-                    if (isProbOnlyLine(nextLine)) {
-                        // 合併：「名稱 機率行」
-                        result.push(line + ' ' + nextLine);
-                        i = nextIdx + 1;
-                        continue;
-                    }
-                }
-
-                result.push(line);
-                i++;
-            }
-            return result;
-        }
-
-        /**
-         * 核心解析函式：嘗試從一行文字解析出 { name, prob, value }
-         * 支援格式：
-         *   1. 名稱 機率%                      → 回真卷軸 1.20%
-         *   2. 名稱 機率                        → 道具  0.5
-         *   3. 名稱 機率 價值（任意分隔符）     → 禮包  2.5  1000
-         *   4. 名稱:機率:價值（冒號分隔）       → 點券:5:200
-         *   5. 隔行排版（由 normalizeLines 預處理）
-         *   6. 表格複製（Tab 分隔多欄）         → 直接從 Excel 貼上
-         *   7. 名稱後多個數字，自動偵測哪個是 % → 龍鱗 200 1.5%（機率=1.5，價值=200）
-         */
-        function parseLine(raw) {
-            const line = raw.trim();
-            if (!line) return null;
-
-            // 正規化：全形空白、全形冒號 → 半形
-            const normalized = line
-                .replace(/[\u3000\u00a0]/g, ' ')   // 全形空白、不換行空格
-                .replace(/：/g, ':')               // 全形冒號
-                .replace(/，/g, ',')               // 全形逗號
-                .replace(/\t/g, '\t');             // tab 保留
-
-            // === 策略 0：Tab 分隔（Excel / 試算表貼上）===
-            // 格式：名稱\t機率(%)\t價值  或  名稱\t機率(%)
-            if (normalized.includes('\t')) {
-                const parts = normalized.split('\t').map(s => s.trim()).filter(Boolean);
-                if (parts.length >= 2) {
-                    const name = parts[0];
-                    const probStr = parts[1].replace(/%/g, '').trim();
-                    const probVal = parseFloat(probStr);
-                    if (name && !isNaN(probVal)) {
-                        const value = parts.length >= 3 ? (parseFloat(parts[2].replace(/%/g, '').trim()) || 0) : 0;
-                        return { name, prob: probVal, value };
-                    }
-                }
-            }
-
-            // === 策略 1：冒號分隔（名稱:機率 或 名稱:機率:價值）===
-            const colonParts = normalized.split(':').map(s => s.trim()).filter(Boolean);
-            if (colonParts.length >= 2) {
-                const probCandidate = parseFloat(colonParts[1]);
-                if (!isNaN(probCandidate) && colonParts[0].length > 0) {
-                    const value = colonParts.length >= 3 ? (parseFloat(colonParts[2]) || 0) : 0;
-                    return { name: colonParts[0], prob: probCandidate, value };
-                }
-            }
-
-            // === 策略 2：從右側掃描尾端數字 token，保留名稱完整性 ===
-            // 核心思路：名稱中可能嵌有數字（如 "星力16星強化券"），
-            // 所以不能移除所有數字。改為從右往左尋找以空格/tab 分隔的
-            // 獨立數字 token（如 "0.50%" "5000"），並把剩餘的左側部分作為名稱。
-            //
-            // 「獨立數字 token」定義：
-            //   - 前面是行首 or 空白/tab
-            //   - 內容純數字（可帶小數點、%）
-            //   - 後面是行尾 or 空白/tab
-            // 這樣 "星力16星強化券" 中的 "16" 因為前後緊鄰中文字，不算獨立 token。
-
-            // 將文字拆成 token（以空白/tab 分隔）
-            const tokens = normalized.split(/[\s\t]+/);
-
-            // 判斷一個 token 是否為獨立的數字 token
-            const isNumToken = (t) => /^[0-9]+(?:\.[0-9]+)?\s*%?$/.test(t);
-
-            // 從右往左掃描，收集尾端連續的數字 token
-            const trailingNums = [];
-            for (let i = tokens.length - 1; i >= 0; i--) {
-                if (isNumToken(tokens[i])) {
-                    trailingNums.unshift({
-                        raw: tokens[i],
-                        val: parseFloat(tokens[i]),
-                        hasPercent: tokens[i].includes('%'),
-                        tokenIndex: i
-                    });
-                } else {
-                    break;  // 遇到非數字 token 就停止
-                }
-            }
-
-            if (trailingNums.length === 0) return null;  // 沒有尾端數字
-
-            // 名稱 = 尾端數字之前的所有 token
-            const nameEndIndex = trailingNums[0].tokenIndex;
-            const nameParts = tokens.slice(0, nameEndIndex);
-            let name = nameParts.join(' ')
-                .replace(/[\s,\-\|\/\\]+$/, '')    // 去掉尾端分隔符
-                .replace(/^[\s,\-\|\/\\]+/, '')    // 去掉頭部分隔符
-                .replace(/\s{2,}/g, ' ')           // 多空格合一
-                .trim();
-
-            if (!name) return null;
-
-            // 從尾端數字中識別 prob 和 value
-            let prob = null, value = 0;
-            const percentNums = trailingNums.filter(n => n.hasPercent);
-            const plainNums = trailingNums.filter(n => !n.hasPercent);
-
-            if (trailingNums.length === 1) {
-                // 只有一個尾端數字 → 視為機率
-                prob = trailingNums[0].val;
-            } else if (percentNums.length >= 1) {
-                // 有帶 % 的 → 那就是機率
-                prob = percentNums[percentNums.length - 1].val;
-                // 其他不帶 % 的 → 價值（取最大的）
-                if (plainNums.length >= 1) {
-                    value = Math.max(...plainNums.map(n => n.val));
+        function loadData() {
+            const saved = localStorage.getItem('gachaSimulatorData');
+            if (saved) {
+                try {
+                    appData = JSON.parse(saved);
+                } catch (e) {
+                    initDefaultActivity();
                 }
             } else {
-                // 多個數字都不帶 %
-                // 格式可能是：名稱 機率 價值
-                // 規則：機率通常 <= 100 且較小；價值通常較大
-                if (trailingNums.length === 2) {
-                    const first = trailingNums[0].val;
-                    const second = trailingNums[1].val;
-                    // 第一個當機率，第二個當價值
-                    prob = first;
-                    value = second;
-                } else {
-                    // 3 個以上：最小的當機率，最大的當價值
-                    const vals = trailingNums.map(n => n.val);
-                    prob = Math.min(...vals);
-                    value = Math.max(...vals);
-                }
+                initDefaultActivity();
             }
 
-            if (prob === null || isNaN(prob)) return null;
-
-            return { name, prob, value };
-        }
-
-        // debounce 預覽（輸入停止後 300ms 觸發）
-        let _previewTimer = null;
-        function debouncePreview() {
-            clearTimeout(_previewTimer);
-            _previewTimer = setTimeout(renderParsePreview, 300);
-        }
-
-        function renderParsePreview() {
-            const text = document.getElementById('smartInput').value;
-            const preview = document.getElementById('parsePreview');
-            preview.innerHTML = '';
-
-            if (!text.trim()) {
-                preview.classList.remove('visible');
-                return;
+            if (!appData.activities || Object.keys(appData.activities).length === 0) {
+                initDefaultActivity();
+            }
+            if (!appData.activities[appData.currentActivity]) {
+                appData.currentActivity = Object.keys(appData.activities)[0];
             }
 
-            // 先做隔行合併預處理，再逐行解析
-            const lines = normalizeLines(text.split('\n'));
-            let parsed = 0, failed = 0;
-            const fragment = document.createDocumentFragment();
-
-            lines.forEach(line => {
-                if (!line.trim()) return;
-                const result = parseLine(line);
-                if (result) {
-                    parsed++;
-                    const tag = document.createElement('span');
-                    tag.className = 'preview-tag';
-                    tag.textContent = `${result.name} ${result.prob}%${result.value ? ' /' + result.value : ''}`;
-                    fragment.appendChild(tag);
-                } else {
-                    failed++;
-                    const tag = document.createElement('span');
-                    tag.className = 'preview-tag warning';
-                    tag.textContent = '⚠ ' + (line.trim().slice(0, 18) || '—');
-                    fragment.appendChild(tag);
-                }
-            });
-
-            if (parsed + failed > 0) {
-                preview.appendChild(fragment);
-                preview.classList.add('visible');
-            } else {
-                preview.classList.remove('visible');
-            }
+            applySettings();
+            switchActivity(appData.currentActivity);
         }
 
-        function smartParse() {
-            const text = document.getElementById('smartInput').value;
-            if (!text.trim()) { alert('請先貼上文字！'); return; }
-
-            const theme = appData.themes[appData.currentThemeId];
-            // 先做隔行合併預處理，再逐行解析
-            const lines = normalizeLines(text.split('\n'));
-            let addedCount = 0, skippedCount = 0;
-
-            lines.forEach(line => {
-                if (!line.trim()) return;
-                const result = parseLine(line);
-                if (result) {
-                    theme.items.push({
-                        id: genId(),
-                        name: result.name,
-                        prob: result.prob,
-                        value: result.value
-                    });
-                    addedCount++;
-                } else {
-                    skippedCount++;
-                }
-            });
-
-            clearSmartInput();
-            renderThemeData();
-            saveData();
-
-            const msg = skippedCount > 0
-                ? `✨ 成功解析 ${addedCount} 個道具！\n（${skippedCount} 行無法識別，已略過）`
-                : `✨ 成功解析並加入了 ${addedCount} 個道具！`;
-            alert(msg);
+        function initDefaultActivity() {
+            appData.activities = {};
+            appData.activities[DEFAULT_ACTIVITY_NAME] = {
+                cost: DEFAULT_COST,
+                autoFill: DEFAULT_AUTO_FILL,
+                items: [],
+                stats: { totalDraws: 0, cost: 0, value: 0 },
+                inventory: {}
+            };
+            appData.currentActivity = DEFAULT_ACTIVITY_NAME;
         }
 
-        function clearSmartInput() {
-            document.getElementById('smartInput').value = '';
-            document.getElementById('parsePreview').classList.remove('visible');
-            document.getElementById('parsePreview').innerHTML = '';
-        }
+        /* === 活動管理機制 === */
+        function switchActivity(name) {
+            appData.currentActivity = name;
+            const act = appData.activities[name];
+            
+            document.getElementById('costPerDraw').value = act.cost !== undefined ? act.cost : DEFAULT_COST;
+            
+            isAutoFill = act.autoFill || false;
+            updateAutoFillButtonUI();
+            
+            parsedItems = act.items || [];
+            drawStats = act.stats || { totalDraws: 0, cost: 0, value: 0 };
+            inventory = act.inventory || {};
 
-        // =============================================
-        // 渲染
-        // =============================================
-        // 價值輸入欄自動擴寬（根據內容長度調整寬度）
-        function autoWidth(el) {
-            const len = Math.max(el.value.length, 5); // 少於 5 位數保持 7ch
-            el.style.width = (len + 2) + 'ch';
-        }
-
-        function renderThemeSelect() {
-            const select = document.getElementById('themeSelect');
-            const fragment = document.createDocumentFragment();
-            for (const key in appData.themes) {
-                const option = document.createElement('option');
-                option.value = key;
-                option.textContent = appData.themes[key].name;
-                if (key === appData.currentThemeId) option.selected = true;
-                fragment.appendChild(option);
-            }
-            select.innerHTML = '';
-            select.appendChild(fragment);
-        }
-
-        function renderThemeData() {
-            const theme = appData.themes[appData.currentThemeId];
-            document.getElementById('costPerDraw').value = theme.cost;
-
-            const tbody = document.getElementById('itemPoolList');
-            const fragment = document.createDocumentFragment();
-
-            // 按機率從低到高排序顯示（不改變原始陣列順序）
-            const sorted = theme.items
-                .map((item, index) => ({ item, index }))
-                .sort((a, b) => a.item.prob - b.item.prob);
-
-            sorted.forEach(({ item }) => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                <td>
-                    <div style="display: flex; align-items: center; gap: 5px;">
-                        <button class="primary" title="抽到有為止" onclick="drawUntilGot('${esc(item.id)}')" style="padding: 0; width: 32px; height: 32px; flex-shrink: 0; font-size: 0.9rem; border-radius: 6px;">抽</button>
-                        <input type="text" value="${esc(item.name)}" onchange="updateItemById('${esc(item.id)}', 'name', this.value)">
-                    </div>
-                </td>
-                <td><input type="number" step="0.1" value="${esc(item.prob)}" onchange="updateItemById('${esc(item.id)}', 'prob', this.value)"></td>
-                <td><input type="number" step="100" class="value-input" value="${esc(item.value)}" onchange="updateItemById('${esc(item.id)}', 'value', this.value)" oninput="autoWidth(this)"></td>
-                <td><button class="danger del-btn" onclick="deleteItemById('${esc(item.id)}')">╳</button></td>
-            `;
-                fragment.appendChild(tr);
-            });
-
-            tbody.innerHTML = '';
-            tbody.appendChild(fragment);
-            // 初始化所有價值欄的寬度
-            tbody.querySelectorAll('.value-input').forEach(autoWidth);
+            renderActivityButtons();
+            renderSetupList();
+            updateStatsDisplay();
             renderInventory();
+            updateAIReview();
+            saveData();
         }
 
-        function updateItemById(id, field, newValue) {
-            const theme = appData.themes[appData.currentThemeId];
-            const item = theme.items.find(i => i.id === id);
-            if (!item) return;
-            if (field === 'prob' || field === 'value') newValue = parseFloat(newValue) || 0;
-            item[field] = newValue;
+        function renderActivityButtons() {
+            const container = document.getElementById('activityButtons');
+            container.innerHTML = '';
+            
+            Object.keys(appData.activities).forEach(name => {
+                const btn = document.createElement('button');
+                btn.className = `btn-activity ${name === appData.currentActivity ? 'selected' : ''}`;
+                btn.innerText = name;
+                btn.onclick = () => switchActivity(name);
+                container.appendChild(btn);
+            });
+        }
+
+        function promptAddActivity() {
+            openDialog('新增活動', '請輸入新活動名稱：', true, (val) => {
+                const name = val.trim();
+                if (!name) return alert('名稱不可為空！');
+                if (appData.activities[name]) return alert('活動名稱已存在！');
+                
+                appData.activities[name] = { cost: DEFAULT_COST, autoFill: DEFAULT_AUTO_FILL, items: [], stats: { totalDraws: 0, cost: 0, value: 0 }, inventory: {} };
+                switchActivity(name);
+            });
+        }
+
+        function promptDeleteActivity() {
+            openDialog('刪除活動', `確定要刪除活動「${appData.currentActivity}」嗎？`, false, () => {
+                delete appData.activities[appData.currentActivity];
+                const remaining = Object.keys(appData.activities);
+                if (remaining.length === 0) {
+                    initDefaultActivity();
+                } else {
+                    appData.currentActivity = remaining[0];
+                }
+                switchActivity(appData.currentActivity);
+            });
+        }
+
+        function promptClearItems() {
+            openDialog('重製道具', '確定要刪除所有設定的道具嗎？', false, () => {
+                parsedItems = [];
+                resetSim();
+                updateAIReview();
+                saveData();
+                renderSetupList();
+            });
+        }
+
+        function handleCostChange() {
             saveData();
-            if (field === 'prob') renderThemeData(); // 機率改變時重新排序
-            else renderInventory();
+            updateAIReview();
+        }
+        
+        function toggleAutoFill() {
+            isAutoFill = !isAutoFill;
+            updateAutoFillButtonUI();
+            saveData();
+        }
+        
+        function updateAutoFillButtonUI() {
+            const btn = document.getElementById('btnAutoFill');
+            if (isAutoFill) {
+                btn.className = 'btn-autofill-on';
+                btn.innerText = '自動帶入價格 ✅';
+            } else {
+                btn.className = 'btn-autofill-off';
+                btn.innerText = '自動帶入價格 ❌';
+            }
+        }
+
+        /* === 對話框機制 (遵守是/否顏色與左右排列規定) === */
+        function openDialog(title, text, showInput, callback) {
+            document.getElementById('dialogTitle').innerText = title;
+            document.getElementById('dialogBody').innerText = text;
+            const inputEl = document.getElementById('dialogInput');
+            inputEl.style.display = showInput ? 'block' : 'none';
+            inputEl.value = '';
+            document.getElementById('dialogModal').style.display = 'flex';
+            
+            if (showInput) {
+                inputEl.focus();
+            }
+            
+            dialogCallback = callback;
+        }
+
+        function closeDialog() {
+            document.getElementById('dialogModal').style.display = 'none';
+            dialogCallback = null;
+        }
+
+        function submitDialog() {
+            const val = document.getElementById('dialogInput').value;
+            if (dialogCallback) dialogCallback(val);
+            closeDialog();
+        }
+
+        /* === 系統設定機制 === */
+        function toggleSettings() {
+            const modal = document.getElementById('settingsModal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function applySettings() {
+            changePanelColor(appData.settings.panelColor || DEFAULT_PANEL_COLOR);
+            document.getElementById('panelColor').value = appData.settings.panelColor || DEFAULT_PANEL_COLOR;
+            setTheme(appData.settings.theme || DEFAULT_THEME, false);
+            setTextSize(appData.settings.fontSize || DEFAULT_FONT_SIZE, false);
+        }
+
+        function changePanelColor(color) {
+            document.documentElement.style.setProperty('--panel-bg', color);
+            appData.settings.panelColor = color;
+            localStorage.setItem('gachaSimulatorData', JSON.stringify(appData));
+        }
+
+        function resetPanelColor() {
+            const color = document.body.classList.contains('light-mode') ? '#FFFFFF' : DEFAULT_PANEL_COLOR;
+            document.getElementById('panelColor').value = color;
+            changePanelColor(color);
+        }
+
+        function setTheme(theme, save = true) {
+            document.getElementById('btn-dark').classList.remove('selected');
+            document.getElementById('btn-light').classList.remove('selected');
+            
+            if (theme === 'light') {
+                document.body.classList.add('light-mode');
+                document.getElementById('btn-light').classList.add('selected');
+                document.body.style.background = '';
+            } else {
+                document.body.classList.remove('light-mode');
+                document.getElementById('btn-dark').classList.add('selected');
+                document.body.style.background = 'linear-gradient(to bottom left, var(--bg-start), var(--bg-end)) fixed';
+            }
+            if(save) {
+                appData.settings.theme = theme;
+                localStorage.setItem('gachaSimulatorData', JSON.stringify(appData));
+            }
+        }
+
+        function setTextSize(size, save = true) {
+            document.body.classList.remove('text-small', 'text-medium', 'text-large');
+            document.body.classList.add(`text-${size}`);
+            
+            document.getElementById('btn-size-small').classList.remove('selected');
+            document.getElementById('btn-size-medium').classList.remove('selected');
+            document.getElementById('btn-size-large').classList.remove('selected');
+            document.getElementById(`btn-size-${size}`).classList.add('selected');
+            
+            if(save) {
+                appData.settings.fontSize = size;
+                localStorage.setItem('gachaSimulatorData', JSON.stringify(appData));
+            }
+        }
+
+        function toggleParseSection() {
+            const body = document.getElementById('parseBody');
+            const header = document.getElementById('parseHeader');
+            if (body.style.maxHeight === '0px' || !body.style.maxHeight) {
+                body.style.maxHeight = '200px';
+                header.innerText = '▼ 智慧文字解析';
+            } else {
+                body.style.maxHeight = '0px';
+                header.innerText = '▶ 智慧文字解析';
+            }
+        }
+
+        /* === 業務計算邏輯 === */
+        function calcBalancedValue(prob, cost, totalItemsCount) {
+            if (prob > 0 && cost > 0 && totalItemsCount > 0) {
+                return Math.round((cost / (prob / 100)) / totalItemsCount);
+            }
+            return 0;
+        }
+
+        function parseItems() {
+            const text = document.getElementById('inputText').value.trim();
+            if (!text) return alert("請先貼上文字！");
+
+            const cost = parseFloat(document.getElementById('costPerDraw').value) || 0;
+
+            const regex = /([\s\S]*?)(\d+\.\d+%)/g;
+            let match;
+            let matchesList = [];
+
+            while ((match = regex.exec(text)) !== null) {
+                if(match[1].trim() !== "") matchesList.push(match);
+            }
+
+            if (matchesList.length === 0) {
+                return alert("無法解析格式！請確認貼上的文字包含官方帶有小數點的機率（如 0.55%）。");
+            }
+
+            let N = matchesList.length;
+            let tempTotalProb = matchesList.reduce((sum, m) => sum + parseFloat(m[2].replace('%', '')), 0);
+            if (tempTotalProb < 100) N += 1; 
+
+            matchesList.forEach(m => {
+                let name = m[1].trim();
+                let prob = parseFloat(m[2].replace('%', ''));
+                let value = isAutoFill ? calcBalancedValue(prob, cost, N) : 0;
+                parsedItems.push({ name, probStr: m[2], prob, value });
+            });
+
+            let currentTotal = parsedItems.reduce((sum, item) => sum + item.prob, 0);
+            if (currentTotal < 100) {
+                let remain = (100 - currentTotal).toFixed(2);
+                parsedItems.push({ name: "⚠️ 未中獎 (機率不足補償)", probStr: remain + "%", prob: parseFloat(remain), value: 0 });
+            }
+
+            document.getElementById('parseBody').style.maxHeight = '0px';
+            document.getElementById('parseHeader').innerText = '▶ 智慧文字解析';
+            document.getElementById('inputText').value = '';
+
+            renderSetupList();
+            resetSim();
+            updateAIReview();
+            saveData();
+        }
+
+        function addManualItem() {
+            const name = document.getElementById('manualName').value.trim();
+            const prob = parseFloat(document.getElementById('manualProb').value);
+            let value = parseFloat(document.getElementById('manualValue').value);
+            const cost = parseFloat(document.getElementById('costPerDraw').value) || 0;
+
+            if (!name || isNaN(prob) || prob < 0) return alert("請輸入正確的名稱與機率！");
+            if (isNaN(value)) value = 0;
+            if (isAutoFill && value === 0) value = calcBalancedValue(prob, cost, 1);
+
+            parsedItems.push({ name, probStr: prob + "%", prob, value });
+
+            document.getElementById('manualName').value = '';
+            document.getElementById('manualProb').value = '';
+            document.getElementById('manualValue').value = '';
+
+            renderSetupList();
+            resetSim();
+            updateAIReview();
+            saveData();
+        }
+
+        function updateItemData(index, field, val) {
+            if (field === 'name') parsedItems[index].name = val;
+            else if (field === 'prob') {
+                let p = parseFloat(val) || 0;
+                parsedItems[index].prob = p;
+                parsedItems[index].probStr = p + "%";
+            } 
+            else if (field === 'value') parsedItems[index].value = parseFloat(val) || 0;
+            
+            updateAIReview();
+            saveData();
+        }
+
+        function deleteItem(index) {
+            parsedItems.splice(index, 1);
+            renderSetupList();
+            resetSim();
+            updateAIReview();
+            saveData();
+        }
+
+        function renderSetupList() {
+            const container = document.getElementById('setupList');
+            container.innerHTML = "";
+
+            if (parsedItems.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:30px; color: var(--text-muted);">請先解析內容或手動新增道具</div>';
+                return;
+            }
+
+            parsedItems.forEach((item, index) => {
+                if(inventory[index] === undefined) inventory[index] = 0;
+                const row = document.createElement('div');
+                row.className = 'setup-item';
+                row.innerHTML = `
+                    <input type="text" class="list-input" value="${item.name}" onchange="updateItemData(${index}, 'name', this.value)">
+                    <input type="number" class="list-input" step="0.1" value="${item.prob}" onchange="updateItemData(${index}, 'prob', this.value)">
+                    <input type="number" class="list-input" value="${item.value}" onchange="updateItemData(${index}, 'value', this.value)">
+                    <div style="display:flex; justify-content:center;">
+                        <button class="action-btn" onclick="deleteItem(${index})">✖</button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        /* === 連續抽卡機制 === */
+        function startDraw(times) {
+            draw(times); 
+            drawTimer = setTimeout(() => {
+                drawIntervalObj = setInterval(() => draw(times), 80); 
+            }, 400); 
+        }
+
+        function stopDraw() {
+            clearTimeout(drawTimer);
+            clearInterval(drawIntervalObj);
+        }
+
+        function draw(times) {
+            if (parsedItems.length === 0) return;
+
+            const costPerDraw = parseFloat(document.getElementById('costPerDraw').value) || 0;
+
+            for (let i = 0; i < times; i++) {
+                let rand = Math.random() * 100;
+                let cumulative = 0;
+                for (let j = 0; j < parsedItems.length; j++) {
+                    cumulative += parsedItems[j].prob;
+                    if (rand <= cumulative) {
+                        inventory[j] = (inventory[j] || 0) + 1;
+                        drawStats.value += parsedItems[j].value;
+                        break;
+                    }
+                }
+            }
+
+            drawStats.totalDraws += times;
+            drawStats.cost += times * costPerDraw;
+            
+            updateStatsDisplay();
+            renderInventory();
+            saveData();
+        }
+
+        function updateStatsDisplay() {
+            const profit = drawStats.value - drawStats.cost;
+            document.getElementById('statDraws').innerText = drawStats.totalDraws.toLocaleString();
+            document.getElementById('statCost').innerText = drawStats.cost.toLocaleString();
+            document.getElementById('statValue').innerText = drawStats.value.toLocaleString();
+            
+            const profitEl = document.getElementById('statProfit');
+            profitEl.innerText = profit.toLocaleString();
+            
+            if (profit > 0) { profitEl.className = "stat-value text-green"; profitEl.innerText = "+" + profit.toLocaleString(); } 
+            else if (profit < 0) { profitEl.className = "stat-value text-red"; } 
+            else { profitEl.className = "stat-value"; }
         }
 
         function renderInventory() {
-            const theme = appData.themes[appData.currentThemeId];
-            let totalCost = theme.totalDraws * theme.cost;
-            let totalValue = 0;
+            const container = document.getElementById('inventoryList');
+            container.innerHTML = "";
+            if (drawStats.totalDraws === 0) return;
 
-            const fragment = document.createDocumentFragment();
+            parsedItems.forEach((item, index) => {
+                const count = inventory[index] || 0;
+                if (count > 0) {
+                    const row = document.createElement('div');
+                    row.className = 'inv-grid';
+                    const totalVal = count * item.value;
+                    const actualProb = (count / drawStats.totalDraws) * 100;
+                    
+                    let probStyle = "color: var(--text-muted);";
+                    let arrow = "";
+                    if (actualProb > item.prob) { probStyle = "color: #4CAF50;"; arrow = "▲"; } 
+                    else if (actualProb < item.prob) { probStyle = "color: #EF5350;"; arrow = "▼"; }
 
-            // 按機率從低到高排序（與左側獎池一致）
-            const sorted = [...theme.items].sort((a, b) => a.prob - b.prob);
-
-            sorted.forEach(item => {
-                const count = theme.inventory[item.id] || 0;
-                if (count <= 0) return;
-
-                const itemTotalValue = count * item.value;
-                totalValue += itemTotalValue;
-
-                const actualProbNum = theme.totalDraws > 0 ? (count / theme.totalDraws) * 100 : 0;
-                const actualProbStr = actualProbNum.toFixed(2);
-
-                let probColor = 'inherit';
-                if (theme.totalDraws > 0) {
-                    if (actualProbNum > item.prob * 1.05) probColor = 'var(--primary)';
-                    else if (actualProbNum < item.prob * 0.95) probColor = 'var(--danger)';
+                    row.innerHTML = `
+                        <span title="${item.name}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</span>
+                        <span>${count}</span>
+                        <span>${totalVal.toLocaleString()}</span>
+                        <span style="${probStyle}">${actualProb.toFixed(2)}% ${arrow}</span>
+                    `;
+                    container.appendChild(row);
                 }
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                <td>${esc(item.name)}</td>
-                <td>${count}</td>
-                <td>${itemTotalValue}</td>
-                <td style="font-weight:bold;color:${probColor};">${actualProbStr}%</td>
-            `;
-                fragment.appendChild(tr);
             });
+        }
 
-            // 未中獎列
-            const missCount = theme.inventory['miss_item'] || 0;
-            if (missCount > 0) {
-                const missProbNum = theme.totalDraws > 0 ? (missCount / theme.totalDraws) * 100 : 0;
-                const tr = document.createElement('tr');
-                tr.style.opacity = '0.6';
-                tr.innerHTML = `
-                <td>未中獎 (銘謝惠顧)</td>
-                <td>${missCount}</td>
-                <td>0</td>
-                <td style="font-weight:bold;">${missProbNum.toFixed(2)}%</td>
-            `;
-                fragment.appendChild(tr);
+        function resetSim() {
+            drawStats = { totalDraws: 0, cost: 0, value: 0 };
+            for (let k in inventory) inventory[k] = 0;
+            updateStatsDisplay();
+            renderInventory();
+            saveData();
+        }
+
+        function updateAIReview() {
+            const expectedEl = document.getElementById('aiExpected');
+            const reviewEl = document.getElementById('aiReviewText');
+
+            if (parsedItems.length === 0) {
+                expectedEl.innerText = "🤖 期望回報：等待數據";
+                reviewEl.innerText = "AI評論：等待分析中...";
+                return;
             }
 
-            const tbody = document.getElementById('inventoryList');
-            tbody.innerHTML = '';
-            tbody.appendChild(fragment);
+            let expectedValue = 0;
+            let hasInputValues = false;
+            let totalProb = 0;
 
-            document.getElementById('statCost').textContent = totalCost.toLocaleString();
-            document.getElementById('statValue').textContent = totalValue.toLocaleString();
-            document.getElementById('statDraws').textContent = theme.totalDraws.toLocaleString();
+            parsedItems.forEach(item => {
+                expectedValue += (item.prob / 100) * item.value;
+                totalProb += item.prob;
+                if (item.value > 0) hasInputValues = true;
+            });
 
-            // 顯示平均已抽（僅在使用過「抽到有為止」時顯示）
-            const avgBadge = document.getElementById('avgDrawsBadge');
-            if (theme.dugCount > 0) {
-                const avg = Math.round(theme.dugTotalDraws / theme.dugCount);
-                avgBadge.textContent = `平均 ${avg.toLocaleString()} 抽獲得`;
-                avgBadge.classList.add('avg-draws-badge');
+            const cost = parseFloat(document.getElementById('costPerDraw').value) || 0;
+            
+            expectedEl.innerText = `🤖 期望回報：${expectedValue.toFixed(2)} 元 / 抽`;
+
+            let comment = "";
+            if (totalProb > 100.1) {
+                comment = `⚠️ 警告：總機率(${totalProb.toFixed(2)}%)超過100%！請檢查道具設定。`;
+                reviewEl.style.color = "#FF0033";
             } else {
-                avgBadge.textContent = '';
-                avgBadge.className = '';
-            }
-
-            const profit = totalValue - totalCost;
-            const profitEl = document.getElementById('statProfit');
-            profitEl.textContent = profit.toLocaleString();
-            profitEl.className = 'stat-value ' + (profit >= 0 ? 'profit' : 'loss');
-        }
-
-        // =============================================
-        // 活動管理
-        // =============================================
-        function switchTheme() {
-            appData.currentThemeId = document.getElementById('themeSelect').value;
-            renderThemeData();
-            saveData();
-        }
-
-        function createNewTheme() {
-            const name = prompt('請輸入新活動名稱：', '新轉蛋活動');
-            if (name) {
-                const id = Date.now().toString();
-                appData.themes[id] = { id, name, cost: 0, items: [], inventory: {}, totalDraws: 0, dugCount: 0, dugTotalDraws: 0 };
-                appData.currentThemeId = id;
-                renderThemeSelect();
-                renderThemeData();
-                saveData(true);
-            }
-        }
-
-        function deleteCurrentTheme() {
-            if (Object.keys(appData.themes).length <= 1) { alert('至少需要保留一個活動！'); return; }
-            if (confirm('確定要刪除當前活動嗎？數據將會遺失。')) {
-                delete appData.themes[appData.currentThemeId];
-                appData.currentThemeId = Object.keys(appData.themes)[0];
-                renderThemeSelect();
-                renderThemeData();
-                saveData(true);
-            }
-        }
-
-        function updateThemeConfig() {
-            appData.themes[appData.currentThemeId].cost = parseFloat(document.getElementById('costPerDraw').value) || 0;
-            saveData();
-            renderInventory();
-        }
-
-        function addItem() {
-            const name = document.getElementById('itemName').value.trim();
-            const prob = parseFloat(document.getElementById('itemProb').value);
-            const value = parseFloat(document.getElementById('itemValue').value) || 0;
-            if (!name || isNaN(prob)) { alert('道具名稱與機率為必填！'); return; }
-
-            appData.themes[appData.currentThemeId].items.push({ id: genId(), name, prob, value });
-            document.getElementById('itemName').value = '';
-            document.getElementById('itemProb').value = '';
-            document.getElementById('itemValue').value = '';
-            renderThemeData();
-            saveData();
-        }
-
-        function clearPrizePool() {
-            if (confirm('確定要清空當前獎池的所有道具嗎？(抽獎紀錄與庫存也會一併重置)')) {
-                const theme = appData.themes[appData.currentThemeId];
-                theme.items = []; theme.inventory = {}; theme.totalDraws = 0;
-                renderThemeData();
-                saveData(true);
-            }
-        }
-
-        function deleteItemById(id) {
-            const theme = appData.themes[appData.currentThemeId];
-            const index = theme.items.findIndex(i => i.id === id);
-            if (index === -1) return;
-            theme.items.splice(index, 1);
-            delete theme.inventory[id];
-            renderThemeData();
-            saveData();
-        }
-
-        // =============================================
-        // 抽獎核心（預建累計機率陣列，大幅提升效能）
-        // =============================================
-
-        /**
-         * 建立抽獎用的累計機率表（只在獎池有變化時重建）
-         * @returns {{ cumulative: number[], items: object[], totalProb: number }}
-         */
-        function buildCumulativeTable(theme) {
-            let cumulative = 0;
-            const table = theme.items.map(item => {
-                cumulative += Math.max(0, item.prob);
-                return { item, cum: cumulative };
-            });
-            return { table, totalProb: cumulative };
-        }
-
-        /**
-         * 從累計機率表中隨機選取一個道具（使用二分搜尋）
-         * @returns {object|null} 選中的道具，null 表示未中獎
-         */
-        function pickItem(table, totalProb) {
-            const rand = Math.random() * totalProb;
-            // 二分搜尋找到第一個 cum > rand 的項目
-            let lo = 0, hi = table.length - 1;
-            while (lo < hi) {
-                const mid = (lo + hi) >> 1;
-                if (table[mid].cum <= rand) lo = mid + 1;
-                else hi = mid;
-            }
-            // 最終確認
-            if (lo < table.length && rand < table[lo].cum) {
-                return table[lo].item;
-            }
-            return null; // 未中獎（機率總和 < 100 時可能發生）
-        }
-
-        function drawGacha(times) {
-            const theme = appData.themes[appData.currentThemeId];
-            if (theme.items.length === 0) { alert('獎池為空！'); return; }
-
-            const { table, totalProb } = buildCumulativeTable(theme);
-            theme.totalDraws += times;
-
-            for (let i = 0; i < times; i++) {
-                const won = pickItem(table, totalProb);
-                if (won) {
-                    theme.inventory[won.id] = (theme.inventory[won.id] || 0) + 1;
+                reviewEl.style.color = ""; 
+                if (!hasInputValues) {
+                    comment = "AI評論：尚未輸入道具價值，目前的抽取為純娛樂性質，抽多少虧多少！📉";
+                } else if (cost === 0) {
+                    comment = "AI評論：單抽成本為0，屬於無本生意，請盡情享受白嫖的樂趣！🎉";
                 } else {
-                    theme.inventory['miss_item'] = (theme.inventory['miss_item'] || 0) + 1;
-                }
-            }
-
-            renderInventory();
-            saveData();
-
-        }
-
-        function drawUntilGot(targetId) {
-            const theme = appData.themes[appData.currentThemeId];
-            const targetItem = theme.items.find(i => i.id === targetId);
-
-            if (!targetItem) return;
-            if (targetItem.prob <= 0) { alert('這個道具機率是 0%，永遠抽不到啦！'); return; }
-
-            const { table, totalProb } = buildCumulativeTable(theme);
-            const maxDraws = 1_000_000;
-            let draws = 0, gotIt = false;
-
-            while (!gotIt && draws < maxDraws) {
-                draws++;
-                const won = pickItem(table, totalProb);
-                if (won) {
-                    theme.inventory[won.id] = (theme.inventory[won.id] || 0) + 1;
-                    if (won.id === targetId) gotIt = true;
-                } else {
-                    theme.inventory['miss_item'] = (theme.inventory['miss_item'] || 0) + 1;
-                }
-            }
-
-            theme.totalDraws += draws;
-
-            // 追蹤「抽到有為止」的統計
-            if (!theme.dugCount) theme.dugCount = 0;
-            if (!theme.dugTotalDraws) theme.dugTotalDraws = 0;
-            theme.dugCount++;
-            theme.dugTotalDraws += draws;
-
-            if (!gotIt) {
-                alert(`已連抽 ${maxDraws.toLocaleString()} 次都沒抽到，強制停止！這機率太可怕了...`);
-            }
-
-            renderInventory();
-            saveData();
-
-        }
-
-        function resetStats() {
-            if (confirm('確定要清空抽獎紀錄？(獎池會保留)')) {
-                const theme = appData.themes[appData.currentThemeId];
-                theme.inventory = {};
-                theme.totalDraws = 0;
-                theme.dugCount = 0;
-                theme.dugTotalDraws = 0;
-                renderInventory();
-                saveData(true);
-            }
-        }
-
-        // =============================================
-        // 資料匯出 / 匯入
-        // =============================================
-        function exportData() {
-            const dataStr = JSON.stringify(appData, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `gacha_data_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function importData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                try {
-                    const imported = JSON.parse(e.target.result);
-                    if (imported.themes) {
-                        appData = imported;
-                        saveData(true);
-                        init();
-                        closeSettings();
-                        alert('匯入成功！');
+                    let cpRatio = expectedValue / cost;
+                    if (cpRatio >= 0.9 && cpRatio <= 1.1) {
+                        comment = `AI評論：已啟用自動計算或達成數值平衡！依目前設定，抽獎總期望值與成本已達動態平衡。⚖️`;
+                    } else if (cpRatio >= 1.5) {
+                        comment = `AI評論：CP值極高！期望回報遠超成本(${cost})，這池太香了建議抽爆！🤑`;
+                    } else if (cpRatio > 1.1) {
+                        comment = `AI評論：CP值不錯！期望回報略高於成本(${cost})，值得小試身手。👍`;
+                    } else if (cpRatio >= 0.5) {
+                        comment = `AI評論：CP值偏低。期望回報低於成本(${cost})，請謹慎衡量自身荷包。🤔`;
                     } else {
-                        alert('格式錯誤！');
+                        comment = `AI評論：CP值極低！期望回報慘不忍睹，這根本是陷阱，快逃！🏃‍♂️💨`;
                     }
-                } catch (err) {
-                    alert('讀取失敗：' + err);
                 }
-            };
-            reader.readAsText(file);
-            event.target.value = '';
+            }
+            reviewEl.innerText = comment;
         }
-
-        // =============================================
-        // 啟動
-        // =============================================
-
-        window.addEventListener('load', init);
     </script>
-
 </body>
-
 </html>
