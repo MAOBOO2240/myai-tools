@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>倉儲管理器</title>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(to bottom left, #1A1C31, #10101B);
+      --card-bg: rgba(255, 255, 255, 0.07);
+      --text-color: #E2E8F0;
+      --border-color: rgba(255, 255, 255, 0.12);
+      --font-base: 13px; /* 預設字體大小：小 */
+      --button-radius: 12px;
+    }
+
+    [data-theme="light"] {
+      --bg-gradient: linear-gradient(to bottom left, #E2E8F0, #CBD5E1);
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --text-color: #0F172A;
+      --border-color: rgba(0, 0, 0, 0.15);
+    }
+
+    body.font-small { --font-base: 13px; }
+    body.font-medium { --font-base: 16px; }
+    body.font-large { --font-base: 19px; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: var(--font-base);
+      background: var(--bg-gradient);
+      color: var(--text-color);
+      min-height: 100vh;
+      padding: 24px 0;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    #glow-cursor {
+      position: fixed;
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(168, 199, 250, 0.04) 0%, rgba(255, 255, 255, 0) 60%);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: -1; 
+      border-radius: 50%;
+      transition: left 0.1s ease-out, top 0.1s ease-out;
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; }
+
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
+
+    main.app-container {
+      width: 66.66%;
+      min-width: 340px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1; 
+    }
+
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+
+    button {
+      font-size: 1.2em; 
+      padding: 0.3em 0.8em; 
+      line-height: 1.2; 
+      border: 1px solid var(--border-color);
+      border-radius: var(--button-radius);
+      background: #3B82F6;
+      color: #FFFFFF;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    button:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-group button.active {
+      background: #10B981;
+      border: 2px solid #FFFFFF;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.4), inset 0 0 2px rgba(0,0,0,0.1);
+      font-weight: 900;
+      transform: scale(1.06);
+    }
+
+    .btn-delete-icon {
+      background-color: #EF4444 !important; 
+      color: #FFFFFF !important; 
+      border: none;
+      border-radius: 8px; 
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .btn-delete-icon:hover { background-color: #DC2626 !important; transform: scale(1.15); }
+
+    section.card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--button-radius);
+      padding: 20px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(12px);
+    }
+
+    h2, h3 { margin-bottom: 12px; }
+
+    input, select {
+      padding: 8px 12px;
+      font-size: 1em;
+      border-radius: var(--button-radius);
+      border: 1px solid var(--border-color);
+      background: rgba(0,0,0,0.2);
+      color: var(--text-color);
+      outline: none;
+    }
+    input[type="time"] { font-family: inherit; }
+    
+    .edit-sku, .edit-qty {
+      width: 100%;
+      background: rgba(0,0,0,0.3);
+      border: 1px dashed var(--border-color);
+    }
+    .edit-sku:focus, .edit-qty:focus { background: rgba(255,255,255,0.1); border: 1px solid #3B82F6; }
+
+    .form-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+    
+    .row-container { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+    .row-container > .card { flex: 1; min-width: 320px; margin-bottom: 0; }
+
+    #toast-container {
+      position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .toast {
+      background: #1E293B; color: #F8FAFC; padding: 12px 20px;
+      border-radius: var(--button-radius); border-left: 5px solid #3B82F6;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3); animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal-content {
+      background: var(--bg-gradient); border: 1px solid var(--border-color);
+      padding: 24px; border-radius: var(--button-radius); width: 360px; max-width: 90%; text-align: center;
+    }
+
+    .btn-yes { background-color: #A8C7FA !important; color: #000 !important; }
+    .btn-no { background-color: #FF0033 !important; color: #FFF !important; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid var(--border-color); padding: 8px; text-align: left; vertical-align: middle; }
+    th { background: rgba(0,0,0,0.15); }
+    .center-col { text-align: center; }
+    .gear-btn { font-size: 1.5em; background: transparent; border: none; box-shadow: none; }
+  </style>
+</head>
+<body class="font-small">
+  <div id="glow-cursor"></div>
+
+  <main class="app-container">
+    <header>
+      <h1>📦 倉儲管理器</h1>
+      <button class="gear-btn" id="gear-btn" title="設定">⚙️</button>
+    </header>
+
+    <div class="row-container">
+      <section class="card">
+        <h3>⏱️ 生產完成時間計算器</h3>
+        <div class="form-group">
+          <span>總需求:</span>
+          <input type="number" id="calc-total" style="width: 80px;">
+          <span>一次生產:</span>
+          <input type="number" id="calc-batch" style="width: 80px;">
+          <span>花費時間 分:</span>
+          <input type="number" id="calc-min" style="width: 60px;">
+          <span>秒:</span>
+          <input type="number" id="calc-sec" style="width: 60px;">
+        </div>
+        <div class="form-group">
+          <span>上班時間:</span>
+          <input type="time" id="calc-start" style="width: 140px;">
+          <span>下班時間:</span>
+          <input type="time" id="calc-end" style="width: 140px;">
+          <button id="start-calc-btn" style="background:#6366F1;">🧮 計算完成時間</button>
+        </div>
+        <input type="text" id="calc-result" readonly placeholder="🏁 預估完成時間將顯示於此" style="margin-top:10px; font-weight:bold; color:#F59E0B; width: 100%; background: rgba(0,0,0,0.3);">
+      </section>
+
+      <section class="card">
+        <h3>📁 專案管理</h3>
+        <div class="form-group">
+          <input type="text" id="new-project-name" placeholder="請輸入新專案名稱">
+          <button id="add-project-btn" style="background:#10B981;">➕ 新增專案</button>
+          <button id="delete-project-btn" style="background:#EF4444; display:none;">🗑️ 刪除目前專案</button>
+        </div>
+        <div class="form-group">
+          <span>選擇目前專案：</span>
+          <div id="project-selector" class="btn-group"></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="card">
+      <h3>🏭 品項庫存與進出貨</h3>
+      
+      <div class="form-group">
+        <input type="text" id="item-sku" placeholder="品項名稱 (&自動多選)" style="width: 180px;">
+        
+        <div style="display:inline-flex; align-items:center; gap:5px; margin-right: 10px; margin-left: 10px;">
+          <span id="qty-label">請輸入數量：</span>
+          <input type="number" id="action-qty" min="1" style="width: 80px;">
+        </div>
+
+        <button id="stock-in-btn" style="background:#059669;">📥 入庫</button>
+        <button id="stock-out-btn" style="background:#D97706;">📤 出庫</button>
+      </div>
+
+      <h4>目前專案品項庫存 (可直接修改數值，或勾選進行進出貨)</h4>
+      <table id="inventory-table">
+        <thead>
+          <tr>
+            <th class="center-col" style="width: 50px;"><input type="checkbox" id="select-all-cb" style="width:18px; height:18px;"></th>
+            <th>品項</th>
+            <th>目前庫存量</th>
+            <th class="center-col" style="width: 60px;">刪除</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h3 id="logs-title">🔍 進出貨歷史紀錄</h3>
+      <div class="form-group">
+        <input type="text" id="search-input" placeholder="搜尋動作、品項">
+        <div id="filter-type-group" class="btn-group">
+          <button class="active" data-type="ALL">全部</button>
+          <button data-type="IN">僅進貨</button>
+          <button data-type="OUT">僅出貨</button>
+        </div>
+      </div>
+      <table id="logs-table">
+        <thead>
+          <tr>
+            <th style="width: 16%;">時間</th>
+            <th style="width: 16%;">動作</th>
+            <th style="width: auto;">詳細內容</th>
+            <th class="center-col" style="width: 60px;">刪除</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- ⚙️ 設定對話框 -->
+  <div id="settings-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3>⚙️ 系統設定</h3>
+      <br>
+      <p>主題模式：</p>
+      <div class="form-group" style="justify-content:center;">
+        <div id="theme-group" class="btn-group">
+          <button data-theme="dark" class="active">深色模式</button>
+          <button data-theme="light">淺色模式</button>
+        </div>
+      </div>
+      <br>
+      <p>時間顯示格式：</p>
+      <div class="form-group" style="justify-content:center;">
+        <div id="timeformat-group" class="btn-group">
+          <button data-format="12">12小時制</button>
+          <button data-format="24" class="active">24小時制</button>
+        </div>
+      </div>
+      <br>
+      <p>文字顯示大小：</p>
+      <div class="form-group" style="justify-content:center;">
+        <div id="fontsize-group" class="btn-group">
+          <button data-size="small" class="active">小</button>
+          <button data-size="medium">中</button>
+          <button data-size="large">大</button>
+        </div>
+      </div>
+      <br>
+      <p>刪除時顯示確認警告：</p>
+      <div class="form-group" style="justify-content:center;">
+        <div id="confirm-toggle-group" class="btn-group">
+          <button data-skip="false" class="active">開啟</button>
+          <button data-skip="true">關閉</button>
+        </div>
+      </div>
+      <br>
+      <button id="close-settings-btn" style="background:#64748B;">關閉</button>
+    </div>
+  </div>
+
+  <!-- ❓ 確認對話框 -->
+  <div id="confirm-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3 id="confirm-message">確定執行此操作嗎？</h3>
+      <div style="margin: 15px 0;">
+        <label style="cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <input type="checkbox" id="skip-confirm-cb" style="width:16px; height:16px;"> 
+          勾選後以後不再提醒 (可在設定中改回)
+        </label>
+      </div>
+      <div class="form-group" style="justify-content:center; gap: 20px;">
+        <button id="confirm-yes-btn" class="btn-yes">是</button>
+        <button id="confirm-no-btn" class="btn-no">否</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script>
+    const TAIWAN_HOLIDAYS = [
+      "2026-01-01", "2026-02-16", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20",
+      "2026-02-28", "2026-04-03", "2026-04-04", "2026-04-05", "2026-06-19", "2026-09-25", "2026-10-10"
+    ];
+
+    let appData = {
+      projects: {}, 
+      projectCalcData: {}, 
+      currentProject: "",
+      logs: [], 
+      settings: { 
+        skipConfirm: false, 
+        timeFormat: '24', 
+        fontSize: 'small', // 預設大小為 小
+        actionQty: 1,
+        calc: { total: 5000, batch: 120, min: 0, sec: 0, start: "09:00", end: "17:00", result: "" }
+      }
+    };
+
+    let undoStack = []; // 儲存最多 50 筆狀態
+    let confirmCallback = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadDataFromStorage();
+      ensureDefaultProject();
+      initGlowCursor();
+      setupEventListeners();
+      applySettingsToUI();
+      renderAll();
+    });
+
+    // 儲存狀態以供 Ctrl+Z 返回使用
+    function saveState() {
+      undoStack.push(JSON.stringify(appData));
+      if(undoStack.length > 50) undoStack.shift();
+    }
+
+    function ensureDefaultProject() {
+      if (Object.keys(appData.projects).length === 0) {
+        appData.projects["預設專案"] = {};
+        appData.projectCalcData["預設專案"] = { total: 5000, batch: 120, min: 0, sec: 0, start: "09:00", end: "17:00", result: "" };
+        appData.currentProject = "預設專案";
+        saveData();
+      }
+    }
+
+    function initGlowCursor() {
+      const glow = document.getElementById('glow-cursor');
+      let mouseX = window.innerWidth / 2;
+      let mouseY = window.innerHeight / 2;
+      window.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+      function updateGlow() {
+        glow.style.left = mouseX + 'px';
+        glow.style.top = mouseY + 'px';
+        requestAnimationFrame(updateGlow);
+      }
+      requestAnimationFrame(updateGlow);
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerText = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3500);
+    }
+
+    function closeConfirm() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      confirmCallback = null;
+    }
+
+    function showConfirm(message, onYes) {
+      const isDeleteProject = message.includes('刪除專案');
+      
+      if (appData.settings.skipConfirm && !isDeleteProject) {
+        onYes();
+        return;
+      }
+      
+      document.getElementById('confirm-message').innerText = message;
+      document.getElementById('skip-confirm-cb').checked = false;
+      
+      const checkboxContainer = document.getElementById('skip-confirm-cb').parentElement.parentElement;
+      if (isDeleteProject) {
+        checkboxContainer.style.display = 'none';
+      } else {
+        checkboxContainer.style.display = 'block';
+      }
+
+      document.getElementById('confirm-modal').classList.remove('hidden');
+      confirmCallback = onYes;
+      document.getElementById('confirm-yes-btn').focus();
+    }
+
+    document.getElementById('confirm-yes-btn').addEventListener('click', () => {
+      if (document.getElementById('skip-confirm-cb').checked) {
+        appData.settings.skipConfirm = true;
+        saveData();
+        applySettingsToUI();
+      }
+      const cb = confirmCallback;
+      closeConfirm(); 
+      if (cb) cb();
+    });
+    
+    document.getElementById('confirm-no-btn').addEventListener('click', closeConfirm);
+
+    // 監聽 Ctrl+Z 與 Enter 鍵
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault(); // 攔截預設的返回行為
+        if (undoStack.length > 0) {
+          appData = JSON.parse(undoStack.pop());
+          saveData();
+          applySettingsToUI();
+          renderAll();
+          showToast("🔙 已返回上一步操作");
+        } else {
+          showToast("⚠️ 已經是最原始狀態，無法再返回");
+        }
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        const confirmModal = document.getElementById('confirm-modal');
+        if (!confirmModal.classList.contains('hidden')) {
+          e.preventDefault(); 
+          const msg = document.getElementById('confirm-message').innerText;
+          if (msg.includes('刪除專案')) return; 
+          document.getElementById('confirm-yes-btn').click();
+        }
+      }
+    });
+
+    function addLog(type, action, detail) {
+      const now = Date.now();
+      appData.logs.unshift({
+        id: now + Math.random().toString(36).substr(2, 5),
+        timeMs: now,
+        timestamp: new Date(now).toLocaleString('zh-TW', { hour12: false }),
+        project: appData.currentProject || "無專案",
+        type: type,
+        action: action,
+        detail: detail
+      });
+      saveData();
+      renderLogs();
+    }
+
+    function getFormattedTime(log) {
+      const is12 = appData.settings.timeFormat === '12';
+      let dateObj = log.timeMs ? new Date(log.timeMs) : new Date(log.timestamp);
+      if (!isNaN(dateObj.getTime())) {
+        return dateObj.toLocaleString('zh-TW', { hour12: is12 });
+      }
+      return log.timestamp;
+    }
+
+    function saveData() {
+      localStorage.setItem('warehouse_app_data', JSON.stringify(appData));
+    }
+
+    function loadDataFromStorage() {
+      const saved = localStorage.getItem('warehouse_app_data');
+      if (saved) {
+        try { 
+          const parsed = JSON.parse(saved);
+          if (parsed.projects) appData.projects = parsed.projects;
+          if (parsed.currentProject !== undefined) appData.currentProject = parsed.currentProject;
+          if (Array.isArray(parsed.logs)) appData.logs = parsed.logs;
+          if (parsed.settings) appData.settings = { ...appData.settings, ...parsed.settings };
+          
+          if (!appData.settings.fontSize) appData.settings.fontSize = 'small';
+          if (!appData.settings.actionQty) appData.settings.actionQty = 1;
+
+          // 轉換舊版設定並綁定專屬專案計算器
+          if (parsed.projectCalcData) {
+            appData.projectCalcData = parsed.projectCalcData;
+          } else {
+            appData.projectCalcData = {};
+            for (let p in appData.projects) {
+              appData.projectCalcData[p] = { ...(appData.settings.calc || { total: 5000, batch: 120, min: 0, sec: 0, start: "09:00", end: "17:00", result: "" }) };
+            }
+          }
+        } catch(e) {}
+      }
+    }
+
+    function updateSkuInputFromCheckboxes() {
+      const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+      if (checkedBoxes.length > 0) {
+        const skus = Array.from(checkedBoxes).map(cb => cb.dataset.sku);
+        document.getElementById('item-sku').value = skus.join(' & ');
+      } else {
+        document.getElementById('item-sku').value = '';
+      }
+    }
+
+    function setupEventListeners() {
+      const addProjectFn = () => {
+        const name = document.getElementById('new-project-name').value.trim();
+        if (!name) return showToast("⚠️ 請輸入專案名稱！");
+        if (appData.projects[name]) return showToast("⚠️ 專案名稱已存在！");
+        
+        saveState(); // 紀錄返回點
+        appData.projects[name] = {};
+        appData.projectCalcData[name] = { total: 5000, batch: 120, min: 0, sec: 0, start: "09:00", end: "17:00", result: "" };
+        appData.currentProject = name;
+        document.getElementById('new-project-name').value = "";
+        saveData();
+        renderAll();
+        showToast(`✅ 已新增專案：${name}`);
+      };
+
+      document.getElementById('add-project-btn').onclick = addProjectFn;
+
+      document.getElementById('new-project-name').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addProjectFn();
+        }
+      });
+
+      document.getElementById('delete-project-btn').onclick = () => {
+        if (!appData.currentProject) return;
+        const projectToDelete = appData.currentProject;
+        showConfirm(`確定要刪除專案「${projectToDelete}」嗎？包含的資料將全部清除！`, () => {
+          
+          saveState(); // 紀錄返回點
+          delete appData.projects[projectToDelete];
+          delete appData.projectCalcData[projectToDelete];
+          appData.logs = appData.logs.filter(log => log.project !== projectToDelete);
+
+          const keys = Object.keys(appData.projects);
+          if (keys.length === 0) {
+            appData.projects["預設專案"] = {};
+            appData.projectCalcData["預設專案"] = { total: 5000, batch: 120, min: 0, sec: 0, start: "09:00", end: "17:00", result: "" };
+            appData.currentProject = "預設專案";
+            showToast("🗑️ 專案已刪除！已自動建立預設專案。");
+          } else {
+            appData.currentProject = keys[0];
+            showToast("🗑️ 專案已刪除！");
+          }
+          saveData();
+          renderAll();
+        });
+      };
+
+      document.getElementById('start-calc-btn').onclick = calculateProductionCompletionTime;
+
+      ['calc-total', 'calc-batch', 'calc-min', 'calc-sec', 'calc-start', 'calc-end'].forEach(id => {
+        document.getElementById(id).addEventListener('input', (e) => {
+          if (appData.currentProject && appData.projectCalcData[appData.currentProject]) {
+            appData.projectCalcData[appData.currentProject][id.replace('calc-', '')] = e.target.value;
+            saveData();
+          }
+        });
+      });
+
+      document.getElementById('action-qty').addEventListener('input', (e) => {
+        appData.settings.actionQty = e.target.value;
+        saveData();
+      });
+
+      const selectAllCb = document.getElementById('select-all-cb');
+      if (selectAllCb) {
+        selectAllCb.addEventListener('change', (e) => {
+          document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = e.target.checked);
+          updateSkuInputFromCheckboxes();
+        });
+      }
+
+      document.getElementById('stock-in-btn').onclick = () => handleStockChange('IN');
+      document.getElementById('stock-out-btn').onclick = () => handleStockChange('OUT');
+
+      document.getElementById('search-input').oninput = renderLogs;
+      setupButtonGroup('filter-type-group', () => renderLogs());
+
+      document.getElementById('gear-btn').onclick = () => document.getElementById('settings-modal').classList.remove('hidden');
+      document.getElementById('close-settings-btn').onclick = () => document.getElementById('settings-modal').classList.add('hidden');
+
+      setupButtonGroup('theme-group', (btn) => {
+        const theme = btn.getAttribute('data-theme');
+        if (theme === 'light') document.body.setAttribute('data-theme', 'light');
+        else document.body.removeAttribute('data-theme');
+      });
+
+      setupButtonGroup('timeformat-group', (btn) => {
+        appData.settings.timeFormat = btn.dataset.format;
+        saveData();
+        renderLogs(); 
+      });
+
+      setupButtonGroup('fontsize-group', (btn) => {
+        const size = btn.getAttribute('data-size');
+        appData.settings.fontSize = size;
+        document.body.className = `font-${size}`;
+        saveData();
+      });
+
+      setupButtonGroup('confirm-toggle-group', (btn) => {
+        appData.settings.skipConfirm = btn.dataset.skip === 'true';
+        saveData();
+      });
+
+      document.getElementById('inventory-table').addEventListener('change', (e) => {
+        if (e.target.classList.contains('item-checkbox')) {
+          updateSkuInputFromCheckboxes();
+        }
+
+        if (e.target.classList.contains('edit-qty')) {
+          let newQty = parseInt(e.target.value, 10) || 0;
+          let sku = e.target.dataset.sku;
+          let oldQty = appData.projects[appData.currentProject][sku] || 0;
+          let diff = newQty - oldQty;
+          if (diff !== 0) {
+            saveState(); // 紀錄返回點
+            appData.projects[appData.currentProject][sku] = newQty;
+            let type = diff > 0 ? 'IN' : 'OUT';
+            let action = diff > 0 ? '📥 入庫' : '📤 出庫';
+            addLog(type, action, `品項: ${sku}, 直接修改數量: ${diff > 0 ? '+' : ''}${diff}，目前總數: ${newQty}`);
+            saveData();
+          }
+        }
+        if (e.target.classList.contains('edit-sku')) {
+          let oldSku = e.target.dataset.oldSku;
+          let newSku = e.target.value.trim();
+          if (newSku && newSku !== oldSku) {
+            saveState(); // 紀錄返回點
+            appData.projects[appData.currentProject][newSku] = appData.projects[appData.currentProject][oldSku];
+            delete appData.projects[appData.currentProject][oldSku];
+            saveData();
+            renderInventory(); 
+          } else if (!newSku) {
+             e.target.value = oldSku; 
+          }
+        }
+      });
+
+      document.getElementById('inventory-table').addEventListener('click', (e) => {
+        let btn = e.target.closest('.delete-inventory');
+        if (btn) {
+          let sku = btn.dataset.sku;
+          showConfirm(`確定要刪除品項 [${sku}] 嗎？`, () => {
+            saveState(); // 紀錄返回點
+            delete appData.projects[appData.currentProject][sku];
+            addLog('INFO', '🗑️ 刪除品項', `品項: ${sku} 已被刪除`);
+            saveData();
+            renderInventory();
+            showToast("🗑️ 品項已刪除！");
+          });
+        }
+      });
+
+      document.getElementById('logs-table').addEventListener('click', (e) => {
+        let btn = e.target.closest('.delete-log');
+        if (btn) {
+          let id = btn.dataset.id;
+          showConfirm(`確定要刪除此紀錄嗎？`, () => {
+            saveState(); // 紀錄返回點
+            appData.logs = appData.logs.filter(log => log.id !== id);
+            saveData();
+            renderLogs();
+          });
+        }
+      });
+    }
+
+    function applySettingsToUI() {
+      document.body.className = `font-${appData.settings.fontSize || 'small'}`;
+
+      document.querySelectorAll('#fontsize-group button').forEach(b => {
+        if (b.dataset.size === (appData.settings.fontSize || 'small')) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+
+      document.querySelectorAll('#timeformat-group button').forEach(b => {
+        if (b.dataset.format === (appData.settings.timeFormat || '24')) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+
+      document.querySelectorAll('#confirm-toggle-group button').forEach(b => {
+        if (b.dataset.skip === String(appData.settings.skipConfirm)) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+
+      document.getElementById('action-qty').value = appData.settings.actionQty || 1;
+    }
+
+    function loadCalcForCurrentProject() {
+      if (!appData.currentProject) return;
+      if (!appData.projectCalcData) appData.projectCalcData = {};
+      if (!appData.projectCalcData[appData.currentProject]) {
+        appData.projectCalcData[appData.currentProject] = { total: 5000, batch: 120, min: 0, sec: 0, start: "09:00", end: "17:00", result: "" };
+      }
+      const data = appData.projectCalcData[appData.currentProject];
+      document.getElementById('calc-total').value = data.total || 5000;
+      document.getElementById('calc-batch').value = data.batch || 120;
+      document.getElementById('calc-min').value = data.min || 0;
+      document.getElementById('calc-sec').value = data.sec || 0;
+      document.getElementById('calc-start').value = data.start || "09:00";
+      document.getElementById('calc-end').value = data.end || "17:00";
+      document.getElementById('calc-result').value = data.result || "";
+    }
+
+    function setupButtonGroup(groupId, callback) {
+      const group = document.getElementById(groupId);
+      if (!group) return;
+      const buttons = group.querySelectorAll('button');
+      buttons.forEach(btn => {
+        btn.onclick = () => {
+          buttons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          if (callback) callback(btn);
+        };
+      });
+    }
+
+    function handleStockChange(type) {
+      if (!appData.currentProject) return showToast("⚠️ 請先選擇或新增專案！");
+      if (!appData.projects[appData.currentProject]) appData.projects[appData.currentProject] = {};
+      
+      const actionName = type === 'IN' ? '📥 入庫' : '📤 出庫';
+      const projItems = appData.projects[appData.currentProject];
+
+      const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+      let targetSKUs = [];
+      
+      if (checkedBoxes.length > 0) {
+        checkedBoxes.forEach(cb => targetSKUs.push(cb.dataset.sku));
+        
+        targetSKUs.forEach(sku => {
+          const currentQty = projItems[sku] || 0;
+          const deltaQty = currentQty; 
+          if (deltaQty === 0) return; // 數量若為0，不執行且不紀錄
+
+          saveState(); // 紀錄返回點
+          const newQty = (type === 'IN') ? currentQty + deltaQty : currentQty - deltaQty;
+          projItems[sku] = newQty;
+          
+          let detailText = `品項: ${sku}, 數量: ${type === 'IN'? '+' : '-'}${deltaQty} (依當前庫存)`;
+          detailText += `，目前總數: ${newQty}`;
+          addLog(type, actionName, detailText);
+        });
+
+      } else {
+        const qty = parseInt(document.getElementById('action-qty').value, 10);
+        if (isNaN(qty) || qty < 0) return showToast("⚠️ 請輸入有效的數量！");
+        if (qty === 0) return; // 數量若為0，不執行且不紀錄
+
+        const sku = document.getElementById('item-sku').value.trim();
+        if (!sku) return showToast("⚠️ 請輸入品項，或在下方表格中勾選！");
+        targetSKUs.push(sku);
+
+        const currentQty = projItems[sku] || 0;
+        if (type === 'OUT' && currentQty < qty) {
+          return showToast(`❌ 出庫失敗，品項 [${sku}] 庫存量不足！`);
+        }
+
+        saveState(); // 紀錄返回點
+        const newQty = (type === 'IN') ? currentQty + qty : currentQty - qty;
+        projItems[sku] = newQty;
+        
+        let detailText = `品項: ${sku}, 數量: ${type === 'IN'? '+' : '-'}${qty}`;
+        detailText += `，目前總數: ${newQty}`;
+        addLog(type, actionName, detailText);
+      }
+
+      if (document.getElementById('select-all-cb')) document.getElementById('select-all-cb').checked = false;
+      document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = false);
+      document.getElementById('item-sku').value = '';
+      
+      saveData();
+      renderInventory();
+      if(targetSKUs.length > 0) showToast(`${actionName} 成功！更新了 ${targetSKUs.length} 個品項`);
+    }
+
+    function calculateProductionCompletionTime() {
+      const totalReq = parseFloat(document.getElementById('calc-total').value || 5000);
+      const batchSize = parseFloat(document.getElementById('calc-batch').value || 120);
+      const m = parseFloat(document.getElementById('calc-min').value || 0);
+      const s = parseFloat(document.getElementById('calc-sec').value || 0);
+      const startStr = document.getElementById('calc-start').value || "09:00";
+      const endStr = document.getElementById('calc-end').value || "17:00";
+
+      if (totalReq <= 0) return showToast("⚠️ 請輸入正確的總需求！");
+      if (batchSize <= 0) return showToast("⚠️ 一次生產數量需大於0！");
+      if (m === 0 && s === 0) return showToast("⚠️ 請輸入花費時間！");
+
+      let [startH, startM] = startStr.split(':').map(Number);
+      let [endH, endM] = endStr.split(':').map(Number);
+      
+      const dailyWorkMinutes = (endH * 60 + endM) - (startH * 60 + startM);
+      if (dailyWorkMinutes <= 0) return showToast("⚠️ 下班時間必須晚於上班時間！");
+
+      const timePerItemMinutes = (m + (s / 60)) / batchSize;
+      let remainingMinutes = totalReq * timePerItemMinutes;
+
+      let currentTime = new Date();
+      
+      while (remainingMinutes > 0) {
+        if (isWorkDay(currentTime)) {
+          let workStartToday = new Date(currentTime);
+          workStartToday.setHours(startH, startM, 0, 0);
+
+          let workEndToday = new Date(currentTime);
+          workEndToday.setHours(endH, endM, 0, 0);
+
+          if (currentTime < workStartToday) {
+            currentTime = workStartToday;
+          }
+
+          if (currentTime < workEndToday) {
+            let availableMinutesToday = (workEndToday - currentTime) / (1000 * 60);
+
+            if (remainingMinutes <= availableMinutesToday) {
+              currentTime = new Date(currentTime.getTime() + remainingMinutes * 60 * 1000);
+              remainingMinutes = 0;
+              break;
+            } else {
+              remainingMinutes -= availableMinutesToday;
+              currentTime = workEndToday;
+            }
+          }
+        }
+        currentTime.setDate(currentTime.getDate() + 1);
+        currentTime.setHours(startH, startM, 0, 0);
+      }
+      
+      const is12 = appData.settings.timeFormat === '12';
+      const resultStr = `🏁 預估完成時間：${currentTime.toLocaleString('zh-TW', { hour12: is12 })}`;
+      
+      document.getElementById('calc-result').value = resultStr;
+      
+      appData.projectCalcData[appData.currentProject].result = resultStr;
+      saveData();
+    }
+
+    function isWorkDay(date) {
+      const day = date.getDay();
+      if (day === 0 || day === 6) return false;
+      const dateStr = date.toISOString().split('T')[0];
+      if (TAIWAN_HOLIDAYS.includes(dateStr)) return false;
+      return true;
+    }
+
+    function renderAll() {
+      renderProjectSelector();
+      loadCalcForCurrentProject();
+      renderInventory();
+      renderLogs();
+    }
+
+    function renderProjectSelector() {
+      const container = document.getElementById('project-selector');
+      const delBtn = document.getElementById('delete-project-btn');
+      container.innerHTML = "";
+      const projects = Object.keys(appData.projects);
+
+      if (projects.length === 0) {
+        container.innerHTML = "<span>目前尚無專案</span>";
+        delBtn.style.display = 'none';
+        document.getElementById('logs-title').innerText = "🔍 進出貨歷史紀錄 (無專案)";
+        return;
+      }
+
+      delBtn.style.display = 'inline-flex';
+      document.getElementById('logs-title').innerText = `🔍 進出貨歷史紀錄 (${appData.currentProject})`;
+
+      projects.forEach(name => {
+        const btn = document.createElement('button');
+        btn.innerText = `📁 ${name}`;
+        if (name === appData.currentProject) btn.classList.add('active');
+        btn.onclick = () => {
+          appData.currentProject = name;
+          saveData();
+          renderAll();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function renderInventory() {
+      const tbody = document.querySelector('#inventory-table tbody');
+      tbody.innerHTML = "";
+      if (document.getElementById('select-all-cb')) document.getElementById('select-all-cb').checked = false;
+
+      if (!appData.currentProject || !appData.projects[appData.currentProject]) {
+        tbody.innerHTML = "<tr><td colspan='4'>無專案資料</td></tr>";
+        return;
+      }
+
+      const items = appData.projects[appData.currentProject];
+      const skuList = Object.keys(items);
+
+      if (skuList.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4'>專案內尚無品項庫存紀錄</td></tr>";
+        return;
+      }
+
+      skuList.forEach(sku => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="center-col"><input type="checkbox" class="item-checkbox" data-sku="${sku}" style="width:18px; height:18px;"></td>
+          <td><input type="text" class="edit-sku" data-old-sku="${sku}" value="${sku}"></td>
+          <td><input type="number" class="edit-qty" data-sku="${sku}" value="${items[sku]}"></td>
+          <td class="center-col"><button class="btn-delete-icon delete-inventory" data-sku="${sku}">✖</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderLogs() {
+      const tbody = document.querySelector('#logs-table tbody');
+      tbody.innerHTML = "";
+
+      const query = document.getElementById('search-input').value.toLowerCase().trim();
+      const activeFilterBtn = document.querySelector('#filter-type-group button.active');
+      const filterType = activeFilterBtn ? activeFilterBtn.getAttribute('data-type') : 'ALL';
+
+      let filteredLogs = appData.logs.filter(log => log.project === appData.currentProject || !appData.currentProject);
+
+      filteredLogs = filteredLogs.filter(log => {
+        const matchQuery = (log.action && log.action.toLowerCase().includes(query)) || (log.detail && log.detail.toLowerCase().includes(query));
+        const matchType = (filterType === 'ALL') || (log.type === filterType);
+        return matchQuery && matchType;
+      });
+
+      if (filteredLogs.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4'>無符合條件的歷史紀錄</td></tr>";
+        return;
+      }
+
+      filteredLogs.forEach(log => {
+        const tr = document.createElement('tr');
+        const displayTime = getFormattedTime(log);
+        tr.innerHTML = `
+          <td>${displayTime}</td>
+          <td>${log.action}</td>
+          <td>${log.detail}</td>
+          <td class="center-col"><button class="btn-delete-icon delete-log" data-id="${log.id}">✖</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  </script>
+</body>
+</html>
