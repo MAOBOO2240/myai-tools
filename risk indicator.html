@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark" data-size="medium">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>股市估值指標與危險係數分析</title>
+<style>
+  /* 全域變數與主題設定 */
+  :root {
+    --bg-gradient: linear-gradient(225deg, #1A1C31, #10101B);
+    --card-bg: rgba(30, 33, 58, 0.75);
+    --card-border: rgba(255, 255, 255, 0.1);
+    --text-primary: #FFFFFF;
+    --text-secondary: #B0B5D0;
+    --button-bg: #2D325A;
+    --button-active: #4F5699;
+    --font-base: 16px;
+    --radius-g2: 24px; /* G2連續曲率近似值 */
+  }
+
+  [data-theme="light"] {
+    --bg-gradient: linear-gradient(225deg, #E6E9F0, #EEF1F5);
+    --card-bg: rgba(255, 255, 255, 0.85);
+    --card-border: rgba(0, 0, 0, 0.08);
+    --text-primary: #1F2438;
+    --text-secondary: #5A6282;
+    --button-bg: #DCE1ED;
+    --button-active: #9AA6CD;
+  }
+
+  [data-size="small"] { --font-base: 14px; }
+  [data-size="medium"] { --font-base: 16px; }
+  [data-size="large"] { --font-base: 19px; }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  body {
+    min-height: 100vh;
+    font-size: var(--font-base);
+    background: var(--bg-gradient);
+    color: var(--text-primary);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px;
+    overflow-x: hidden;
+    position: relative;
+    transition: background 0.3s ease;
+  }
+
+  /* 滑鼠動態漸層效果 */
+  .interactive-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(99, 102, 241, 0.15), transparent 80%);
+  }
+
+  /* 圓角暗色系滾動條 */
+  ::-webkit-scrollbar {
+    width: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #10101B;
+    border-radius: 12px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2D325A;
+    border-radius: 12px;
+    border: 3px solid #10101B;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #4F5699;
+  }
+
+  /* 螢幕 2/3 寬度容器 */
+  .main-container {
+    width: 66vw;
+    min-width: 340px;
+    max-width: 1200px;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    position: relative;
+  }
+
+  /* 右上角齒輪按鈕 */
+  .gear-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--button-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-g2);
+    padding: 0.66em;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .gear-btn:hover {
+    transform: rotate(30deg);
+    background: var(--button-active);
+  }
+
+  /* G2 連續曲率按鈕規範 */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    border-radius: var(--radius-g2);
+    padding: 0.66em 1.33em;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    color: var(--text-primary);
+    background: var(--button-bg);
+  }
+  .btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+  .btn.active {
+    background: #6366F1;
+    color: #FFFFFF;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
+  }
+
+  /* 是 / 否 按鈕樣式 */
+  .btn-yes {
+    background-color: #A8C7FA !important;
+    color: #10101B !important;
+  }
+  .btn-no {
+    background-color: #FF0033 !important;
+    color: #FFFFFF !important;
+  }
+
+  /* 卡片樣式 (語意化標籤) */
+  .macro-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-g2);
+    padding: 24px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  }
+  .macro-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .macro-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+  }
+  .macro-desc {
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* 指數卡片網格 */
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  .indicator-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-g2);
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  .indicator-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  .danger-badge {
+    padding: 0.4em 0.8em;
+    border-radius: var(--radius-g2);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #FFF;
+  }
+  .indicator-val {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin: 8px 0;
+  }
+  .indicator-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+
+  /* 設定彈窗 */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+  }
+  .modal-content {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-g2);
+    padding: 28px;
+    width: 360px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .modal-section {
+    margin-bottom: 24px;
+  }
+  .modal-section h4 {
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+  }
+  .btn-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* Toast 提示框 */
+  #toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 1000;
+  }
+  .toast {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text-primary);
+    padding: 16px 24px;
+    border-radius: var(--radius-g2);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    backdrop-filter: blur(16px);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: opacity 0.3s ease;
+  }
+  @keyframes slideIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 提示框容器 -->
+<div id="toast-container"></div>
+
+<div class="interactive-bg" id="bgEffect"></div>
+
+<main class="main-container">
+  <!-- 右上角設定按鈕 -->
+  <button class="gear-btn" id="gearBtn" title="設定">⚙️</button>
+
+  <!-- 置頂大局判斷 -->
+  <section class="macro-card" id="macroContainer"></section>
+
+  <!-- 各指標危險係數卡片 -->
+  <section class="grid-container" id="indicatorsGrid"></section>
+
+  <!-- 數據重整理操作項（含是/否按鈕） -->
+  <section class="macro-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+      <span>💡 <b>確認更新數據庫？</b> (按下 ENTER 鍵等同於點擊「是」)</span>
+      <div class="btn-group">
+        <button class="btn btn-yes" id="btnYes">是 ⭕</button>
+        <button class="btn btn-no" id="btnNo">否 ❌</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- 設定彈窗 -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-content">
+    <h3 style="margin-bottom:20px;">⚙️ 偏好設定</h3>
+    <div class="modal-section">
+      <h4>主題模式</h4>
+      <div class="btn-group">
+        <button class="btn" id="btnThemeDark">🌙 深色</button>
+        <button class="btn" id="btnThemeLight">☀️ 淺色</button>
+      </div>
+    </div>
+    <div class="modal-section">
+      <h4>文字大小</h4>
+      <div class="btn-group">
+        <button class="btn" id="btnSizeS">小</button>
+        <button class="btn" id="btnSizeM">中</button>
+        <button class="btn" id="btnSizeL">大</button>
+      </div>
+    </div>
+    <button class="btn" id="closeModalBtn" style="width:100%; margin-top:12px;">關閉設定</button>
+  </div>
+</div>
+
+<script>
+// =========================================================================
+// 數值設定區 (繁體中文註解：可在此更改大局判斷與各項指標之數值)
+// =========================================================================
+
+// 1. 更改大局判斷的標題與敘述
+const MACRO_JUDGMENT = {
+  title: "⚠️ 目前整體大局判斷：高危險警戒 (綜合風險評級: 4 / 5)",
+  description: "當前美股市場處於「估值極高」與「無風險利率高企」的雙重壓測狀態。巴菲特指數與席勒本益比雙雙進入歷史極值區間，且股票風險溢價已降至接近零，代表股票相對債券不具備足夠的補償報酬。若企業未來盈利無法大幅超越預期，市場對利空抵抗力極低。",
+  badgeColor: "#FF0033"
+};
+
+// 2. 更改各項指標的名稱、數值與危險係數
+const INDICATORS_DATA = [
+  {
+    name: "巴菲特指數",
+    emoji: "📈",
+    value: "198%",
+    dangerLevel: "危險係數 90% (極高)",
+    dangerColor: "#FF0033",
+    desc: "股市總市值遠超過 GDP 規模，長期回報率預期嚴重受限。"
+  },
+  {
+    name: "席勒本益比",
+    emoji: "📊",
+    value: "35.8",
+    dangerLevel: "危險係數 82% (高)",
+    dangerColor: "#FF5500",
+    desc: "遠高於歷史均值 17.1，平滑十載盈餘後之估值依然極度高昂。"
+  },
+  {
+    name: "股票風險溢價",
+    emoji: "⚖️",
+    value: "0.7%",
+    dangerLevel: "危險係數 85% (高)",
+    dangerColor: "#FF0033",
+    desc: "股票盈餘殖利率與美債殖利率幾乎持平，風險回報性價比低下。"
+  },
+  {
+    name: "托賓 Q 比率",
+    emoji: "🏛️",
+    value: "1.72",
+    dangerLevel: "危險係數 75% (偏高)",
+    dangerColor: "#FFAA00",
+    desc: "企業總市值高於資產重置成本，呈現資本市場溢價膨脹。"
+  },
+  {
+    name: "前瞻本益比",
+    emoji: "🔮",
+    value: "21.8x",
+    dangerLevel: "危險係數 60% (中高)",
+    dangerColor: "#FFCC00",
+    desc: "高於歷史平均，受強勁的科技與 AI 獲利調升所支撐。"
+  },
+  {
+    name: "等權重 vs 市值加權",
+    emoji: "🎯",
+    value: "差額 6.2x",
+    dangerLevel: "危險係數 78% (偏高)",
+    dangerColor: "#FFAA00",
+    desc: "指數漲幅集中於少數巨頭，廣度不足隱含結構脆弱性。"
+  }
+];
+
+// =========================================================================
+// 畫面渲染與互動邏輯
+// =========================================================================
+
+// 渲染大局判斷
+function renderMacro() {
+  const container = document.getElementById('macroContainer');
+  container.innerHTML = `
+    <header class="macro-header">
+      <h2 class="macro-title">${MACRO_JUDGMENT.title}</h2>
+      <span class="danger-badge" style="background-color: ${MACRO_JUDGMENT.badgeColor}">即時監測</span>
+    </header>
+    <p class="macro-desc">${MACRO_JUDGMENT.description}</p>
+  `;
+}
+
+// 渲染指標卡片
+function renderIndicators() {
+  const grid = document.getElementById('indicatorsGrid');
+  grid.innerHTML = INDICATORS_DATA.map(item => `
+    <article class="indicator-card">
+      <div>
+        <header class="card-top">
+          <span class="indicator-name">${item.emoji} ${item.name}</span>
+          <span class="danger-badge" style="background-color: ${item.dangerColor}">${item.dangerLevel}</span>
+        </header>
+        <div class="indicator-val">${item.value}</div>
+      </div>
+      <footer class="indicator-desc">${item.desc}</footer>
+    </article>
+  `).join('');
+}
+
+// 優化1: 使用 requestAnimationFrame 處理滑鼠動態背景
+let ticking = false;
+document.addEventListener('mousemove', (e) => {
+  if (!ticking) {
+    window.requestAnimationFrame(() => {
+      const bg = document.getElementById('bgEffect');
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      bg.style.setProperty('--mouse-x', `${x}%`);
+      bg.style.setProperty('--mouse-y', `${y}%`);
+      ticking = false;
+    });
+    ticking = true;
+  }
+});
+
+// 設定彈窗邏輯
+const modal = document.getElementById('settingsModal');
+document.getElementById('gearBtn').addEventListener('click', () => modal.style.display = 'flex');
+document.getElementById('closeModalBtn').addEventListener('click', () => modal.style.display = 'none');
+modal.addEventListener('click', (e) => { if(e.target === modal) modal.style.display = 'none'; });
+
+// 主題切換邏輯
+const htmlEl = document.documentElement;
+const btnDark = document.getElementById('btnThemeDark');
+const btnLight = document.getElementById('btnThemeLight');
+function setTheme(theme) {
+  htmlEl.setAttribute('data-theme', theme);
+  btnDark.classList.toggle('active', theme === 'dark');
+  btnLight.classList.toggle('active', theme === 'light');
+}
+btnDark.addEventListener('click', () => setTheme('dark'));
+btnLight.addEventListener('click', () => setTheme('light'));
+setTheme('dark');
+
+// 字體大小切換邏輯
+const btnS = document.getElementById('btnSizeS');
+const btnM = document.getElementById('btnSizeM');
+const btnL = document.getElementById('btnSizeL');
+function setFontSize(size) {
+  htmlEl.setAttribute('data-size', size);
+  btnS.classList.toggle('active', size === 'small');
+  btnM.classList.toggle('active', size === 'medium');
+  btnL.classList.toggle('active', size === 'large');
+}
+btnS.addEventListener('click', () => setFontSize('small'));
+btnM.addEventListener('click', () => setFontSize('medium'));
+btnL.addEventListener('click', () => setFontSize('large'));
+setFontSize('medium');
+
+// 優化3: 網頁內建提示框 (Toast) 取代 alert
+function showToast(message, icon = '✨') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+  container.appendChild(toast);
+  
+  // 3秒後淡出移除
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// 是/否 按鈕與 Enter 鍵邏輯
+const btnYes = document.getElementById('btnYes');
+const btnNo = document.getElementById('btnNo');
+
+btnYes.addEventListener('click', () => showToast('已完成資料重整理。', '✅'));
+btnNo.addEventListener('click', () => showToast('已取消操作。', '❌'));
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    btnYes.click();
+  }
+});
+
+// 執行初始渲染
+renderMacro();
+renderIndicators();
+</script>
+</body>
+</html>
