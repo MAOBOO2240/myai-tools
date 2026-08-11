@@ -5,743 +5,657 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🍁 楓之谷送禮與比值計算機</title>
     <style>
+        /* ========================================== */
+        /* ⚙️ 核心設定與變數 (Values at the top)       */
+        /* ========================================== */
         :root {
-            /* 淺色模式變數 (純白底、黑字) */
-            --bg-color: #ffffff;
-            --panel-bg: #ffffff;
-            --panel-border: #e0e0e0;
-            --text-main: #000000;
-            --text-muted: #666666;
-            --input-bg: #f9f9f9;
-            --btn-primary: #000000;
-            --btn-primary-text: #ffffff;
-            --btn-primary-hover: #333333;
-            --btn-secondary: #f0f0f0;
-            --btn-secondary-hover: #e0e0e0;
-            --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            --profit-color: #00875A;
-            --loss-color: #DE350B;
+            /* 淺色模式漸層起點與終點 */
+            --bg-grad-start: #f0f4f8;
+            --bg-grad-end: #d9e2ec;
+            /* 面板背景與邊框 */
+            --panel-bg: rgba(255, 255, 255, 0.9);
+            --panel-border: #bcccdc;
+            /* 文字顏色 */
+            --text-main: #102a43;
+            --text-muted: #486581;
+            /* 輸入框背景 */
+            --input-bg: #ffffff;
         }
 
-        [data-theme="dark"] {
-            /* 深色模式變數 (深灰底、灰框、漸層白光) */
-            --bg-color: #151515;
-            --panel-bg: #282828;
-            --panel-border: rgba(255, 255, 255, 0.08);
+        body.dark-mode {
+            /* 深色模式漸層起點 (#1A1C31) 與終點 */
+            --bg-grad-start: #1A1C31; 
+            --bg-grad-end: #10101B;   
+            --panel-bg: rgba(30, 32, 50, 0.8);
+            --panel-border: rgba(255, 255, 255, 0.1);
             --text-main: #ffffff;
-            --text-muted: #aaaaaa;
-            --input-bg: #1c1c1c;
-            --btn-primary: #ffffff;
-            --btn-primary-text: #000000;
-            --btn-primary-hover: #cccccc;
-            --btn-secondary: #383838;
-            --btn-secondary-hover: #4a4a4a;
-            
-            /* 雙層 box-shadow 創造漸層白光效果 */
-            --shadow: 0 0 18px rgba(255, 255, 255, 0.12), inset 0 0 1px rgba(255, 255, 255, 0.25);
-            
-            --profit-color: #4CAF50;
-            --loss-color: #FF5252;
+            --text-muted: #9aa5b1;
+            --input-bg: #24273b;
         }
+
+        /* 控制文字顯示大小 (對應小、中、大) */
+        body.size-sm { --base-font: 16px; }
+        body.size-md { --base-font: 20px; }
+        body.size-lg { --base-font: 24px; }
 
         body {
             margin: 0;
-            padding: 20px;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background-color: var(--bg-color);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: var(--base-font);
+            background: linear-gradient(to bottom left, var(--bg-grad-start), var(--bg-grad-end));
             color: var(--text-main);
-            transition: background-color 0.4s ease, color 0.4s ease;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: flex-start;
+            padding: 20px 0;
+            transition: background 0.4s, color 0.4s;
+            overflow-x: hidden;
+            position: relative;
         }
 
-        body.text-sm { font-size: 14px; }
-        body.text-md { font-size: 16px; }
-        body.text-lg { font-size: 18px; }
+        /* 網頁佔據螢幕約三分之二 */
+        main {
+            width: 66.66vw;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            z-index: 10;
+        }
 
-        .container {
-            width: 100%;
-            max-width: 900px;
+        /* 左右排版 */
+        .layout-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
+            width: 100%;
         }
 
-        @media (max-width: 768px) {
-            .container { grid-template-columns: 1fr; }
+        @media (max-width: 1000px) {
+            .layout-grid { grid-template-columns: 1fr; }
+            main { width: 90vw; }
         }
 
-        .glass-panel {
+        section {
             background: var(--panel-bg);
             border: 1px solid var(--panel-border);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 24px;
-            box-shadow: var(--shadow);
-            transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
-            /* 讓左右面板等高 */
-            height: 100%;
-            box-sizing: border-box;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
             display: flex;
             flex-direction: column;
+            position: relative;
+            z-index: 10;
         }
 
-        h1, h2, h3 {
-            margin-top: 0;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .header-controls {
-            grid-column: 1 / -1;
+        header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 5px;
-        }
-
-        /* 頁籤切換區 */
-        .tabs-container {
-            grid-column: 1 / -1;
-            display: flex;
-            gap: 10px;
             margin-bottom: 10px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--panel-border);
-        }
-
-        .btn-text-icon {
-            background: var(--btn-secondary);
+            background: var(--panel-bg);
+            padding: 16px 24px;
+            border-radius: 16px;
             border: 1px solid var(--panel-border);
-            color: var(--text-main);
-            border-radius: 20px;
-            padding: 8px 16px;
-            cursor: pointer;
-            font-size: 1em;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            font-weight: 500;
-            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
-        }
-        .btn-text-icon:hover { 
-            background: var(--btn-secondary-hover); 
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 10;
         }
 
-        .btn-icon-only {
-            background: var(--btn-secondary);
-            border: 1px solid var(--panel-border);
-            color: var(--text-main);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            font-size: 1.2em;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
-        }
-        .btn-icon-only:hover { 
-            background: var(--btn-secondary-hover);
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
-        }
-
-        .form-group {
-            margin-bottom: 15px;
+        h1, h2 { margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px; }
+        
+        /* 網頁內建提示框 Toast */
+        #toast-container {
+            position: fixed;
+            bottom: 30px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 10px;
+        }
+        .toast {
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 9999px;
+            font-size: calc(var(--base-font) * 1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: fadeInOut 3s forwards;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(20px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
         }
 
-        /* 手續費單選框排版 */
-        .radio-group {
-            display: flex;
-            flex-direction: row;
-            gap: 15px;
-            margin-top: 4px;
-        }
-        .radio-group label {
-            font-weight: normal;
-            font-size: 0.95em;
+        /* 垂直捲軸採用圓角設計 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(136, 136, 136, 0.5); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(136, 136, 136, 0.8); }
+
+        /* 所有按鈕設計 (邊緣 G2 連續曲率近似、字體佔 2/3 高度) */
+        button {
+            border: none;
             cursor: pointer;
-            display: flex;
+            border-radius: 9999px; 
+            font-size: calc(var(--base-font) * 1.2);
+            height: 1.5em; /* 高度為字體的 1.5 倍，故文字佔 2/3 */
+            line-height: 1.5em;
+            padding: 0 1.2em;
+            font-weight: bold;
+            display: inline-flex;
             align-items: center;
-            gap: 4px;
-        }
-
-        label {
-            font-weight: 500;
-            display: flex;
-            align-items: center;
+            justify-content: center;
             gap: 6px;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            color: #ffffff;
+            position: relative;
+            z-index: 10;
+            font-family: inherit;
+            white-space: nowrap; /* 按鈕內文字不換行 */
+            flex-shrink: 0;      /* 防止按鈕被過度擠壓 */
         }
+        button:hover { filter: brightness(1.15) contrast(1.1); transform: scale(1.02); }
+        button:active { transform: scale(0.98); }
 
-        .hint {
-            font-size: 0.85em;
-            color: var(--text-muted);
-            transition: color 0.3s ease;
-        }
-
-        input[type="number"], select {
+        /* 特定按鈕顏色配置與表情符號 */
+        .btn-tab { background-color: #607d8b; }
+        .btn-tab.active { background-color: #ff9800; }
+        .btn-yes { background-color: #A8C7FA; color: #000; } /* 「是」按鈕顏色 */
+        .btn-no { background-color: #FF0033; }             /* 「否」按鈕顏色 */
+        .btn-opt { background-color: #546e7a; }
+        .btn-opt.active { background-color: #4CAF50; box-shadow: 0 0 10px #4CAF50; }
+        .btn-gear { background-color: #333; font-size: calc(var(--base-font) * 2); height: 1.5em; width: 1.5em; padding: 0; position: fixed; top: 20px; right: 20px; z-index: 100;}
+        .btn-mode { background-color: #9c27b0; }
+        
+        /* 輸入框設計 */
+        input[type="number"] {
             width: 100%;
-            padding: 10px 12px;
-            border-radius: 8px;
+            padding: 0.6em 1em;
+            border-radius: 9999px;
             border: 1px solid var(--panel-border);
             background: var(--input-bg);
             color: var(--text-main);
             outline: none;
-            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+            font-size: calc(var(--base-font) * 1.2);
             box-sizing: border-box;
+            margin-top: 5px;
+            position: relative;
+            z-index: 10;
             font-family: inherit;
-            font-size: inherit;
         }
-        input[type="number"]:focus, select:focus {
-            border-color: var(--text-main);
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
-        }
-        [data-theme="light"] input[type="number"]:focus, [data-theme="light"] select:focus {
-            box-shadow: none;
-        }
+        input[type="number"]:focus { border-color: #4CAF50; box-shadow: 0 0 8px rgba(76, 175, 80, 0.4); }
 
-        button.primary {
-            background: var(--btn-primary);
-            color: var(--btn-primary-text);
-            border: 1px solid var(--panel-border);
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 1em;
-            transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
+        .form-group { margin-bottom: 16px; position: relative; z-index: 10; }
+        
+        /* 系列按鈕並排，強制不換行，超出則顯示橫向捲軸 */
+        .btn-group { 
+            display: flex; 
+            gap: 10px; 
+            flex-wrap: nowrap; 
+            margin-top: 5px; 
+            position: relative; 
+            z-index: 10; 
+            overflow-x: auto;
+            padding-bottom: 4px;
         }
-        button.primary:hover { 
-            background: var(--btn-primary-hover); 
-        }
-        [data-theme="dark"] button.primary:hover {
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-        }
+        .btn-group::-webkit-scrollbar { height: 4px; }
 
         .result-box {
             background: var(--input-bg);
-            border-radius: 8px;
-            padding: 20px; 
-            margin-bottom: 15px;
-            border: 1px solid var(--panel-border);
-            transition: background-color 0.4s ease, border-color 0.4s ease;
-            flex-grow: 1; /* 讓內部框可以延伸填滿多餘空間 */
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 10px;
+            flex-grow: 1;
+            position: relative;
+            z-index: 10;
         }
-
         .result-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 14px; 
-            padding-bottom: 14px; 
+            padding: 12px 0;
             border-bottom: 1px dashed var(--panel-border);
-            transition: border-color 0.4s ease;
         }
-        .result-row:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
+        .result-row:last-child { border-bottom: none; }
+        .profit { color: #4CAF50; font-weight: bold; font-size: 1.2em; }
+        .loss { color: #FF5252; font-weight: bold; font-size: 1.2em; }
 
-        .final-profit {
-            font-size: 1.5em;
-            font-weight: bold;
-            text-align: center;
-            margin-top: auto; /* 將這塊推到底部 */
-            padding-top: 20px;
-        }
-        .profit { color: var(--profit-color); transition: color 0.4s ease; }
-        .loss { color: var(--loss-color); transition: color 0.4s ease; }
-
-        /* 設定彈窗 */
+        /* 設定視窗 (框框加大) */
         #settings-modal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 100;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
             justify-content: center;
             align-items: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            backdrop-filter: blur(5px);
         }
-        #settings-modal.active { display: flex; opacity: 1; }
-
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
+        #settings-modal.active { display: flex; }
     </style>
 </head>
-<body class="text-md" data-theme="light">
+<body class="dark-mode size-md">
 
-    <div class="container">
-        <div class="header-controls">
-            <h1 style="margin:0;">🍁 楓之谷實用計算工具</h1>
-            <div style="display:flex; gap:10px;">
-                <button class="btn-text-icon" id="theme-toggle" title="切換深淺色">🌙 深色模式</button>
-                <button class="btn-icon-only" id="settings-btn" title="設定">⚙️</button>
+    <button class="btn-gear" onclick="toggleSettings()">⚙️</button>
+
+    <main>
+        <header>
+            <h1 style="margin:0;">🍁 楓之谷實用計算機</h1>
+            <div class="btn-group" style="margin-top:0;">
+                <button class="btn-tab active" id="tab-gift" onclick="switchTab('gift')">🎁 送禮</button>
+                <button class="btn-tab" id="tab-rate" onclick="switchTab('rate')">💰 幣值</button>
             </div>
-        </div>
+        </header>
 
-        <div class="tabs-container">
-            <button id="tab-gift" class="primary" onclick="switchTab('gift')">🎁 送禮計算機</button>
-            <button id="tab-rate" class="btn-text-icon" onclick="switchTab('rate')">💰 楓點比值</button>
-        </div>
-
-        <div id="view-gift" style="display: contents;">
-            <div class="glass-panel">
+        <div id="view-gift" class="layout-grid">
+            <section>
                 <h2>📝 參數設定</h2>
                 
                 <div class="form-group">
-                    <label id="label-amount">🎁 道具原價 (送禮金額)</label>
-                    <input type="number" id="input-gift-amount" min="0" step="100">
-                    <div class="hint">📌 對方玩家想購買的道具原本價格</div>
+                    <div>🎁 道具原價 (TWD)</div>
+                    <input type="number" id="val-amount" value="1500" step="100">
+                </div>
+                
+                <div class="form-group">
+                    <div>🤝 送禮折數 (如 84 折填 84)</div>
+                    <input type="number" id="val-discount" value="84" step="1">
                 </div>
 
                 <div class="form-group">
-                    <label>🤝 送禮折數</label>
-                    <input type="number" id="input-discount" step="1" min="1" max="100">
-                    <div class="hint">📌 8折輸入 8，84折輸入 84，82折輸入 82</div>
+                    <div>📈 楓點換楓幣比率 (1億楓幣 = 多少楓點)</div>
+                    <input type="number" id="val-mp-rate" value="8" step="1">
                 </div>
 
                 <div class="form-group">
-                    <label>📈 楓點換楓幣比率</label>
-                    <input type="number" id="input-mp-rate" step="1" min="1">
-                    <div class="hint">📌 多少楓點可換 1E (一億) 楓幣</div>
+                    <div>💵 遊戲幣值比率 (多少萬楓幣 = 1台幣)</div>
+                    <input type="number" id="val-meso-rate" value="2000" step="50">
                 </div>
 
                 <div class="form-group">
-                    <label>💵 遊戲幣值比率</label>
-                    <input type="number" id="input-meso-rate" step="50" min="0">
-                    <div class="hint">📌 每多少「萬」楓幣 = 1 台幣(賣給玩家)</div>
-                </div>
-            </div>
-
-            <div class="glass-panel">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 style="margin: 0;">📊 計算結果</h2>
-                    <div style="display: flex; gap: 8px;">
-                        <button id="btn-mode-sell" class="primary" onclick="switchCalcMode('sell')" style="padding: 6px 12px; font-size: 0.9em;">💰 賣掉</button>
-                        <button id="btn-mode-self" class="btn-text-icon" onclick="switchCalcMode('self')" style="padding: 6px 12px; font-size: 0.9em;">🛍️ 自用</button>
+                    <div>👑 VIP 點數加成等級</div>
+                    <div class="btn-group" id="vip-tier-group">
+                        <button class="btn-opt" data-val="16" onclick="setVipTier(16, this)">🥉 普/銀</button>
+                        <button class="btn-opt" data-val="24" onclick="setVipTier(24, this)">🥇 金牌</button>
+                        <button class="btn-opt" data-val="32" onclick="setVipTier(32, this)">💎 鑽石</button>
+                        <button class="btn-opt active" data-val="40" onclick="setVipTier(40, this)">👑 皇家</button>
                     </div>
                 </div>
 
-                <div id="sell-results" style="display: flex; flex-direction: column; height: 100%;">
-                    <div class="result-box">
-                        <div class="result-row" style="border-bottom: none; margin-bottom: 4px; padding-bottom: 0;">
-                            <span style="font-weight: bold;">💸 實際儲值成本</span>
-                            <span id="res-recharge-cost" style="font-weight: bold;">0 TWD</span>
-                        </div>
-                        <div class="hint" style="text-align: right; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px dashed var(--panel-border);">(道具原價 ÷ 1.05 的官方回饋)</div>
+                <div class="form-group">
+                    <div>⭐ 是否計算 VIP 點數回饋？</div>
+                    <!-- 是在左 #A8C7FA，否在右 #FF0033 -->
+                    <div class="btn-group">
+                        <button class="btn-yes" id="btn-vip-yes" onclick="setVipToggle(true)">✔️ 是</button>
+                        <button class="btn-no" id="btn-vip-no" onclick="setVipToggle(false)">❌ 否</button>
+                    </div>
+                </div>
+            </section>
 
+            <section>
+                <h2>📊 結算面板</h2>
+                <div class="btn-group" style="margin-bottom: 10px;">
+                    <button class="btn-opt active" id="mode-sell" onclick="setCalcMode('sell')">💰 賣掉模式</button>
+                    <button class="btn-opt" id="mode-self" onclick="setCalcMode('self')">🛍️ 自用模式</button>
+                </div>
+                
+                <div class="result-box">
+                    <div class="result-row">
+                        <span>💸 實際儲值成本 (÷1.05)</span>
+                        <span id="res-cost">0 TWD</span>
+                    </div>
+                    <div class="result-row">
+                        <span>🤝 對方實收金額</span>
+                        <span id="res-buyer">0 TWD</span>
+                    </div>
+                    <div class="result-row">
+                        <span>💎 獲得 VIP 點數</span>
+                        <span id="res-vip">0 點</span>
+                    </div>
+                    
+                    <div id="sell-details">
                         <div class="result-row">
-                            <span style="font-weight: bold;">🤝 對方需繳金額 (實收)</span>
-                            <span id="res-buyer-pay" style="font-weight: bold;">0 TWD</span>
-                        </div>
-                        
-                        <div class="result-row">
-                            <span>💎 獲得 VIP 點數</span>
-                            <span id="res-vip">0 點</span>
-                        </div>
-                        <div class="result-row">
-                            <span>🍁 VIP 兌換楓點 (300:1)</span>
-                            <span id="res-mp">0 點</span>
-                        </div>
-                        <div class="result-row">
-                            <span>🪙 楓點換成楓幣</span>
+                            <span>🪙 轉為楓幣</span>
                             <span id="res-mesos">0 億</span>
                         </div>
                         <div class="result-row">
-                            <span>💵 楓幣換算額外台幣</span>
-                            <span id="res-meso-revenue">0 TWD</span>
+                            <span>💵 楓幣換現</span>
+                            <span id="res-meso-twd">0 TWD</span>
+                        </div>
+                        <div class="result-row" style="margin-top: 20px; border:none; flex-direction: column; align-items: center; gap: 10px;">
+                            <span style="font-size:1.2em;">✨ 總營利狀態</span>
+                            <span id="res-final-sell" style="font-size:1.5em;">等待計算...</span>
                         </div>
                     </div>
-                    
-                    <div class="final-profit" id="res-final-sell">
-                        等待計算...
-                    </div>
-                </div>
 
-                <div id="self-results" style="display: none; flex-direction: column; height: 100%;">
-                    <div class="result-box">
-                        <div class="result-row" style="border-bottom: none; margin-bottom: 4px; padding-bottom: 0;">
-                            <span style="font-weight: bold;">💸 實際儲值成本</span>
-                            <span id="res-self-recharge-cost" style="font-weight: bold;">0 TWD</span>
-                        </div>
-                        <div class="hint" style="text-align: right; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px dashed var(--panel-border);">(道具原價 ÷ 1.05 的官方回饋)</div>
-                        
+                    <div id="self-details" style="display:none;">
                         <div class="result-row">
-                            <span style="font-weight: bold;">🤝 對方需繳金額 (實收)</span>
-                            <span id="res-self-buyer-pay" style="font-weight: bold;">0 TWD</span>
+                            <span>🔥 實際自我花費</span>
+                            <span id="res-self-cost">0 TWD</span>
                         </div>
-
-                        <div class="result-row">
-                            <span style="font-weight: bold;">🔥 實際花費</span>
-                            <span id="res-self-expense" style="font-weight: bold;">0 TWD</span>
+                        <div class="result-row" style="margin-top: 20px; border:none; flex-direction: column; align-items: center; gap: 10px;">
+                            <span style="font-size:1.2em;">✨ 相當於折扣</span>
+                            <span id="res-final-self" style="font-size:1.5em;">等待計算...</span>
                         </div>
-
-                        <div class="result-row">
-                            <span>💎 獲得 VIP 點數</span>
-                            <span id="res-self-vip">0 點</span>
-                        </div>
-
-                        <div class="result-row">
-                            <span>🍁 VIP 兌換楓點 (300:1)</span>
-                            <span id="res-self-mp">0 點</span>
-                        </div>
-
-                        <div class="result-row">
-                            <span style="font-weight: bold;">✨ 實質比例</span>
-                            <span id="res-self-vip-per-twd" style="font-weight: bold;">1 : 0 VIP</span>
-                        </div>
-                    </div>
-                    
-                    <div class="final-profit" id="res-final-self">
-                        等待計算...
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
 
-        <div id="view-rate" style="display: none;">
-            <div class="glass-panel">
+        <div id="view-rate" class="layout-grid" style="display: none;">
+            <section>
                 <h2>📝 比值參數設定</h2>
+                <div class="form-group">
+                    <div>💵 1 台幣 = 多少萬楓幣</div>
+                    <input type="number" id="val-rate-meso" value="2000" step="50">
+                </div>
                 
                 <div class="form-group">
-                    <label>💵 目前 1 台幣 = 多少萬楓幣</label>
-                    <input type="number" id="input-rate-meso" step="50" min="0">
-                    <div class="hint">📌 以「萬」為單位 </div>
-                    
-                    <div class="radio-group">
-                        <label>
-                            <input type="radio" name="tax-type" value="0.05" checked> 🤝 直接交易(5%)
-                        </label>
-                        <label>
-                            <input type="radio" name="tax-type" value="0.03"> 🛒 拉拍賣(3%)
-                        </label>
+                    <div>🧾 交易手續費方式</div>
+                    <div class="btn-group" id="tax-group">
+                        <button class="btn-opt active" data-val="0.05" onclick="setTaxRate(0.05, this)">🤝 直接交易(5%)</button>
+                        <button class="btn-opt" data-val="0.03" onclick="setTaxRate(0.03, this)">🛒 拉拍賣(3%)</button>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>📈 目前 1 億楓幣 = 多少楓點</label>
-                    <input type="number" id="input-rate-mp" step="1" min="0">
-                    <div class="hint">📌 (預設 6，即 1E = 6點)</div>
+                    <div>📈 1 億楓幣 = 多少楓點</div>
+                    <input type="number" id="val-rate-mp" value="6" step="1">
                 </div>
-            </div>
+            </section>
 
-            <div class="glass-panel">
-                <h2 style="margin-bottom: 20px;">📊 計算結果</h2>
+            <section>
+                <h2>📊 比值結果</h2>
                 <div class="result-box">
                     <div class="result-row">
-                        <span>🪙 1億楓幣的台幣成本</span>
-                        <span id="res-rate-cost100m">0 TWD</span>
+                        <span>🪙 1億楓幣成本</span>
+                        <span id="res-rate-100m">0 TWD</span>
                     </div>
-                    <div class="result-row" style="border-bottom: none; margin-bottom: 4px; padding-bottom: 0;">
-                        <span style="font-weight: bold;">🍁 1點楓點的實質成本</span>
-                        <span id="res-rate-cost1mp" style="font-weight: bold;">0 TWD</span>
+                    <div class="result-row">
+                        <span>🍁 1楓點成本</span>
+                        <span id="res-rate-1mp">0 TWD</span>
                     </div>
-                    <div class="hint" style="text-align: right; padding-bottom: 0; margin-bottom: 0;">(標準價格：1楓點 = 1台幣)</div>
+                    <div class="result-row" style="margin-top: 20px; border:none; flex-direction: column; align-items: center; gap: 10px;">
+                        <span style="font-size:1.2em;">✨ 實質折數</span>
+                        <span id="res-rate-final" style="font-size:1.5em;">等待計算...</span>
+                    </div>
                 </div>
-                
-                <div class="final-profit" id="res-rate-final">
-                    等待計算...
-                </div>
-            </div>
+            </section>
         </div>
-    </div>
+    </main>
 
     <div id="settings-modal">
-        <div class="glass-panel" style="width: 320px;">
-            <h2>⚙️ 設定</h2>
+        <!-- 框框加大寬度至 550px -->
+        <section style="width: 550px; max-width: 90vw; text-align: center;">
+            <h2 style="justify-content: center;">⚙️ 系統設定</h2>
             
             <div class="form-group">
-                <label>👑 VIP 等級 (影響獲得點數)</label>
-                <select id="vip-tier-select" onchange="calculateGift()">
-                    <option value="16">非VIP (1 TWD = 16點)</option>
-                    <option value="16">銀牌 (1 TWD = 16點)</option>
-                    <option value="24">金牌 (1 TWD = 24點)</option>
-                    <option value="32">鑽石 (1 TWD = 32點)</option>
-                    <option value="40" selected>皇家 (1 TWD = 40點)</option>
-                </select>
+                <div style="margin-bottom: 8px;">🎨 顯示模式</div>
+                <div class="btn-group" style="justify-content: center;">
+                    <button class="btn-mode" onclick="setTheme('dark')">🌙 深色</button>
+                    <button class="btn-mode" onclick="setTheme('light')">☀️ 淺色</button>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>🔠 文字大小</label>
-                <select id="font-size-select" onchange="changeFontSize()">
-                    <option value="text-sm">小 (Small)</option>
-                    <option value="text-md" selected>中 (Medium)</option>
-                    <option value="text-lg">大 (Large)</option>
-                </select>
+            <div class="form-group" style="margin-top: 20px;">
+                <div style="margin-bottom: 8px;">🔠 文字顯示大小</div>
+                <div class="btn-group" style="justify-content: center;">
+                    <button class="btn-opt" onclick="setSize('sm')">🔎 小</button>
+                    <button class="btn-opt" onclick="setSize('md')">🔎 中</button>
+                    <button class="btn-opt" onclick="setSize('lg')">🔎 大</button>
+                </div>
             </div>
 
-            <button class="primary" style="width: 100%; margin-top: 20px;" onclick="closeSettings()">完成</button>
-        </div>
+            <button class="btn-yes" style="margin-top: 20px; width: 100%; justify-content: center;" onclick="toggleSettings()">✔️ 完成</button>
+        </section>
     </div>
 
+    <div id="toast-container"></div>
+
     <script>
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        const body = document.body;
+        // ==========================================
+        // ⚙️ 系統核心設定與儲存值 (所有可調變數皆在此)
+        // ==========================================
+        const CONFIG = {
+            state: {
+                theme: 'dark',
+                size: 'md',
+                enableVip: true,
+                vipTierValue: 40,
+                taxValue: 0.05,
+                calcMode: 'sell',
+                activeTab: 'gift'
+            },
+            inputs: {
+                amount: 1500,
+                discount: 84,
+                mpRate: 8,
+                mesoRate: 2000,
+                rateMeso: 2000,
+                rateMp: 6
+            }
+        };
 
-        // --- 全域變數：目前送禮計算模式 ---
-        let currentCalcMode = 'sell';
+        const STORAGE_KEY = 'MS_CALCULATOR_PREFS';
 
-        // --- 頁籤切換邏輯 ---
+        function saveData() {
+            CONFIG.inputs.amount = document.getElementById('val-amount').value;
+            CONFIG.inputs.discount = document.getElementById('val-discount').value;
+            CONFIG.inputs.mpRate = document.getElementById('val-mp-rate').value;
+            CONFIG.inputs.mesoRate = document.getElementById('val-meso-rate').value;
+            CONFIG.inputs.rateMeso = document.getElementById('val-rate-meso').value;
+            CONFIG.inputs.rateMp = document.getElementById('val-rate-mp').value;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(CONFIG));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    Object.assign(CONFIG.state, parsed.state);
+                    Object.assign(CONFIG.inputs, parsed.inputs);
+                } catch (e) { }
+            }
+            
+            document.getElementById('val-amount').value = CONFIG.inputs.amount;
+            document.getElementById('val-discount').value = CONFIG.inputs.discount;
+            document.getElementById('val-mp-rate').value = CONFIG.inputs.mpRate;
+            document.getElementById('val-meso-rate').value = CONFIG.inputs.mesoRate;
+            document.getElementById('val-rate-meso').value = CONFIG.inputs.rateMeso;
+            document.getElementById('val-rate-mp').value = CONFIG.inputs.rateMp;
+
+            setTheme(CONFIG.state.theme, false);
+            setSize(CONFIG.state.size, false);
+            switchTab(CONFIG.state.activeTab);
+            setCalcMode(CONFIG.state.calcMode, false);
+            setVipToggle(CONFIG.state.enableVip, false);
+            
+            updateActiveBtnUI('#vip-tier-group', CONFIG.state.vipTierValue);
+            updateActiveBtnUI('#tax-group', CONFIG.state.taxValue);
+        }
+
+        function showToast(msg) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerText = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.toggle('active');
+            if(!modal.classList.contains('active')) {
+                scheduleCalculate();
+                saveData();
+            }
+        }
+
+        function setTheme(mode, notify = true) {
+            CONFIG.state.theme = mode;
+            document.body.className = `${mode}-mode size-${CONFIG.state.size}`;
+            if(notify) {
+                showToast(`已切換為${mode === 'dark' ? '深色' : '淺色'}模式`);
+                saveData();
+            }
+        }
+
+        function setSize(size, notify = true) {
+            CONFIG.state.size = size;
+            document.body.className = `${CONFIG.state.theme}-mode size-${size}`;
+            if(notify) {
+                showToast(`文字大小已調整`);
+                saveData();
+            }
+        }
+
         function switchTab(tabId) {
-            const viewGift = document.getElementById('view-gift');
-            const viewRate = document.getElementById('view-rate');
-            const tabGift = document.getElementById('tab-gift');
-            const tabRate = document.getElementById('tab-rate');
+            CONFIG.state.activeTab = tabId;
+            document.getElementById('view-gift').style.display = tabId === 'gift' ? 'grid' : 'none';
+            document.getElementById('view-rate').style.display = tabId === 'rate' ? 'grid' : 'none';
+            document.getElementById('tab-gift').classList.toggle('active', tabId === 'gift');
+            document.getElementById('tab-rate').classList.toggle('active', tabId === 'rate');
+            saveData();
+        }
 
-            if (tabId === 'gift') {
-                viewGift.style.display = 'contents';
-                viewRate.style.display = 'none';
-                tabGift.className = 'primary';
-                tabRate.className = 'btn-text-icon';
-            } else {
-                viewGift.style.display = 'none';
-                viewRate.style.display = 'contents';
-                tabGift.className = 'btn-text-icon';
-                tabRate.className = 'primary';
+        function setVipToggle(isEnabled, notify = true) {
+            CONFIG.state.enableVip = isEnabled;
+            document.getElementById('btn-vip-yes').style.boxShadow = isEnabled ? '0 0 15px #A8C7FA' : 'none';
+            document.getElementById('btn-vip-no').style.boxShadow = !isEnabled ? '0 0 15px #FF0033' : 'none';
+            document.getElementById('btn-vip-yes').style.border = isEnabled ? '2px solid #fff' : 'none';
+            document.getElementById('btn-vip-no').style.border = !isEnabled ? '2px solid #fff' : 'none';
+            
+            if (notify) {
+                showToast(isEnabled ? '✅ 已開啟 VIP 回饋計算' : '❌ 已關閉 VIP 回饋計算');
+                scheduleCalculate();
             }
         }
 
-        // --- 子模式切換邏輯 (賣掉 / 自用) ---
-        function switchCalcMode(mode) {
-            currentCalcMode = mode;
-            const btnSell = document.getElementById('btn-mode-sell');
-            const btnSelf = document.getElementById('btn-mode-self');
-            
-            if (mode === 'sell') {
-                btnSell.className = 'primary';
-                btnSelf.className = 'btn-text-icon';
-            } else {
-                btnSell.className = 'btn-text-icon';
-                btnSelf.className = 'primary';
+        /* 按下Enter鍵等同於按下「是」按鈕 */
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                setVipToggle(true);
             }
-            calculateGift();
+        });
+
+        function setCalcMode(mode, notify = true) {
+            CONFIG.state.calcMode = mode;
+            document.getElementById('mode-sell').classList.toggle('active', mode === 'sell');
+            document.getElementById('mode-self').classList.toggle('active', mode === 'self');
+            document.getElementById('sell-details').style.display = mode === 'sell' ? 'block' : 'none';
+            document.getElementById('self-details').style.display = mode === 'self' ? 'block' : 'none';
+            if(notify) scheduleCalculate();
         }
 
-        // --- 初始化與儲存設定 ---
-        function init() {
-            // 主題與字體
-            const savedTheme = localStorage.getItem('ms_theme') || 'light';
-            setTheme(savedTheme);
-
-            const savedFontSize = localStorage.getItem('ms_fontsize') || 'text-md';
-            document.getElementById('font-size-select').value = savedFontSize;
-            changeFontSize();
-
-            const savedVipRate = localStorage.getItem('ms_val_vip') || '40';
-            document.getElementById('vip-tier-select').value = savedVipRate;
-
-            // 送禮計算機預設值
-            document.getElementById('input-gift-amount').value = localStorage.getItem('ms_val_amount') || 1500;
-            document.getElementById('input-discount').value = localStorage.getItem('ms_val_discount') || 84;
-            document.getElementById('input-mp-rate').value = localStorage.getItem('ms_val_mpRate') || 8;
-            document.getElementById('input-meso-rate').value = localStorage.getItem('ms_val_mesoRate') || 2000;
-
-            // 楓點比值預設值
-            document.getElementById('input-rate-meso').value = localStorage.getItem('ms_rate_meso') || 2000;
-            document.getElementById('input-rate-mp').value = localStorage.getItem('ms_rate_mp') || 6;
-            
-            // 手續費預設值
-            const savedTax = localStorage.getItem('ms_tax_type') || '0.05';
-            const taxRadios = document.getElementsByName('tax-type');
-            for (let radio of taxRadios) {
-                if (radio.value === savedTax) {
-                    radio.checked = true;
+        function updateActiveBtnUI(groupSelector, matchValue) {
+            document.querySelectorAll(`${groupSelector} button`).forEach(b => {
+                if(parseFloat(b.getAttribute('data-val')) === parseFloat(matchValue)) {
+                    b.classList.add('active');
+                } else {
+                    b.classList.remove('active');
                 }
-                radio.addEventListener('change', calculateRate);
-            }
+            });
+        }
 
-            // 綁定所有輸入框的即時計算事件
-            document.getElementById('input-gift-amount').addEventListener('input', calculateGift);
-            document.getElementById('input-discount').addEventListener('input', calculateGift);
-            document.getElementById('input-mp-rate').addEventListener('input', calculateGift);
-            document.getElementById('input-meso-rate').addEventListener('input', calculateGift);
+        function updateActiveButton(groupSelector, clickedBtn, valueKey) {
+            document.querySelectorAll(`${groupSelector} button`).forEach(b => b.classList.remove('active'));
+            clickedBtn.classList.add('active');
+            CONFIG.state[valueKey] = parseFloat(clickedBtn.getAttribute('data-val'));
+            scheduleCalculate();
+        }
+
+        function setVipTier(val, btn) { updateActiveButton('#vip-tier-group', btn, 'vipTierValue'); }
+        function setTaxRate(val, btn) { updateActiveButton('#tax-group', btn, 'taxValue'); }
+
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('input', scheduleCalculate);
+        });
+
+        // ==========================================
+        // 🔄 運用 requestAnimationFrame 減少渲染負載
+        // ==========================================
+        let isCalculating = false;
+        function scheduleCalculate() {
+            if (!isCalculating) {
+                isCalculating = true;
+                requestAnimationFrame(() => {
+                    calculateAll();
+                    isCalculating = false;
+                });
+            }
+        }
+
+        function calculateAll() {
+            calcGift();
+            calcRate();
+            saveData();
+        }
+
+        function calcGift() {
+            const amount = parseFloat(document.getElementById('val-amount').value) || 0;
+            const discountRaw = parseFloat(document.getElementById('val-discount').value) || 0;
+            const mpRate = parseFloat(document.getElementById('val-mp-rate').value) || 1;
+            const mesoRate = parseFloat(document.getElementById('val-meso-rate').value) || 1;
+
+            const actualDiscount = discountRaw > 0 ? (discountRaw < 10 ? discountRaw / 10 : discountRaw / 100) : 0;
+            const rechargeCost = Math.ceil(amount / 1.05);
+            const buyerPays = amount * actualDiscount;
             
-            document.getElementById('input-rate-meso').addEventListener('input', calculateRate);
-            document.getElementById('input-rate-mp').addEventListener('input', calculateRate);
-
-            // 初始執行一次雙邊計算
-            calculateGift();
-            calculateRate();
-        }
-
-        // --- 主題切換 ---
-        themeToggleBtn.addEventListener('click', () => {
-            const currentTheme = body.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            setTheme(newTheme);
-        });
-
-        function setTheme(theme) {
-            body.setAttribute('data-theme', theme);
-            if (theme === 'light') {
-                themeToggleBtn.innerText = '🌙 深色模式';
-            } else {
-                themeToggleBtn.innerText = '☀️ 淺色模式';
-            }
-            localStorage.setItem('ms_theme', theme);
-        }
-
-        // --- 文字大小 ---
-        function changeFontSize() {
-            const size = document.getElementById('font-size-select').value;
-            body.classList.remove('text-sm', 'text-md', 'text-lg');
-            body.classList.add(size);
-            localStorage.setItem('ms_fontsize', size);
-        }
-
-        // --- 設定彈窗控制 ---
-        document.getElementById('settings-btn').addEventListener('click', () => {
-            document.getElementById('settings-modal').classList.add('active');
-        });
-        function closeSettings() {
-            document.getElementById('settings-modal').classList.remove('active');
-            calculateGift();
-        }
-
-        // --- 核心即時計算：送禮/自用 ---
-        function calculateGift() {
-            const giftAmount = parseFloat(document.getElementById('input-gift-amount').value) || 0;
-            const discountRaw = parseFloat(document.getElementById('input-discount').value) || 0;
-            const mpRate = parseFloat(document.getElementById('input-mp-rate').value) || 1; 
-            const mesoRate = parseFloat(document.getElementById('input-meso-rate').value) || 1; 
-            const vipMultiplier = parseInt(document.getElementById('vip-tier-select').value) || 40;
-
-            localStorage.setItem('ms_val_amount', giftAmount);
-            localStorage.setItem('ms_val_discount', discountRaw);
-            localStorage.setItem('ms_val_mpRate', mpRate);
-            localStorage.setItem('ms_val_mesoRate', mesoRate);
-            localStorage.setItem('ms_val_vip', vipMultiplier);
-
-            let actualDiscount = 0; 
-            if (discountRaw > 0) {
-                actualDiscount = discountRaw < 10 ? discountRaw / 10 : discountRaw / 100;
-            }
-
-            // 共用變數計算
-            const rechargeCost = Math.ceil(giftAmount / 1.05);
-            const buyerPays = giftAmount * actualDiscount;
-            const vipPoints = giftAmount * vipMultiplier;
+            const vipPoints = CONFIG.state.enableVip ? (amount * CONFIG.state.vipTierValue) : 0;
             const maplePoints = vipPoints / 300;
             const mesosInE = maplePoints / mpRate;
-            const totalMesosInW = mesosInE * 10000;
-            const mesoRevenue = totalMesosInW / mesoRate;
+            const mesoRevenue = (mesosInE * 10000) / mesoRate;
 
-            const totalRevenue = buyerPays + mesoRevenue;
-            const profitOrLoss = totalRevenue - rechargeCost;
+            document.getElementById('res-cost').innerText = rechargeCost.toLocaleString() + ' TWD';
+            document.getElementById('res-buyer').innerText = buyerPays.toFixed(0) + ' TWD';
+            document.getElementById('res-vip').innerText = Math.floor(vipPoints).toLocaleString() + ' 點';
 
-            // 判斷當前模式 (賣掉 或 自用)
-            if (currentCalcMode === 'sell') {
-                // 顯示賣掉面板，隱藏自用面板
-                document.getElementById('sell-results').style.display = 'flex';
-                document.getElementById('self-results').style.display = 'none';
-
-                document.getElementById('res-recharge-cost').innerText = rechargeCost.toLocaleString() + ' TWD';
-                document.getElementById('res-buyer-pay').innerText = buyerPays.toFixed(0) + ' TWD';
-                
-                document.getElementById('res-vip').innerHTML = `${Math.floor(vipPoints).toLocaleString()} 點 <span style="font-size:0.8em; color:var(--text-muted);">(x${vipMultiplier})</span>`;
-                document.getElementById('res-mp').innerText = Math.floor(maplePoints).toLocaleString() + ' 點';
+            if (CONFIG.state.calcMode === 'sell') {
                 document.getElementById('res-mesos').innerText = mesosInE.toFixed(2) + ' 億';
-                document.getElementById('res-meso-revenue').innerText = mesoRevenue.toFixed(0) + ' TWD';
-
-                const finalEl = document.getElementById('res-final-sell');
-                if (giftAmount === 0) {
-                    finalEl.innerHTML = `等待輸入數值...`;
-                } else if (profitOrLoss >= 0) {
-                    finalEl.innerHTML = `✨ 本次總營利: <span class="profit">+${profitOrLoss.toFixed(0)} TWD</span>`;
-                } else {
-                    finalEl.innerHTML = `📉 本次總虧損: <span class="loss">${profitOrLoss.toFixed(0)} TWD</span>`;
-                }
+                document.getElementById('res-meso-twd').innerText = mesoRevenue.toFixed(0) + ' TWD';
+                
+                const profit = (buyerPays + mesoRevenue) - rechargeCost;
+                const el = document.getElementById('res-final-sell');
+                if (profit >= 0) el.innerHTML = `<span class="profit">+${profit.toFixed(0)} TWD</span>`;
+                else el.innerHTML = `<span class="loss">${profit.toFixed(0)} TWD</span>`;
             } else {
-                // 顯示自用面板，隱藏賣掉面板
-                document.getElementById('sell-results').style.display = 'none';
-                document.getElementById('self-results').style.display = 'flex';
-
-                // 1. 實際花費 = 實際儲值成本 - 對方需繳金額
                 const expense = rechargeCost - buyerPays;
-                // 2. 動態比例 (1 : 多少 VIP)
-                const vipPerTwd = expense > 0 ? (vipPoints / expense) : 0;
-
-                // 更新顯示順序
-                document.getElementById('res-self-recharge-cost').innerText = rechargeCost.toLocaleString() + ' TWD';
-                document.getElementById('res-self-buyer-pay').innerText = buyerPays.toFixed(0) + ' TWD';
-                document.getElementById('res-self-expense').innerText = expense.toFixed(0) + ' TWD';
+                document.getElementById('res-self-cost').innerText = expense.toFixed(0) + ' TWD';
                 
-                document.getElementById('res-self-vip').innerHTML = `${Math.floor(vipPoints).toLocaleString()} 點 <span style="font-size:0.8em; color:var(--text-muted);">(x${vipMultiplier})</span>`;
-                document.getElementById('res-self-mp').innerText = Math.floor(maplePoints).toLocaleString() + ' 點';
-                
-                // 動態 VIP 比例文字
-                document.getElementById('res-self-vip-per-twd').innerText = `1 : ${vipPerTwd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} VIP`;
-
-                const finalEl = document.getElementById('res-final-self');
-                if (giftAmount === 0) {
-                    finalEl.innerHTML = `等待輸入數值...`;
-                } else if (expense <= 0) {
-                    finalEl.innerHTML = `✨ 購買東西相當於: <span class="profit">免費 (還有賺)</span>`;
+                const el = document.getElementById('res-final-self');
+                if (expense <= 0) {
+                    el.innerHTML = `<span class="profit">免費 (還有賺)</span>`;
                 } else {
-                    // 顯示購買東西的話算是幾折 (花費成本 / 獲得的等值楓點 * 10)
                     const equivalentDiscount = maplePoints > 0 ? (expense / maplePoints) * 10 : 0;
-                    finalEl.innerHTML = `✨ 購買東西相當於: <span class="profit">${equivalentDiscount.toFixed(2)} 折</span>`;
+                    el.innerHTML = `<span class="profit">${equivalentDiscount.toFixed(2)} 折</span>`;
                 }
             }
         }
 
-        // --- 核心即時計算：楓點比值 ---
-        function calculateRate() {
-            const mesoPerTwd = parseFloat(document.getElementById('input-rate-meso').value) || 0;
-            const mpPer100m = parseFloat(document.getElementById('input-rate-mp').value) || 0;
-            // 取得選擇的手續費趴數
-            const taxRate = parseFloat(document.querySelector('input[name="tax-type"]:checked').value);
-
-            localStorage.setItem('ms_rate_meso', mesoPerTwd);
-            localStorage.setItem('ms_rate_mp', mpPer100m);
-            localStorage.setItem('ms_tax_type', taxRate);
-
-            const finalEl = document.getElementById('res-rate-final');
-
-            if (mesoPerTwd === 0 || mpPer100m === 0) {
-                document.getElementById('res-rate-cost100m').innerText = '0 TWD';
-                document.getElementById('res-rate-cost1mp').innerText = '0 TWD';
-                finalEl.innerHTML = `等待輸入有效數值...`;
-                return;
-            }
-
-            // 扣除手續費後的實收幣值 (例如：輸入2000，扣掉5%手續費後，實收為 1900萬)
-            const effectiveMesoPerTwd = mesoPerTwd * (1 - taxRate);
-
-            // 1億 = 10000萬，算出 1億楓幣需要多少台幣 (使用實收幣值計算成本)
-            const costPer100m = 10000 / effectiveMesoPerTwd;
+        function calcRate() {
+            const mesoPerTwd = parseFloat(document.getElementById('val-rate-meso').value) || 0;
+            const mpPer100m = parseFloat(document.getElementById('val-rate-mp').value) || 0;
             
-            // 算出 1點楓點需要多少台幣
+            if (mesoPerTwd === 0 || mpPer100m === 0) return;
+
+            const effectiveMeso = mesoPerTwd * (1 - CONFIG.state.taxValue);
+            const costPer100m = 10000 / effectiveMeso;
             const costPerMp = costPer100m / mpPer100m;
-            
-            // 換算成折數 (因為原價 1TWD = 1點，所以成本0.79等於7.9折)
             const discount = costPerMp * 10;
 
-            document.getElementById('res-rate-cost100m').innerText = costPer100m.toFixed(2) + ' TWD';
-            document.getElementById('res-rate-cost1mp').innerText = costPerMp.toFixed(3) + ' TWD';
-
-            finalEl.innerHTML = `✨ 實質折數: <span class="profit">${discount.toFixed(2)} 折</span>`;
+            document.getElementById('res-rate-100m').innerText = costPer100m.toFixed(2) + ' TWD';
+            document.getElementById('res-rate-1mp').innerText = costPerMp.toFixed(3) + ' TWD';
+            document.getElementById('res-rate-final').innerHTML = `<span class="profit">${discount.toFixed(2)} 折</span>`;
         }
 
-        // 啟動初始化
-        init();
-
+        loadData();
+        scheduleCalculate();
     </script>
 </body>
 </html>
