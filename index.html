@@ -5,7 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>工具箱</title>
     <link rel="icon" type="image/png" href="icon.png">
+    <script>
+        // 畫面渲染前套用主題，預設為深色模式，防止白光閃爍
+        if (localStorage.getItem('toolbox_theme') !== 'light') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
     <style>
+        /* 加上 box-sizing 防止 padding 撐破寬度產生橫向捲軸 */
+        * {
+            box-sizing: border-box;
+        }
+
         /* 預設淺色模式變數 */
         :root {
             --bg-color: #f4f7f6;
@@ -148,7 +159,7 @@
         .main-content {
             flex-grow: 1;
             padding: 20px;
-            overflow-y: auto;
+            height: 100vh;
             transition: 0.3s;
         }
 
@@ -159,7 +170,7 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             border: 1px solid var(--border-color);
             width: 100%;
-            height: 95%; /* 讓 iframe 填滿畫面 */
+            height: 100%; /* 改為 100% 填滿底部空間 */
         }
         .tool-section.active { display: block; }
         
@@ -179,14 +190,13 @@
             <div class="sidebar-inner">
                 <div class="sidebar-header">
                     <span>🛠️ 工具箱</span>
-                    <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="切換深淺色">🌙</button>
+                    <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="切換深淺色"></button>
                 </div>
                 
                 <div class="nav-menu" id="nav-menu">
                     <button class="nav-btn active" onclick="showTool('timer', this)">⏳ 倒數計時器</button>
                     <button class="nav-btn" onclick="showTool('gift', this)">🎁 送禮計算機</button>
                     <button class="nav-btn" onclick="showTool('Gacha', this)">🔮 轉蛋模擬器</button>
-                    <button class="nav-btn" onclick="showTool('storehouse', this)">📦 倉儲管理器</button>
                     <button class="nav-btn" onclick="showTool('risk indicator', this)">⚠️ 僅供參考</button>
                     
 <!--                ⬆️這邊上面貼其貼上修改好的代碼(上面的順序=顯示的順序)
@@ -211,9 +221,6 @@
         <div id="Gacha" class="tool-section">
             <iframe src="Gacha.html"></iframe>
         </div>
-        <div id="storehouse" class="tool-section">
-            <iframe src="storehouse.html"></iframe>
-        </div> 
         <div id="risk indicator" class="tool-section">
             <iframe src="risk indicator.html"></iframe>
         </div> 
@@ -236,24 +243,35 @@
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            document.getElementById(toolId).classList.add('active');
-            if(btnElement) btnElement.classList.add('active');
+            
+            const targetSection = document.getElementById(toolId);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+            
+            if(btnElement) {
+                btnElement.classList.add('active');
+            } else {
+                const targetBtn = document.querySelector(`.nav-btn[onclick*="'${toolId}'"]`);
+                if(targetBtn) targetBtn.classList.add('active');
+            }
+
+            localStorage.setItem('toolbox_last_tool', toolId);
         }
 
         // 深淺色模式切換與圖示變更
         function toggleTheme() {
             const body = document.documentElement;
-            const currentTheme = body.getAttribute('data-theme');
             const themeBtn = document.getElementById('theme-btn');
 
-            if (currentTheme === 'dark') {
+            if (body.getAttribute('data-theme') === 'dark') {
                 body.removeAttribute('data-theme');
                 localStorage.setItem('toolbox_theme', 'light'); 
-                themeBtn.innerText = '🌙'; // 回到淺色模式，顯示月亮(代表點擊切換深色)
+                themeBtn.innerText = '🌙'; 
             } else {
                 body.setAttribute('data-theme', 'dark');
                 localStorage.setItem('toolbox_theme', 'dark'); 
-                themeBtn.innerText = '☀️'; // 進入深色模式，顯示太陽(代表點擊切換淺色)
+                themeBtn.innerText = '☀️'; 
             }
         }
 
@@ -262,32 +280,31 @@
             const sidebar = document.getElementById('sidebar');
             const toggleBtn = document.getElementById('toggle-btn');
             
-            // 切換 collapsed 類別
             sidebar.classList.toggle('collapsed');
             
-            // 變更按鈕圖示
             if (sidebar.classList.contains('collapsed')) {
-                toggleBtn.innerText = '❱'; // 縮進去後，顯示向右箭頭
+                toggleBtn.innerText = '❱';
                 toggleBtn.title = "展開選單";
             } else {
-                toggleBtn.innerText = '❰'; // 展開時，顯示向左箭頭
+                toggleBtn.innerText = '❰';
                 toggleBtn.title = "收合選單";
             }
         }
 
-        // 網頁載入時，讀取主介面的專屬設定並更新按鈕圖示
-        window.onload = () => {
+        // 取代 window.onload，在 DOM 解析完畢後立即執行，防止載入時閃跳
+        (function init() {
             const themeBtn = document.getElementById('theme-btn');
-            if (localStorage.getItem('toolbox_theme') === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
+            if (document.documentElement.getAttribute('data-theme') === 'dark') {
                 themeBtn.innerText = '☀️';
             } else {
                 themeBtn.innerText = '🌙';
             }
-        };
+
+            const lastTool = localStorage.getItem('toolbox_last_tool');
+            if (lastTool && document.getElementById(lastTool)) {
+                showTool(lastTool);
+            }
+        })();
     </script>
 </body>
 </html>
-
-
-
