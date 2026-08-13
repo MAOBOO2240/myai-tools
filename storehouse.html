@@ -86,8 +86,8 @@
     .tab-pane.active { display: block; }
 
     button {
-      font-size: 1.2em; 
-      padding: 0.3em 0.8em; 
+      font-size: 1.1em; 
+      padding: 0.35em 0.75em; 
       line-height: 1.2; 
       border: 1px solid var(--border-color);
       border-radius: var(--button-radius);
@@ -131,6 +131,25 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.3);
     }
     .btn-delete-icon:hover { background-color: #DC2626 !important; transform: scale(1.15); }
+
+    .btn-return-icon {
+      background-color: #F59E0B !important;
+      color: #000000 !important;
+      border: none;
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .btn-return-icon:hover { background-color: #D97706 !important; transform: scale(1.15); }
 
     section.card {
       background: var(--card-bg);
@@ -257,21 +276,23 @@
         </section>
       </div>
 
+      <!-- 🏭 品項庫存 -->
       <section class="card">
-        <h3>🏭 品項庫存與進出貨</h3>
+        <h3>🏭 品項庫存</h3>
         
         <div class="form-group">
           <input type="text" id="item-sku" placeholder="品項名稱 (&自動多選)" style="width: 180px;">
-          <div style="display:inline-flex; align-items:center; gap:5px; margin-right: 10px; margin-left: 10px;">
+          <div style="display:inline-flex; align-items:center; gap:5px; margin-right: 5px; margin-left: 5px;">
             <span id="qty-label">請輸入數量：</span>
             <input type="number" id="action-qty" min="1" style="width: 80px;">
           </div>
 
           <button id="stock-in-btn" style="background:#059669;">📥 入庫</button>
-          <button id="stock-out-btn" style="background:#D97706;">📤 出庫</button>
+          <button id="stock-out-btn" style="background:#D97706;">📤 出貨</button>
+          <button id="stock-out-all-btn" style="background:#7C3AED;" title="全選時，將所選品項的現有庫存全部出貨">📦 庫存全部出貨</button>
         </div>
 
-        <h4>目前專案品項庫存 <span style="font-size: 0.85em; font-weight: normal; opacity: 0.8;">(可直接輸入公式如 *3 後按 Enter，或勾選進行批次進出貨)</span></h4>
+        <h4>目前專案品項庫存 <span style="font-size: 0.85em; font-weight: normal; opacity: 0.8;">(可直接輸入公式如 *3 後按 Enter，選取品項會自動帶入設定數量，庫存為 0 者自動排於最下方)</span></h4>
         <table id="inventory-table">
           <thead>
             <tr>
@@ -285,6 +306,30 @@
         </table>
       </section>
 
+      <!-- 🚚 出貨目錄表 -->
+      <section class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+          <h3 style="margin-bottom: 0;">🚚 出貨目錄表</h3>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="search-shipment-input" placeholder="搜尋出貨品項、備註..." style="width: 220px;">
+          </div>
+        </div>
+        <table id="shipments-table">
+          <thead>
+            <tr>
+              <th style="width: 14%; white-space: nowrap;">出貨時間</th>
+              <th style="width: 34%;">品項</th>
+              <th style="width: 10%;">出貨數量</th>
+              <th style="width: 34%;">備註</th>
+              <th class="center-col" style="width: 5%;">返回</th>
+              <th class="center-col" style="width: 5%;">刪除</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <!-- 🔍 進出貨歷史紀錄 -->
       <section class="card">
         <h3 id="logs-title">🔍 進出貨歷史紀錄</h3>
         <div class="form-group" style="justify-content: space-between;">
@@ -296,15 +341,13 @@
               <button data-type="OUT">僅出貨</button>
             </div>
           </div>
-          <!-- 連動刪除按鈕 -->
-          <button id="link-del-btn" style="background:#64748B;" title="未啟用：刪除紀錄不影響庫存">連結⛓️‍💥</button>
         </div>
         <table id="logs-table">
           <thead>
             <tr>
-              <th style="width: 16%; white-space: nowrap;">時間</th>
-              <th style="width: 10%;">動作</th>
-              <th style="width: 38%;">詳細內容</th>
+              <th style="width: 14%; white-space: nowrap;">時間</th>
+              <th style="width: 6%;">動作</th>
+              <th style="width: 48%;">詳細內容</th>
               <th style="width: auto;">備註</th>
               <th class="center-col" style="width: 60px;">刪除</th>
             </tr>
@@ -327,14 +370,27 @@
           
           <div id="report-summary-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-bottom: 30px;"></div>
 
+          <h3 style="margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">🚚 出貨目錄</h3>
+          <table id="report-shipments-table" style="margin-bottom: 30px;">
+            <thead>
+              <tr>
+                <th style="width: 14%; white-space: nowrap;">出貨時間</th>
+                <th style="width: auto;">品項</th>
+                <th style="width: 8%;">出貨數量</th>
+                <th style="width: auto;">備註</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+
           <h3 style="margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">📜 歷史紀錄</h3>
           <table id="report-table">
             <thead>
               <tr>
-                <th style="width: 16%; white-space: nowrap;">時間</th>
-                <th style="width: 10%;">動作</th>
-                <th style="width: 44%;">詳細內容</th>
-                <th style="width: 30%;">備註</th>
+                <th style="width: 14%; white-space: nowrap;">時間</th>
+                <th style="width: 6%;">動作</th>
+                <th style="width: 50%;">詳細內容</th>
+                <th style="width: auto;">備註</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -415,6 +471,8 @@
       projects: {}, 
       projectCalcData: {}, 
       itemPhotos: {}, 
+      itemBoundQty: {}, 
+      shipments: [],   
       currentProject: "",
       logs: [], 
       settings: { 
@@ -423,7 +481,6 @@
         timeFormat: '24', 
         fontSize: 'medium',
         actionQty: 1,
-        linkDelete: false, 
         calc: { total: 5000, batch: 120, min: 0, sec: 0, start: "09:00", end: "17:00", result: "" }
       }
     };
@@ -451,6 +508,7 @@
         appData.projects["預設專案"] = {};
         appData.projectCalcData["預設專案"] = { total: 5000, batch: 120, min: 0, sec: 0, start: "09:00", end: "17:00", result: "", draftSku: "" };
         appData.itemPhotos["預設專案"] = {};
+        appData.itemBoundQty["預設專案"] = {};
         appData.currentProject = "預設專案";
         saveData();
       }
@@ -548,10 +606,11 @@
       }
     });
 
-    function addLog(type, action, detail, sku = null, qtyDelta = null) {
+    function addLog(type, action, detail, sku = null, qtyDelta = null, linkedShipmentId = null) {
       const now = Date.now();
       appData.logs.unshift({
         id: now + Math.random().toString(36).substr(2, 5),
+        linkedShipmentId: linkedShipmentId,
         timeMs: now,
         timestamp: new Date(now).toLocaleString('zh-TW', { hour12: false }),
         project: appData.currentProject || "無專案",
@@ -564,6 +623,24 @@
       });
       saveData();
       renderLogs();
+    }
+
+    function addShipmentRecord(sku, qty, customId = null) {
+      if (!appData.shipments) appData.shipments = [];
+      const now = Date.now();
+      const id = customId || ('ship_' + now + '_' + Math.random().toString(36).substr(2, 5));
+      appData.shipments.unshift({
+        id: id,
+        timeMs: now,
+        timestamp: new Date(now).toLocaleString('zh-TW', { hour12: false }),
+        project: appData.currentProject || "無專案",
+        sku: sku,
+        qty: qty,
+        note: ""
+      });
+      saveData();
+      renderShipments();
+      return id;
     }
 
     function getFormattedTime(log) {
@@ -587,12 +664,15 @@
           if (parsed.projects) appData.projects = parsed.projects;
           if (parsed.currentProject !== undefined) appData.currentProject = parsed.currentProject;
           if (Array.isArray(parsed.logs)) appData.logs = parsed.logs;
+          if (Array.isArray(parsed.shipments)) appData.shipments = parsed.shipments;
           if (parsed.settings) appData.settings = { ...appData.settings, ...parsed.settings };
           if (parsed.itemPhotos) appData.itemPhotos = parsed.itemPhotos;
           else appData.itemPhotos = {};
 
+          if (parsed.itemBoundQty) appData.itemBoundQty = parsed.itemBoundQty;
+          else appData.itemBoundQty = {};
+
           if (!appData.settings.fontSize) appData.settings.fontSize = 'medium';
-          if (appData.settings.linkDelete === undefined) appData.settings.linkDelete = false;
 
           if (parsed.projectCalcData) {
             appData.projectCalcData = parsed.projectCalcData;
@@ -608,6 +688,27 @@
             }
           }
         } catch(e) {}
+      }
+    }
+
+    function autoFillBoundQtyForSelection() {
+      const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+      let targetSku = "";
+      if (checkedBoxes.length > 0) {
+        targetSku = checkedBoxes[0].dataset.sku;
+      } else {
+        const skuStr = document.getElementById('item-sku').value.trim();
+        const skus = skuStr.split('&').map(s => s.trim()).filter(s => s);
+        if (skus.length > 0) targetSku = skus[0];
+      }
+
+      if (targetSku && appData.itemBoundQty[appData.currentProject]) {
+        const boundQty = appData.itemBoundQty[appData.currentProject][targetSku];
+        if (boundQty !== undefined && boundQty !== null && boundQty > 0) {
+          document.getElementById('action-qty').value = boundQty;
+          appData.settings.actionQty = boundQty;
+          saveData();
+        }
       }
     }
 
@@ -630,6 +731,8 @@
       if (!anyCheckbox) allChecked = false;
       const selectAllCb = document.getElementById('select-all-cb');
       if (selectAllCb) selectAllCb.checked = allChecked;
+
+      autoFillBoundQtyForSelection();
     }
 
     function updateSkuInputFromCheckboxes() {
@@ -652,6 +755,8 @@
           appData.projectCalcData[appData.currentProject].draftSku = document.getElementById('item-sku').value;
           saveData();
       }
+
+      autoFillBoundQtyForSelection();
     }
 
     function resizeImage(dataUrl, callback) {
@@ -692,16 +797,6 @@
         showToast("🗑️ 照片已移除");
       }
     };
-
-    function updateLinkDelBtn() {
-      const btn = document.getElementById('link-del-btn');
-      if (btn) {
-        btn.innerText = appData.settings.linkDelete ? '連結🔗' : '連結⛓️‍💥';
-        btn.title = appData.settings.linkDelete ? '已啟用：刪除紀錄會同時回復庫存' : '未啟用：刪除紀錄不影響庫存';
-        btn.style.backgroundColor = appData.settings.linkDelete ? '#3B82F6' : '#475569';
-        btn.style.borderColor = appData.settings.linkDelete ? '#3B82F6' : '#475569';
-      }
-    }
 
     function setupEventListeners() {
       document.getElementById('item-sku').addEventListener('input', (e) => {
@@ -768,6 +863,7 @@
         appData.projects[name] = {};
         appData.projectCalcData[name] = { total: 5000, batch: 120, min: 0, sec: 0, start: "09:00", end: "17:00", result: "", draftSku: "" };
         appData.itemPhotos[name] = {};
+        appData.itemBoundQty[name] = {};
         appData.currentProject = name;
         document.getElementById('new-project-name').value = "";
         saveData();
@@ -793,13 +889,16 @@
           delete appData.projects[projectToDelete];
           delete appData.projectCalcData[projectToDelete];
           delete appData.itemPhotos[projectToDelete];
+          delete appData.itemBoundQty[projectToDelete];
           appData.logs = appData.logs.filter(log => log.project !== projectToDelete);
+          appData.shipments = appData.shipments.filter(s => s.project !== projectToDelete);
 
           const keys = Object.keys(appData.projects);
           if (keys.length === 0) {
             appData.projects["預設專案"] = {};
             appData.projectCalcData["預設專案"] = { total: 5000, batch: 120, min: 0, sec: 0, start: "09:00", end: "17:00", result: "", draftSku: "" };
             appData.itemPhotos["預設專案"] = {};
+            appData.itemBoundQty["預設專案"] = {};
             appData.currentProject = "預設專案";
             showToast("🗑️ 專案已刪除！已自動建立預設專案。");
           } else {
@@ -835,10 +934,13 @@
         });
       }
 
-      document.getElementById('stock-in-btn').onclick = () => handleStockChange('IN');
-      document.getElementById('stock-out-btn').onclick = () => handleStockChange('OUT');
+      document.getElementById('stock-in-btn').onclick = () => handleStockChange('IN', 'NORMAL');
+      document.getElementById('stock-out-btn').onclick = () => handleStockChange('OUT', 'NORMAL');
+      document.getElementById('stock-out-all-btn').onclick = () => handleStockChange('OUT', 'ALL');
 
       document.getElementById('search-input').oninput = renderLogs;
+      document.getElementById('search-shipment-input').oninput = renderShipments;
+
       setupButtonGroup('filter-type-group', () => renderLogs());
 
       document.getElementById('gear-btn').onclick = () => document.getElementById('settings-modal').classList.remove('hidden');
@@ -854,6 +956,7 @@
         appData.settings.timeFormat = btn.dataset.format;
         saveData();
         renderLogs(); 
+        renderShipments();
       });
 
       setupButtonGroup('fontsize-group', (btn) => {
@@ -866,12 +969,6 @@
       setupButtonGroup('confirm-toggle-group', (btn) => {
         appData.settings.skipConfirm = btn.dataset.skip === 'true';
         saveData();
-      });
-
-      document.getElementById('link-del-btn').addEventListener('click', () => {
-        appData.settings.linkDelete = !appData.settings.linkDelete;
-        saveData();
-        updateLinkDelBtn();
       });
 
       document.getElementById('inventory-table').addEventListener('keydown', (e) => {
@@ -913,9 +1010,21 @@
             saveState(); 
             appData.projects[appData.currentProject][sku] = newQty;
             let type = diff > 0 ? 'IN' : 'OUT';
-            let action = diff > 0 ? '📥 入庫' : '📤 出庫';
-            addLog(type, action, `品項: ${sku}, 直接修改數量: ${diff > 0 ? '+' : ''}${diff}，目前總數: ${newQty}`, sku, diff);
+            let action = diff > 0 ? '📥 入庫' : '📤 出貨';
+            
+            let linkedShipmentId = null;
+            if (type === 'OUT') {
+              linkedShipmentId = 'ship_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+              addShipmentRecord(sku, Math.abs(diff), linkedShipmentId);
+            }
+
+            let detailText = diff > 0 
+              ? `品項: ${sku}, 直接修改數量: +${diff}，目前總庫存: ${newQty}`
+              : `品項: ${sku}, 出貨數量: ${Math.abs(diff)}（已同步登錄至出貨目錄表），目前總庫存: ${newQty}`;
+            
+            addLog(type, action, detailText, sku, diff, linkedShipmentId);
             saveData();
+            renderInventory();
           }
         }
         
@@ -930,6 +1039,11 @@
             if(appData.itemPhotos && appData.itemPhotos[appData.currentProject] && appData.itemPhotos[appData.currentProject][oldSku]) {
               appData.itemPhotos[appData.currentProject][newSku] = appData.itemPhotos[appData.currentProject][oldSku];
               delete appData.itemPhotos[appData.currentProject][oldSku];
+            }
+
+            if(appData.itemBoundQty && appData.itemBoundQty[appData.currentProject] && appData.itemBoundQty[appData.currentProject][oldSku] !== undefined) {
+              appData.itemBoundQty[appData.currentProject][newSku] = appData.itemBoundQty[appData.currentProject][oldSku];
+              delete appData.itemBoundQty[appData.currentProject][oldSku];
             }
 
             saveData();
@@ -950,6 +1064,9 @@
             if(appData.itemPhotos && appData.itemPhotos[appData.currentProject]) {
               delete appData.itemPhotos[appData.currentProject][sku];
             }
+            if(appData.itemBoundQty && appData.itemBoundQty[appData.currentProject]) {
+              delete appData.itemBoundQty[appData.currentProject][sku];
+            }
             
             let currentDraft = appData.projectCalcData[appData.currentProject].draftSku || "";
             let draftArray = currentDraft.split('&').map(s => s.trim()).filter(s => s);
@@ -966,39 +1083,86 @@
         }
       });
 
+      document.getElementById('shipments-table').addEventListener('click', (e) => {
+        let returnBtn = e.target.closest('.return-shipment');
+        if (returnBtn) {
+          let id = returnBtn.dataset.id;
+          let shipment = appData.shipments.find(s => s.id === id);
+          if (!shipment) return;
+
+          showConfirm(`確定要將品項 [${shipment.sku}] 的出貨數量 (${shipment.qty}) 退回品項庫存嗎？`, () => {
+            saveState();
+            let sku = shipment.sku;
+            let qty = shipment.qty;
+            let proj = shipment.project || appData.currentProject;
+
+            if (!appData.projects[proj]) appData.projects[proj] = {};
+            let currentQty = appData.projects[proj][sku] || 0;
+            let newQty = currentQty + qty;
+            appData.projects[proj][sku] = newQty;
+
+            let detailText = `品項: ${sku}, 從出貨目錄退回庫存: +${qty}，目前總庫存: ${newQty}`;
+            addLog('IN', '📥 退回庫存', detailText, sku, qty);
+
+            appData.shipments = appData.shipments.filter(s => s.id !== id);
+
+            saveData();
+            renderShipments();
+            renderInventory();
+            renderLogs();
+            showToast(`🔃 已將品項 [${sku}] 的出貨數量 (${qty}) 退回品項庫存！`);
+          });
+          return;
+        }
+
+        let deleteBtn = e.target.closest('.delete-shipment');
+        if (deleteBtn) {
+          let id = deleteBtn.dataset.id;
+          let shipment = appData.shipments.find(s => s.id === id);
+          if (!shipment) return;
+
+          showConfirm(`確定要完全刪除此筆出貨紀錄嗎？（品項庫存數量不會改變）`, () => {
+            saveState();
+            let sku = shipment.sku;
+            let qty = shipment.qty;
+
+            appData.shipments = appData.shipments.filter(s => s.id !== id);
+
+            let detailText = `品項: ${sku}, 刪除出貨紀錄: -${qty}（完全刪除，庫存不變）`;
+            addLog('INFO', '🗑️ 刪除出貨紀錄', detailText, sku, 0);
+
+            saveData();
+            renderShipments();
+            renderLogs();
+            showToast("🗑️ 已完全刪除該筆出貨紀錄（庫存維持不變）");
+          });
+        }
+      });
+
+      document.getElementById('shipments-table').addEventListener('change', (e) => {
+        if (e.target.classList.contains('edit-shipment-note')) {
+          let id = e.target.dataset.id;
+          let newNote = e.target.value;
+          let item = appData.shipments.find(s => s.id === id);
+          if (item && item.note !== newNote) {
+            saveState();
+            item.note = newNote;
+            saveData();
+            showToast("📝 出貨備註已儲存！");
+          }
+        }
+      });
+
       document.getElementById('logs-table').addEventListener('click', (e) => {
         let btn = e.target.closest('.delete-log');
         if (btn) {
           let id = btn.dataset.id;
-          showConfirm(`確定要刪除此紀錄嗎？`, () => {
+          showConfirm(`確定要刪除此歷史紀錄嗎？`, () => {
             saveState(); 
-            let log = appData.logs.find(l => l.id === id);
-            
-            if (appData.settings.linkDelete && log && (log.type === 'IN' || log.type === 'OUT')) {
-              let sku = log.sku;
-              let delta = log.qtyDelta;
-              
-              if (sku === undefined || delta === undefined) {
-                const match = log.detail.match(/品項:\s*(.+?),\s*(?:直接修改)?數量:\s*([\+\-]?\d+)/);
-                if (match) {
-                  sku = match[1];
-                  delta = parseInt(match[2], 10);
-                }
-              }
-
-              if (sku && delta && appData.projects[log.project]) {
-                let currentQty = appData.projects[log.project][sku] || 0;
-                let newQty = currentQty - delta;
-                if (newQty < 0) newQty = 0;
-                appData.projects[log.project][sku] = newQty;
-              }
-            }
-
             appData.logs = appData.logs.filter(l => l.id !== id);
             saveData();
             renderLogs();
-            if(appData.settings.linkDelete) renderInventory();
-            showToast("🗑️ 紀錄已刪除" + (appData.settings.linkDelete ? "，並連動調整庫存" : ""));
+            showToast("🗑️ 已刪除歷史紀錄");
           });
         }
       });
@@ -1037,22 +1201,6 @@
       });
 
       document.getElementById('action-qty').value = appData.settings.actionQty || 1;
-      updateLinkDelBtn();
-    }
-
-    function applyModeUI() {
-      const mode = appData.settings.stockMode || 'SINGLE';
-      document.querySelectorAll('#stock-mode-group button').forEach(b => {
-        if (b.dataset.mode === mode) b.classList.add('active');
-        else b.classList.remove('active');
-      });
-      
-      const qtyInput = document.getElementById('action-qty');
-      if (mode === 'BOX') {
-        document.getElementById('qty-label').innerText = '一箱有：';
-      } else {
-        document.getElementById('qty-label').innerText = '一個有：';
-      }
     }
 
     function loadCalcForCurrentProject() {
@@ -1085,16 +1233,13 @@
       });
     }
 
-    function handleStockChange(type) {
+    function handleStockChange(type, mode = 'NORMAL') {
       if (!appData.currentProject) return showToast("⚠️ 請先選擇或新增專案！");
       if (!appData.projects[appData.currentProject]) appData.projects[appData.currentProject] = {};
-      
-      const qty = parseInt(document.getElementById('action-qty').value, 10);
-      if (isNaN(qty) || qty < 0) return showToast("⚠️ 請輸入有效的數量！");
-      if (qty === 0) return; 
+      if (!appData.itemBoundQty[appData.currentProject]) appData.itemBoundQty[appData.currentProject] = {};
 
-      const actionName = type === 'IN' ? '📥 入庫' : '📤 出庫';
       const projItems = appData.projects[appData.currentProject];
+      const projBound = appData.itemBoundQty[appData.currentProject];
 
       const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
       let targetSKUs = [];
@@ -1107,26 +1252,64 @@
         targetSKUs = skuStr.split('&').map(s => s.trim()).filter(s => s);
       }
 
+      const inputQty = parseInt(document.getElementById('action-qty').value, 10);
+
+      let itemQtyMap = {};
+
+      for (let sku of targetSKUs) {
+        let calcQty = inputQty;
+        if (mode === 'ALL') {
+          calcQty = projItems[sku] || 0;
+        }
+
+        if (isNaN(calcQty) || calcQty < 0) calcQty = 0;
+        itemQtyMap[sku] = calcQty;
+
+        if (projItems[sku] === undefined && mode === 'NORMAL') {
+          projBound[sku] = calcQty;
+        }
+      }
+
       if (type === 'OUT') {
         for (let sku of targetSKUs) {
+          const reqQty = itemQtyMap[sku];
+          if (reqQty <= 0) continue;
           const currentQty = projItems[sku] || 0;
-          if (currentQty < qty) {
-            return showToast(`❌ 出庫失敗，品項 [${sku}] 庫存量不足！`);
+          if (currentQty < reqQty) {
+            return showToast(`❌ 出貨失敗，品項 [${sku}] 庫存量不足 (${currentQty} < ${reqQty})！`);
           }
         }
       }
 
       saveState(); 
 
+      const actionName = type === 'IN' ? '📥 入庫' : '📤 出貨';
+
       targetSKUs.forEach(sku => {
+        const qty = itemQtyMap[sku];
+        if (qty === 0) return;
+
         const currentQty = projItems[sku] || 0;
         const newQty = (type === 'IN') ? currentQty + qty : currentQty - qty;
         projItems[sku] = newQty;
+
+        if (projBound[sku] === undefined) {
+          projBound[sku] = qty;
+        }
         
         const delta = (type === 'IN') ? qty : -qty;
-        let detailText = `品項: ${sku}, 數量: ${type === 'IN'? '+' : '-'}${qty}`;
-        detailText += `，目前總數: ${newQty}`;
-        addLog(type, actionName, detailText, sku, delta);
+        let detailText = "";
+        let linkedShipmentId = null;
+
+        if (type === 'IN') {
+          detailText = `品項: ${sku}, 入庫數量: +${qty}，目前總庫存: ${newQty}`;
+        } else {
+          linkedShipmentId = 'ship_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+          detailText = `品項: ${sku}, 出貨數量: -${qty}（已登錄至出貨目錄表），目前總庫存: ${newQty}`;
+          addShipmentRecord(sku, qty, linkedShipmentId);
+        }
+
+        addLog(type, actionName, detailText, sku, delta, linkedShipmentId);
       });
 
       if (checkedBoxes.length === 0) {
@@ -1135,6 +1318,7 @@
       
       saveData();
       renderInventory();
+      renderShipments();
       if(targetSKUs.length > 0) showToast(`${actionName} 成功！更新了 ${targetSKUs.length} 個品項`);
     }
 
@@ -1211,6 +1395,7 @@
       renderProjectSelector();
       loadCalcForCurrentProject();
       renderInventory();
+      renderShipments();
       renderLogs();
       if (document.getElementById('tab-report').classList.contains('active')) {
         renderReport();
@@ -1260,7 +1445,7 @@
       }
 
       const items = appData.projects[appData.currentProject];
-      const skuList = Object.keys(items);
+      let skuList = Object.keys(items);
 
       if (skuList.length === 0) {
         tbody.innerHTML = "<tr><td colspan='4'>專案內尚無品項庫存紀錄</td></tr>";
@@ -1268,9 +1453,19 @@
         return;
       }
 
+      skuList.sort((a, b) => {
+        const qtyA = items[a] || 0;
+        const qtyB = items[b] || 0;
+        if (qtyA > 0 && qtyB <= 0) return -1;
+        if (qtyA <= 0 && qtyB > 0) return 1;
+        return 0;
+      });
+
       skuList.forEach(sku => {
         const isChecked = checkedSKUs.includes(sku) ? "checked" : "";
         const tr = document.createElement('tr');
+        if ((items[sku] || 0) <= 0) tr.style.opacity = "0.6";
+
         tr.innerHTML = `
           <td class="center-col"><input type="checkbox" class="item-checkbox" data-sku="${sku}" style="width:18px; height:18px;" ${isChecked}></td>
           <td><input type="text" class="edit-sku" data-old-sku="${sku}" value="${sku}"></td>
@@ -1284,6 +1479,42 @@
       if (selectAllCb) {
          selectAllCb.checked = (checkedSKUs.length > 0 && checkedSKUs.length === skuList.length);
       }
+    }
+
+    function renderShipments() {
+      const tbody = document.querySelector('#shipments-table tbody');
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      const query = (document.getElementById('search-shipment-input')?.value || "").toLowerCase().trim();
+
+      let filtered = appData.shipments.filter(s => s.project === appData.currentProject || !appData.currentProject);
+
+      if (query) {
+        filtered = filtered.filter(s => 
+          (s.sku && s.sku.toLowerCase().includes(query)) ||
+          (s.note && s.note.toLowerCase().includes(query))
+        );
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='6' class='center-col'>尚無出貨紀錄</td></tr>";
+        return;
+      }
+
+      filtered.forEach(item => {
+        const tr = document.createElement('tr');
+        const displayTime = getFormattedTime(item);
+        tr.innerHTML = `
+          <td style="white-space: nowrap;">${displayTime}</td>
+          <td style="font-weight: bold; color: #F59E0B;">${item.sku}</td>
+          <td style="font-weight: bold; color: #10B981;">${item.qty}</td>
+          <td><input type="text" class="edit-shipment-note edit-note" data-id="${item.id}" value="${item.note || ''}" placeholder="點擊新增備註..."></td>
+          <td class="center-col"><button class="btn-return-icon return-shipment" data-id="${item.id}" title="退回品項庫存">🔃</button></td>
+          <td class="center-col"><button class="btn-delete-icon delete-shipment" data-id="${item.id}" title="完全刪除紀錄（不影響庫存）">✖</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
 
     function renderLogs() {
@@ -1355,6 +1586,26 @@
         }
       }
 
+      const reportShipBody = document.querySelector('#report-shipments-table tbody');
+      reportShipBody.innerHTML = "";
+      let reportShipments = appData.shipments.filter(s => s.project === appData.currentProject || !appData.currentProject);
+
+      if (reportShipments.length === 0) {
+        reportShipBody.innerHTML = "<tr><td colspan='4' class='center-col'>尚無出貨紀錄</td></tr>";
+      } else {
+        reportShipments.forEach(item => {
+          const tr = document.createElement('tr');
+          const displayTime = getFormattedTime(item);
+          tr.innerHTML = `
+            <td style="white-space: nowrap;">${displayTime}</td>
+            <td style="font-weight: bold; color: #F59E0B;">${item.sku}</td>
+            <td style="font-weight: bold; color: #10B981;">${item.qty}</td>
+            <td>${item.note || ''}</td>
+          `;
+          reportShipBody.appendChild(tr);
+        });
+      }
+
       const tbody = document.querySelector('#report-table tbody');
       tbody.innerHTML = "";
       
@@ -1379,4 +1630,12 @@
     }
   </script>
 </body>
-</html>
+</html>'''
+
+with open('gemini-code-1786521795243.html', 'w', encoding='utf-8') as f:
+    f.write(html_code)
+
+print("Updated HTML code with separate Return and Delete emoji icon columns successfully!")
+EOF
+python3 update_html_v8.py
+}
