@@ -158,7 +158,7 @@
         .btn-gear { background-color: #333; font-size: calc(var(--base-font) * 2); height: 1.5em; width: 1.5em; padding: 0; position: fixed; top: 20px; right: 20px; z-index: 100;}
         .btn-mode { background-color: #9c27b0; }
         
-        input[type="number"] {
+        input[type="number"], input[type="text"] {
             width: 100%;
             padding: 0.6em 1em;
             border-radius: 9999px;
@@ -173,7 +173,7 @@
             z-index: 10;
             font-family: inherit;
         }
-        input[type="number"]:focus { border-color: #4CAF50; box-shadow: 0 0 8px rgba(76, 175, 80, 0.4); }
+        input[type="number"]:focus, input[type="text"]:focus { border-color: #4CAF50; box-shadow: 0 0 8px rgba(76, 175, 80, 0.4); }
 
         .form-group { margin-bottom: 16px; position: relative; z-index: 10; }
         
@@ -245,7 +245,7 @@
                 
                 <div class="form-group">
                     <div>🎁 道具原價 (TWD)</div>
-                    <input type="number" id="val-amount" value="1500" step="100">
+                    <input type="text" id="val-amount" value="1500" placeholder="可輸入數字或算式，如 1500+500">
                 </div>
                 
                 <div class="form-group">
@@ -436,7 +436,7 @@
                 activeTab: 'gift'
             },
             inputs: {
-                amount: 1500,
+                amount: '1500',
                 discount: 84,
                 mpRate: 8,
                 mesoRate: 2000,
@@ -446,6 +446,35 @@
         };
 
         const STORAGE_KEY = 'MS_CALCULATOR_PREFS';
+
+        function evaluateMathExpression(str) {
+            if (str === null || str === undefined) return NaN;
+            str = String(str).trim();
+            if (!str) return 0;
+
+            str = str.replace(/[\uFF10-\uFF19]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xEE00))
+                     .replace(/＋/g, '+')
+                     .replace(/－/g, '-')
+                     .replace(/＊|×/g, '*')
+                     .replace(/／|÷/g, '/')
+                     .replace(/（/g, '(')
+                     .replace(/）/g, ')')
+                     .replace(/，|,/g, '');
+
+            if (/[^0-9.+\-*/()\s]/.test(str)) {
+                return NaN;
+            }
+
+            try {
+                const val = new Function(`'use strict'; return (${str})`)();
+                if (typeof val === 'number' && isFinite(val)) {
+                    return val;
+                }
+            } catch (e) {
+                return NaN;
+            }
+            return NaN;
+        }
 
         function saveData() {
             CONFIG.inputs.amount = document.getElementById('val-amount').value;
@@ -543,7 +572,7 @@
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && document.activeElement !== document.getElementById('val-amount')) {
                 setVipToggle(true);
             }
         });
@@ -577,9 +606,29 @@
         function setVipTier(val, btn) { updateActiveButton('#vip-tier-group', btn, 'vipTierValue'); }
         function setTaxRate(val, btn) { updateActiveButton('#tax-group', btn, 'taxValue'); }
 
-        document.querySelectorAll('input[type="number"]').forEach(input => {
+        document.querySelectorAll('input').forEach(input => {
             input.addEventListener('input', scheduleCalculate);
         });
+
+        const valAmountEl = document.getElementById('val-amount');
+        if (valAmountEl) {
+            valAmountEl.addEventListener('blur', () => {
+                const val = evaluateMathExpression(valAmountEl.value);
+                if (!isNaN(val) && valAmountEl.value.trim() !== '') {
+                    valAmountEl.value = val;
+                    scheduleCalculate();
+                }
+            });
+            valAmountEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const val = evaluateMathExpression(valAmountEl.value);
+                    if (!isNaN(val) && valAmountEl.value.trim() !== '') {
+                        valAmountEl.value = val;
+                        scheduleCalculate();
+                    }
+                }
+            });
+        }
 
         let isCalculating = false;
         function scheduleCalculate() {
@@ -599,7 +648,10 @@
         }
 
         function calcGift() {
-            const amount = parseFloat(document.getElementById('val-amount').value) || 0;
+            const rawAmount = document.getElementById('val-amount').value;
+            const parsedAmount = evaluateMathExpression(rawAmount);
+            const amount = isNaN(parsedAmount) ? 0 : parsedAmount;
+
             const discountRaw = parseFloat(document.getElementById('val-discount').value) || 0;
             const mpRate = parseFloat(document.getElementById('val-mp-rate').value) || 1;
             const mesoRate = parseFloat(document.getElementById('val-meso-rate').value) || 1;
@@ -614,7 +666,7 @@
             const mesoRevenue = (mesosInE * 10000) / mesoRate;
 
             const lblBuyMeso = `🪙 購買楓幣 (${mpRate}點 = 1億)`;
-            const lblCashOut = `💵 楓幣換現 (${mesoRate}萬 = 1TWD)`;
+            const lblCashOut = `💵 楓幣換現 (${mesoRate}萬 = 1台幣)`;
 
             if (CONFIG.state.calcMode === 'sell') {
                 document.getElementById('res-sell-cost').innerText = rechargeCost.toLocaleString() + ' TWD';
