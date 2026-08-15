@@ -66,7 +66,7 @@
             main { width: 90vw; }
         }
 
-        section {
+        .panel {
             background: var(--panel-bg);
             border: 1px solid var(--panel-border);
             border-radius: 16px;
@@ -175,7 +175,7 @@
         }
         input[type="number"]:focus, input[type="text"]:focus { border-color: #4CAF50; box-shadow: 0 0 8px rgba(76, 175, 80, 0.4); }
 
-        .form-group { margin-bottom: 16px; position: relative; z-index: 10; }
+        .form-group { margin-bottom: 16px; position: relative; z-index: 10; transition: color 0.3s; }
         
         .btn-group { 
             display: flex; 
@@ -240,27 +240,27 @@
         </header>
 
         <div id="view-gift" class="layout-grid">
-            <section>
+            <div class="panel">
                 <h2>📝 參數設定</h2>
                 
                 <div class="form-group">
                     <div>🎁 道具原價 (TWD)</div>
-                    <input type="text" id="val-amount" value="1500" placeholder="可輸入數字或算式，如 1500+500">
+                    <input type="text" id="val-amount" value="30000" placeholder="可輸入數字或算式，如 1500+500">
                 </div>
                 
-                <div class="form-group">
+                <div class="form-group" id="group-discount">
                     <div>🤝 送禮折數 (自用模式不計算此項)</div>
-                    <input type="number" id="val-discount" value="84" step="1">
+                    <input type="number" id="val-discount" value="8" step="1">
                 </div>
 
                 <div class="form-group">
                     <div>📈 購買楓幣 (1億楓幣 = 多少楓點)</div>
-                    <input type="number" id="val-mp-rate" value="8" step="1">
+                    <input type="number" id="val-mp-rate" value="5" step="1">
                 </div>
 
                 <div class="form-group">
                     <div>💵 遊戲幣值比率 (多少萬楓幣 = 1台幣)</div>
-                    <input type="number" id="val-meso-rate" value="2000" step="50">
+                    <input type="number" id="val-meso-rate" value="2700" step="50">
                 </div>
 
                 <div class="form-group">
@@ -269,20 +269,30 @@
                         <button class="btn-opt" data-val="16" onclick="setVipTier(16, this)">🥉 普/銀</button>
                         <button class="btn-opt" data-val="24" onclick="setVipTier(24, this)">🥇 金牌</button>
                         <button class="btn-opt" data-val="32" onclick="setVipTier(32, this)">💎 鑽石</button>
-                        <button class="btn-opt active" data-val="40" onclick="setVipTier(40, this)">👑 皇家</button>
+                        <button class="btn-opt active" data-val="40" onclick="setVipTier(40, this)">👑 皇家/黑</button>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <div>⭐ 是否計算 VIP 點數回饋？</div>
-                    <div class="btn-group">
-                        <button class="btn-yes" id="btn-vip-yes" onclick="setVipToggle(true)">✔️ 是</button>
-                        <button class="btn-no" id="btn-vip-no" onclick="setVipToggle(false)">❌ 否</button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <div>⭐ 是否計算 VIP 點數回饋？</div>
+                        <div class="btn-group">
+                            <button class="btn-yes" id="btn-vip-yes" onclick="setVipToggle(true)">✔️ 是</button>
+                            <button class="btn-no" id="btn-vip-no" onclick="setVipToggle(false)">❌ 否</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <div>💳 付款方式</div>
+                        <div class="btn-group" id="payment-group">
+                            <button class="btn-opt" data-val="card" onclick="setPaymentMode('card', this)">💳 刷卡</button>
+                            <button class="btn-opt active" data-val="reader" onclick="setPaymentMode('reader', this)">🏧 讀卡機</button>
+                        </div>
                     </div>
                 </div>
-            </section>
+            </div>
 
-            <section>
+            <div class="panel">
                 <h2>📊 結算面板</h2>
                 <div class="btn-group" style="margin-bottom: 10px;">
                     <button class="btn-opt active" id="mode-sell" onclick="setCalcMode('sell')">💰 賣掉模式</button>
@@ -292,7 +302,7 @@
                 <div class="result-box">
                     <div id="sell-details">
                         <div class="result-row">
-                            <span>💸 實際儲值成本 (÷1.05)</span>
+                            <span>💸 實際儲值成本</span>
                             <span id="res-sell-cost">0 TWD</span>
                         </div>
                         <div class="result-row">
@@ -323,7 +333,7 @@
 
                     <div id="self-details" style="display:none;">
                         <div class="result-row">
-                            <span>💸 實際儲值成本 (÷1.05)</span>
+                            <span>💸 實際儲值成本</span>
                             <span id="res-self-cost">0 TWD</span>
                         </div>
                         <div class="result-row">
@@ -352,15 +362,15 @@
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
         </div>
 
         <div id="view-rate" class="layout-grid" style="display: none;">
-            <section>
+            <div class="panel">
                 <h2>📝 比值參數設定</h2>
                 <div class="form-group">
                     <div>💵 1 台幣 = 多少萬楓幣</div>
-                    <input type="number" id="val-rate-meso" value="2000" step="50">
+                    <input type="number" id="val-rate-meso" value="2700" step="50">
                 </div>
                 
                 <div class="form-group">
@@ -375,9 +385,9 @@
                     <div>📈 1 億楓幣 = 多少楓點</div>
                     <input type="number" id="val-rate-mp" value="6" step="1">
                 </div>
-            </section>
+            </div>
 
-            <section>
+            <div class="panel">
                 <h2>📊 比值結果</h2>
                 <div class="result-box">
                     <div class="result-row">
@@ -393,12 +403,12 @@
                         <span id="res-rate-final" style="font-size:1.5em;">等待計算...</span>
                     </div>
                 </div>
-            </section>
+            </div>
         </div>
     </main>
 
     <div id="settings-modal">
-        <section style="width: 550px; max-width: 90vw; text-align: center;">
+        <div class="panel" style="width: 550px; max-width: 90vw; text-align: center;">
             <h2 style="justify-content: center;">⚙️ 系統設定</h2>
             
             <div class="form-group">
@@ -419,7 +429,7 @@
             </div>
 
             <button class="btn-yes" style="margin-top: 20px; width: 100%; justify-content: center;" onclick="toggleSettings()">✔️ 完成</button>
-        </section>
+        </div>
     </div>
 
     <div id="toast-container"></div>
@@ -429,18 +439,32 @@
             state: {
                 theme: 'dark',
                 size: 'md',
-                enableVip: true,
-                vipTierValue: 40,
                 taxValue: 0.05,
                 calcMode: 'sell',
                 activeTab: 'gift'
             },
-            inputs: {
-                amount: '1500',
-                discount: 84,
-                mpRate: 8,
-                mesoRate: 2000,
-                rateMeso: 2000,
+            modeData: {
+                sell: {
+                    amount: '30000',
+                    discount: 8,
+                    mpRate: 5,
+                    mesoRate: 2700,
+                    vipTierValue: 40,
+                    enableVip: true,
+                    paymentMode: 'reader'
+                },
+                self: {
+                    amount: '30000',
+                    discount: 8,
+                    mpRate: 5,
+                    mesoRate: 2700,
+                    vipTierValue: 40,
+                    enableVip: true,
+                    paymentMode: 'reader'
+                }
+            },
+            rate: {
+                rateMeso: 2700,
                 rateMp: 6
             }
         };
@@ -477,12 +501,13 @@
         }
 
         function saveData() {
-            CONFIG.inputs.amount = document.getElementById('val-amount').value;
-            CONFIG.inputs.discount = document.getElementById('val-discount').value;
-            CONFIG.inputs.mpRate = document.getElementById('val-mp-rate').value;
-            CONFIG.inputs.mesoRate = document.getElementById('val-meso-rate').value;
-            CONFIG.inputs.rateMeso = document.getElementById('val-rate-meso').value;
-            CONFIG.inputs.rateMp = document.getElementById('val-rate-mp').value;
+            const mode = CONFIG.state.calcMode;
+            CONFIG.modeData[mode].amount = document.getElementById('val-amount').value;
+            CONFIG.modeData[mode].discount = document.getElementById('val-discount').value;
+            CONFIG.modeData[mode].mpRate = document.getElementById('val-mp-rate').value;
+            CONFIG.modeData[mode].mesoRate = document.getElementById('val-meso-rate').value;
+            CONFIG.rate.rateMeso = document.getElementById('val-rate-meso').value;
+            CONFIG.rate.rateMp = document.getElementById('val-rate-mp').value;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(CONFIG));
         }
 
@@ -491,26 +516,34 @@
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
-                    Object.assign(CONFIG.state, parsed.state);
-                    Object.assign(CONFIG.inputs, parsed.inputs);
+                    if(parsed.modeData) {
+                        Object.assign(CONFIG.state, parsed.state);
+                        Object.assign(CONFIG.modeData.sell, parsed.modeData.sell);
+                        Object.assign(CONFIG.modeData.self, parsed.modeData.self);
+                        Object.assign(CONFIG.rate, parsed.rate);
+                    }
                 } catch (e) { }
             }
             
-            document.getElementById('val-amount').value = CONFIG.inputs.amount;
-            document.getElementById('val-discount').value = CONFIG.inputs.discount;
-            document.getElementById('val-mp-rate').value = CONFIG.inputs.mpRate;
-            document.getElementById('val-meso-rate').value = CONFIG.inputs.mesoRate;
-            document.getElementById('val-rate-meso').value = CONFIG.inputs.rateMeso;
-            document.getElementById('val-rate-mp').value = CONFIG.inputs.rateMp;
+            const mode = CONFIG.state.calcMode;
+            const data = CONFIG.modeData[mode];
+            document.getElementById('val-amount').value = data.amount;
+            document.getElementById('val-discount').value = data.discount;
+            document.getElementById('val-mp-rate').value = data.mpRate;
+            document.getElementById('val-meso-rate').value = data.mesoRate;
+            document.getElementById('val-rate-meso').value = CONFIG.rate.rateMeso;
+            document.getElementById('val-rate-mp').value = CONFIG.rate.rateMp;
 
             setTheme(CONFIG.state.theme, false);
             setSize(CONFIG.state.size, false);
             switchTab(CONFIG.state.activeTab);
-            setCalcMode(CONFIG.state.calcMode, false);
-            setVipToggle(CONFIG.state.enableVip, false);
             
-            updateActiveBtnUI('#vip-tier-group', CONFIG.state.vipTierValue);
+            updateActiveBtnUI('#vip-tier-group', data.vipTierValue);
+            updateActiveBtnUI('#payment-group', data.paymentMode);
             updateActiveBtnUI('#tax-group', CONFIG.state.taxValue);
+            setVipToggleUI(data.enableVip);
+            
+            setCalcMode(mode, false);
         }
 
         function showToast(msg) {
@@ -558,12 +591,16 @@
             saveData();
         }
 
-        function setVipToggle(isEnabled, notify = true) {
-            CONFIG.state.enableVip = isEnabled;
+        function setVipToggleUI(isEnabled) {
             document.getElementById('btn-vip-yes').style.boxShadow = isEnabled ? '0 0 15px #A8C7FA' : 'none';
             document.getElementById('btn-vip-no').style.boxShadow = !isEnabled ? '0 0 15px #FF0033' : 'none';
             document.getElementById('btn-vip-yes').style.border = isEnabled ? '2px solid #fff' : 'none';
             document.getElementById('btn-vip-no').style.border = !isEnabled ? '2px solid #fff' : 'none';
+        }
+
+        function setVipToggle(isEnabled, notify = true) {
+            CONFIG.modeData[CONFIG.state.calcMode].enableVip = isEnabled;
+            setVipToggleUI(isEnabled);
             
             if (notify) {
                 showToast(isEnabled ? '✅ 已開啟 VIP 回饋計算' : '❌ 已關閉 VIP 回饋計算');
@@ -572,23 +609,46 @@
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && document.activeElement !== document.getElementById('val-amount')) {
-                setVipToggle(true);
+            if (e.key === 'Enter') {
+                const activeEl = document.activeElement;
+                if (activeEl && activeEl.id === 'val-amount') {
+                    const val = evaluateMathExpression(activeEl.value);
+                    if (!isNaN(val) && activeEl.value.trim() !== '') {
+                        activeEl.value = val;
+                        scheduleCalculate();
+                    }
+                } else {
+                    document.getElementById('btn-vip-yes').click();
+                }
             }
         });
 
         function setCalcMode(mode, notify = true) {
+            saveData();
             CONFIG.state.calcMode = mode;
+            const data = CONFIG.modeData[mode];
+            
+            document.getElementById('val-amount').value = data.amount;
+            document.getElementById('val-discount').value = data.discount;
+            document.getElementById('val-mp-rate').value = data.mpRate;
+            document.getElementById('val-meso-rate').value = data.mesoRate;
+            updateActiveBtnUI('#vip-tier-group', data.vipTierValue);
+            updateActiveBtnUI('#payment-group', data.paymentMode);
+            setVipToggleUI(data.enableVip);
+
             document.getElementById('mode-sell').classList.toggle('active', mode === 'sell');
             document.getElementById('mode-self').classList.toggle('active', mode === 'self');
             document.getElementById('sell-details').style.display = mode === 'sell' ? 'block' : 'none';
             document.getElementById('self-details').style.display = mode === 'self' ? 'block' : 'none';
+            
+            document.getElementById('group-discount').style.color = mode === 'self' ? '#FF0033' : '';
+
             if(notify) scheduleCalculate();
         }
 
         function updateActiveBtnUI(groupSelector, matchValue) {
             document.querySelectorAll(`${groupSelector} button`).forEach(b => {
-                if(parseFloat(b.getAttribute('data-val')) === parseFloat(matchValue)) {
+                if(String(b.getAttribute('data-val')) === String(matchValue)) {
                     b.classList.add('active');
                 } else {
                     b.classList.remove('active');
@@ -596,15 +656,26 @@
             });
         }
 
-        function updateActiveButton(groupSelector, clickedBtn, valueKey) {
-            document.querySelectorAll(`${groupSelector} button`).forEach(b => b.classList.remove('active'));
-            clickedBtn.classList.add('active');
-            CONFIG.state[valueKey] = parseFloat(clickedBtn.getAttribute('data-val'));
+        function setVipTier(val, btn) { 
+            document.querySelectorAll('#vip-tier-group button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            CONFIG.modeData[CONFIG.state.calcMode].vipTierValue = parseFloat(val);
             scheduleCalculate();
         }
 
-        function setVipTier(val, btn) { updateActiveButton('#vip-tier-group', btn, 'vipTierValue'); }
-        function setTaxRate(val, btn) { updateActiveButton('#tax-group', btn, 'taxValue'); }
+        function setPaymentMode(val, btn) {
+            document.querySelectorAll('#payment-group button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            CONFIG.modeData[CONFIG.state.calcMode].paymentMode = val;
+            scheduleCalculate();
+        }
+
+        function setTaxRate(val, btn) { 
+            document.querySelectorAll('#tax-group button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            CONFIG.state.taxValue = parseFloat(val);
+            scheduleCalculate();
+        }
 
         document.querySelectorAll('input').forEach(input => {
             input.addEventListener('input', scheduleCalculate);
@@ -617,15 +688,6 @@
                 if (!isNaN(val) && valAmountEl.value.trim() !== '') {
                     valAmountEl.value = val;
                     scheduleCalculate();
-                }
-            });
-            valAmountEl.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    const val = evaluateMathExpression(valAmountEl.value);
-                    if (!isNaN(val) && valAmountEl.value.trim() !== '') {
-                        valAmountEl.value = val;
-                        scheduleCalculate();
-                    }
                 }
             });
         }
@@ -648,6 +710,9 @@
         }
 
         function calcGift() {
+            const mode = CONFIG.state.calcMode;
+            const modeData = CONFIG.modeData[mode];
+
             const rawAmount = document.getElementById('val-amount').value;
             const parsedAmount = evaluateMathExpression(rawAmount);
             const amount = isNaN(parsedAmount) ? 0 : parsedAmount;
@@ -657,10 +722,16 @@
             const mesoRate = parseFloat(document.getElementById('val-meso-rate').value) || 1;
 
             const actualDiscount = discountRaw > 0 ? (discountRaw < 10 ? discountRaw / 10 : discountRaw / 100) : 0;
-            const rechargeCost = Math.ceil(amount / 1.05);
+            
+            const isReader = modeData.paymentMode === 'reader';
+            const rechargeCost = isReader ? Math.ceil(amount / 1.05) : amount;
+            
             const buyerPays = amount * actualDiscount;
             
-            const vipPoints = CONFIG.state.enableVip ? (amount * CONFIG.state.vipTierValue) : 0;
+            const selfVipMap = { 16: 20, 24: 30, 32: 40, 40: 50 };
+            const actualVipTier = mode === 'self' ? selfVipMap[modeData.vipTierValue] : modeData.vipTierValue;
+            
+            const vipPoints = modeData.enableVip ? (amount * actualVipTier) : 0;
             const maplePoints = vipPoints / 300;
             const mesosInE = maplePoints / mpRate;
             const mesoRevenue = (mesosInE * 10000) / mesoRate;
@@ -668,7 +739,7 @@
             const lblBuyMeso = `🪙 購買楓幣 (${mpRate}點 = 1億)`;
             const lblCashOut = `💵 楓幣換現 (${mesoRate}萬 = 1台幣)`;
 
-            if (CONFIG.state.calcMode === 'sell') {
+            if (mode === 'sell') {
                 document.getElementById('res-sell-cost').innerText = rechargeCost.toLocaleString() + ' TWD';
                 document.getElementById('res-sell-buyer').innerText = buyerPays.toFixed(0) + ' TWD';
                 document.getElementById('res-sell-vip').innerText = Math.floor(vipPoints).toLocaleString() + ' 點';
